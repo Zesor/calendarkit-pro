@@ -2,7 +2,7 @@ import React from 'react';
 import { format, isSameDay, differenceInMinutes, isToday, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { CalendarEvent } from '../types';
-import { cn } from '../utils';
+import { cn, isEventDragDisabled } from '../utils';
 import { DraggableEvent } from '../components/dnd/DraggableEvent';
 import { DroppableCell } from '../components/dnd/DroppableCell';
 import { ResizableEvent } from '../components/dnd/ResizableEvent';
@@ -275,7 +275,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
                                         className={cn(
                                             "rounded-md border shadow-sm transition-all hover:shadow-md group overflow-hidden relative",
                                             "glass",
-                                            readonly ? "cursor-default" : "cursor-grab active:cursor-grabbing",
+                                            readonly || isEventDragDisabled(event) ? "cursor-default" : "cursor-grab active:cursor-grabbing",
                                             !event.color && "border-primary/20 bg-primary/10",
                                             isShortEvent ? "px-1 flex items-center justify-center" : "p-2",
                                             // Add active border for overlapped events to distinguish them

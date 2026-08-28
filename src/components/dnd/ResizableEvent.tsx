@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { CalendarEvent } from '../../types';
-import { cn } from '../../utils';
+import { cn, isEventResizeDisabled } from '../../utils';
 
 interface ResizableEventProps {
   event: CalendarEvent;
@@ -23,6 +23,7 @@ export const ResizableEvent: React.FC<ResizableEventProps> = ({
   style,
   readonly,
 }) => {
+  const resizeLocked = readonly || isEventResizeDisabled(event);
   const [isResizing, setIsResizing] = useState(false);
   const [resizeHeight, setResizeHeight] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -101,13 +102,13 @@ export const ResizableEvent: React.FC<ResizableEventProps> = ({
       {/* Resize Handle */}
       <div
         className={cn(
-          readonly ? "cursor-default" : "cursor-ns-resize group-hover:opacity-100",
+          resizeLocked ? "cursor-default" : "cursor-ns-resize group-hover:opacity-100",
           "absolute bottom-0 left-0 right-0 h-3 z-20 flex items-center justify-center",
           "opacity-0 transition-opacity",
           isResizing && "opacity-100"
         )}
-        onMouseDown={readonly ? undefined : handleResizeStart}
-        onTouchStart={readonly ? undefined : handleResizeStart}
+        onMouseDown={resizeLocked ? undefined : handleResizeStart}
+        onTouchStart={resizeLocked ? undefined : handleResizeStart}
       >
         <div className={cn(
           "w-8 h-1 rounded-full transition-all",
