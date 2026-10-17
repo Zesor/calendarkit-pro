@@ -50,8 +50,9 @@ function needsRecurrenceCopy(event: CalendarEvent): boolean {
 }
 
 /**
- * Coerces string/number dates to `Date` and drops invalid events (bad date, end before
- * start, duplicate id) with a development warning. Cached per input array and per event.
+ * Coerces string/number dates to `Date` and drops invalid events (bad date, end before start)
+ * with a development warning; duplicate ids are kept but warned about. Cached per input array
+ * and per event: events are treated as immutable (create a new object to change one).
  */
 export function normalizeEvents(events: CalendarEvent[]): CalendarEvent[] {
   const cached = normalizedList.get(events)
@@ -61,9 +62,9 @@ export function normalizeEvents(events: CalendarEvent[]): CalendarEvent[] {
   for (const event of events) {
     const normalized = normalizeEvent(event)
     if (!normalized) continue
+    // Duplicates are still rendered (1.x behaviour) but break drag & drop and React keys: warn.
     if (seen.has(normalized.id)) {
-      warnOnce(`duplicate-id:${normalized.id}`, `Duplicate event id "${normalized.id}": only the first one is rendered.`)
-      continue
+      warnOnce(`duplicate-id:${normalized.id}`, `Duplicate event id "${normalized.id}": ids must be unique.`)
     }
     seen.add(normalized.id)
     result.push(normalized)
@@ -112,20 +113,32 @@ export interface DaySegment {
   end: Date
 }
 
+/** Wall-clock day range [start, end) to build segments for. */
+export interface DayRange {
+  start: Date
+  end: Date
+}
+
 const segmentCache = new WeakMap<CalendarEvent[], Map<string, Map<string, DaySegment[]>>>()
 
 /**
  * Splits each event at display midnight (T4): an event from 22:00 to 02:00 yields one segment
- * per day it covers. Keys are `yyyy-MM-dd`. Cached per (array, zone), so each day's array is
- * referentially stable while the events and zone do not change.
+ * per day it covers. Keys are `yyyy-MM-dd`. Pass the visible `range` so very long events only
+ * produce the days on screen. Cached per (array, zone, range), so each day's array is
+ * referentially stable while those do not change.
  */
-export function segmentsByDisplayDay(events: CalendarEvent[], tz?: string): Map<string, DaySegment[]> {
-  return memoByZone(segmentCache, events, tz, () => {
+export function segmentsByDisplayDay(events: CalendarEvent[], tz?: string, range?: DayRange): Map<string, DaySegment[]> {
+  const cacheKey = range ? `${tz ?? ''}|${range.start.getTime()}|${range.end.getTime()}` : tz
+  return memoByZone(segmentCache, events, cacheKey, () => {
     const map = new Map<string, DaySegment[]>()
     for (const event of events) {
       const wallStart = toDisplay(event.start, tz)
-      const wallEnd = toDisplay(event.end, tz)
-      let day = startOfDay(wallStart)
+      // In a DST fall-back hour the wall end can precede the wall start: keep the event visible.
+      const rawEnd = toDisplay(event.end, tz)
+      const wallEnd = rawEnd < wallStart ? wallStart : rawEnd
+      if (range && (wallEnd < range.start || wallStart >= range.end)) continue
+      let day = startOfDay(range && wallStart < range.start ? range.start : wallStart)
+      const stop = range && wallEnd > range.end ? range.end : wallEnd
       do {
         const next = addDays(day, 1)
         const start = wallStart > day ? wallStart : day
@@ -138,7 +151,7 @@ export function segmentsByDisplayDay(events: CalendarEvent[], tz?: string): Map<
           else map.set(key, [segment])
         }
         day = next
-      } while (day < wallEnd)
+      } while (day < stop)
     }
     return map
   })

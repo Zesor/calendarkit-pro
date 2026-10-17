@@ -6,6 +6,11 @@ export interface DropInput {
   /** Wall-clock date of the drop target, as built by the grid (day cell or time slot). */
   overDate: Date
   overResourceId?: string
+  /**
+   * Wall-clock ms between the event's start and the start of the block that was grabbed
+   * (non-zero for the second-day block of an event crossing midnight).
+   */
+  grabOffsetMs?: number
   view: ViewType
   tz?: string
 }
@@ -21,14 +26,14 @@ export interface DropResult {
  * changes its day; time grids take the slot time. Duration and (unless dropped on another
  * resource) `resourceId` are kept. Returns `null` when nothing changes.
  */
-export function computeDrop({ event, overDate, overResourceId, view, tz }: DropInput): DropResult | null {
+export function computeDrop({ event, overDate, overResourceId, grabOffsetMs = 0, view, tz }: DropInput): DropResult | null {
   let wallStart: Date
   if (view === 'month') {
     const original = toDisplay(event.start, tz)
     wallStart = new Date(overDate)
     wallStart.setHours(original.getHours(), original.getMinutes(), original.getSeconds(), original.getMilliseconds())
   } else {
-    wallStart = new Date(overDate)
+    wallStart = new Date(overDate.getTime() - grabOffsetMs)
     wallStart.setSeconds(0, 0)
   }
   const start = fromDisplay(wallStart, tz)

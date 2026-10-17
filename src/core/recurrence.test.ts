@@ -157,6 +157,14 @@ describe('series edits', () => {
     expect(updated.start).toEqual(new Date(2026, 9, 5, 11, 0))
   })
 
+  test('R5: moving an occurrence by 7 days across the DST change keeps 09:00 (no ±1h drift)', () => {
+    const master = series({ start: new Date(2026, 9, 1, 9, 0), end: new Date(2026, 9, 1, 9, 30), recurrence: { freq: 'WEEKLY', exdates: [new Date(2026, 9, 15, 9, 0)] } })
+    const occurrence = expandRecurrences([master], range(new Date(2026, 9, 22), new Date(2026, 9, 23)))[0] // Thu 22 Oct 09:00
+    const updated = shiftSeries(master, occurrence, new Date(2026, 9, 29, 9, 0), new Date(2026, 9, 29, 9, 30))
+    expect(updated.start).toEqual(new Date(2026, 9, 8, 9, 0))
+    expect(updated.recurrence?.exdates).toEqual([new Date(2026, 9, 22, 9, 0)])
+  })
+
   test('R6: excludeOccurrence appends the occurrence start to exdates', () => {
     const master = series({ recurrence: { freq: 'DAILY' } })
     const updated = excludeOccurrence(master, new Date(2026, 9, 6, 9, 0))

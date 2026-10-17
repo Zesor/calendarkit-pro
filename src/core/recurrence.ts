@@ -1,4 +1,4 @@
-import { addMonths, differenceInCalendarDays, startOfMonth } from 'date-fns'
+import { addMonths, startOfMonth } from 'date-fns'
 import { RRule, Weekday } from 'rrule'
 import type { CalendarEvent } from '../types'
 import { fromDisplay, toDisplay } from './timezone'
@@ -124,8 +124,12 @@ export function stripOccurrenceFields(event: CalendarEvent): CalendarEvent {
   return rest as CalendarEvent
 }
 
-const shiftWall = (instant: Date, deltaMs: number, tz?: string) =>
-  fromDisplay(new Date(toDisplay(instant, tz).getTime() + deltaMs), tz)
+// Shift in the floating domain (pure UTC arithmetic) so the browser's own DST never adds ±1h.
+const shiftFloating = (instant: Date, deltaMs: number, tz?: string) =>
+  fromFloating(new Date(toFloating(instant, tz).getTime() + deltaMs), tz)
+
+const DAY_MS = 24 * 60 * 60 * 1000
+const floatingDay = (floating: Date) => Math.floor(floating.getTime() / DAY_MS)
 
 /**
  * R5: applies to the whole series the move/resize made on one occurrence. The series start moves by
@@ -139,11 +143,11 @@ export function shiftSeries(
   newEnd: Date,
   anchorTz?: string,
 ): CalendarEvent {
-  const fromWall = toDisplay(occurrence.start, anchorTz)
-  const toWall = toDisplay(newStart, anchorTz)
-  const deltaMs = toWall.getTime() - fromWall.getTime()
-  const dayDelta = differenceInCalendarDays(toWall, fromWall)
-  const start = shiftWall(master.start, deltaMs, anchorTz)
+  const fromFloat = toFloating(occurrence.start, anchorTz)
+  const toFloat = toFloating(newStart, anchorTz)
+  const deltaMs = toFloat.getTime() - fromFloat.getTime()
+  const dayDelta = floatingDay(toFloat) - floatingDay(fromFloat)
+  const start = shiftFloating(master.start, deltaMs, anchorTz)
   const end = new Date(start.getTime() + (newEnd.getTime() - newStart.getTime()))
   const recurrence = master.recurrence && {
     ...master.recurrence,
@@ -151,7 +155,7 @@ export function shiftSeries(
       master.recurrence.byweekday && dayDelta % 7 !== 0
         ? master.recurrence.byweekday.map((d) => (((d + dayDelta) % 7) + 7) % 7)
         : master.recurrence.byweekday,
-    exdates: master.recurrence.exdates?.map((d) => shiftWall(d, deltaMs, anchorTz)),
+    exdates: master.recurrence.exdates?.map((d) => shiftFloating(d, deltaMs, anchorTz)),
   }
   return stripOccurrenceFields({ ...master, start, end, recurrence })
 }

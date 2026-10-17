@@ -8,14 +8,16 @@ interface DraggableEventProps extends React.HTMLAttributes<HTMLDivElement> {
   event: CalendarEvent;
   /** Unique drag id when one event renders several blocks (e.g. one per day). Defaults to `event.id`. */
   dragId?: string;
+  /** Wall-clock ms from the event start to this block's start (blocks after midnight). */
+  grabOffsetMs?: number;
   children: React.ReactNode;
 }
 
-const DraggableEventImpl: React.FC<DraggableEventProps> = ({ event, dragId, children, className, style: propStyle, ...props }) => {
+const DraggableEventImpl: React.FC<DraggableEventProps> = ({ event, dragId, grabOffsetMs, children, className, style: propStyle, ...props }) => {
   const dragDisabled = isEventDragDisabled(event);
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: dragId ?? event.id,
-    data: { event },
+    data: { event, grabOffsetMs },
     disabled: dragDisabled,
   });
 

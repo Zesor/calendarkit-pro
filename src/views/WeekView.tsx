@@ -1,5 +1,5 @@
 import React from 'react';
-import { format, differenceInMinutes, isSameDay, Locale } from 'date-fns';
+import { addDays, format, differenceInMinutes, isSameDay, Locale } from 'date-fns';
 import { CalendarEvent } from '../types';
 import { cn, isEventDragDisabled } from '../utils';
 import { DaySegment, segmentsByDisplayDay } from '../core/events';
@@ -49,6 +49,12 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
     [currentDate, locale],
   );
 
+  // Only the days on screen get segments, so endless events stay cheap.
+  const visibleRange = React.useMemo(
+    () => ({ start: weekDays[0], end: addDays(weekDays[weekDays.length - 1], 1) }),
+    [weekDays],
+  );
+
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const [now, setNow] = React.useState(() => new Date());
 
@@ -65,7 +71,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
     }
   }, [timezone]);
 
-  const segmentsByDay = segmentsByDisplayDay(events, timezone);
+  const segmentsByDay = segmentsByDisplayDay(events, timezone, visibleRange);
   const today = displayToday(timezone, now);
   const zonedNow = toDisplay(now, timezone);
   const nowTop = (minutesSinceDisplayMidnight(now, timezone) / 60) * HOUR_HEIGHT;
@@ -198,6 +204,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
                             <DraggableEvent
                                 key={`${event.id}-${dayKey}`}
                                 dragId={`${event.id}@${dayKey}`}
+                                grabOffsetMs={start.getTime() - zonedEventStart.getTime()}
                                 event={event}
                                 className={`absolute z-10 transition-all ${readonly ? "cursor-default" : ""}`}
                                 style={{

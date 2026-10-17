@@ -20,16 +20,17 @@ describe('normalizeEvents', () => {
     expect(normalizeEvents([input])[0]).toBe(input)
   })
 
-  test('skips invalid dates, end before start and duplicate ids, warning once each', () => {
+  test('skips invalid dates and end before start; keeps duplicate ids (1.x behaviour) — warning once each', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const ok = ev('ok', new Date(2026, 9, 17, 9), new Date(2026, 9, 17, 10))
+    const duplicate = ev('ok', new Date(2026, 9, 18, 9), new Date(2026, 9, 18, 10))
     const result = normalizeEvents([
       ok,
       ev('bad', 'not a date', new Date()),
       ev('reversed', new Date(2026, 9, 17, 10), new Date(2026, 9, 17, 9)),
-      ev('ok', new Date(2026, 9, 18, 9), new Date(2026, 9, 18, 10)),
+      duplicate,
     ])
-    expect(result).toEqual([ok])
+    expect(result).toEqual([ok, duplicate])
     expect(warn).toHaveBeenCalledTimes(3)
   })
 
@@ -79,6 +80,20 @@ describe('segmentsByDisplayDay', () => {
   test('a zero-length event keeps one segment', () => {
     const point = ev('p', new Date(2026, 9, 17, 9), new Date(2026, 9, 17, 9))
     expect(segmentsByDisplayDay([point]).get('2026-10-17')).toHaveLength(1)
+  })
+
+  test('a range bounds the work: an endless event yields only the requested days', () => {
+    const endless = ev('forever', new Date(2020, 0, 1, 9), new Date(9999, 0, 1))
+    const t0 = performance.now()
+    const map = segmentsByDisplayDay([endless], undefined, { start: new Date(2026, 9, 12), end: new Date(2026, 9, 19) })
+    expect([...map.keys()]).toHaveLength(7)
+    expect(map.get('2026-10-12')?.[0]).toMatchObject({ start: new Date(2026, 9, 12), end: new Date(2026, 9, 13) })
+    expect(performance.now() - t0).toBeLessThan(100)
+  })
+
+  test('an event inside the DST fall-back hour (wall end before wall start) is kept', () => {
+    const fallBack = ev('fb', new Date('2026-10-25T00:45:00Z'), new Date('2026-10-25T01:15:00Z')) // 02:45 CEST → 02:15 CET
+    expect(segmentsByDisplayDay([fallBack], 'Europe/Paris').get('2026-10-25')).toHaveLength(1)
   })
 
   test('segments use the display zone and are cached per zone', () => {

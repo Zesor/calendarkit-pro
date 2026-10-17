@@ -36,6 +36,12 @@ describe('computeDrop (D3)', () => {
     expect(computeDrop({ event: e, overDate: new Date(2026, 9, 15, 9), overResourceId: 'b', view: 'resource' })?.resourceId).toBe('b')
   })
 
+  test('dropping the second-day block of a night event in place changes nothing (grab offset)', () => {
+    const night = event(new Date(2026, 9, 15, 22), new Date(2026, 9, 16, 2))
+    expect(computeDrop({ event: night, overDate: new Date(2026, 9, 16, 0, 0), grabOffsetMs: 2 * 3600_000, view: 'week' })).toBeNull()
+    expect(computeDrop({ event: night, overDate: new Date(2026, 9, 16, 1, 0), grabOffsetMs: 2 * 3600_000, view: 'week' })?.start).toEqual(new Date(2026, 9, 15, 23))
+  })
+
   test('returns null when nothing changes', () => {
     const e = event(new Date(2026, 9, 15, 9), new Date(2026, 9, 15, 10), { resourceId: 'a' })
     expect(computeDrop({ event: e, overDate: new Date(2026, 9, 15, 9), overResourceId: 'a', view: 'resource' })).toBeNull()

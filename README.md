@@ -210,7 +210,9 @@ Moving, resizing or editing one occurrence updates the whole series by the same 
 
 ### Invalid data
 
-Dates may be `Date` objects, ISO strings or timestamps. Events with an invalid date, an end before their start, or a duplicate `id` are skipped, with a warning in development.
+Dates may be `Date` objects, ISO strings or timestamps. Events with an invalid date or an end before their start are skipped, with a warning in development. Event ids must be unique (duplicates are rendered but warned about, and break drag & drop).
+
+Treat events as immutable: to change an event, pass a new object (`events.map(e => e.id === id ? { ...e, title } : e)`). Computations are cached per event object, so mutating an event in place may not be reflected.
 
 ## Timezone Support
 

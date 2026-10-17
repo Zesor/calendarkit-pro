@@ -1,5 +1,5 @@
 import React from 'react';
-import { format, differenceInMinutes, isSameDay, Locale } from 'date-fns';
+import { addDays, format, differenceInMinutes, isSameDay, Locale, startOfDay } from 'date-fns';
 import { CalendarEvent } from '../types';
 import { cn, isEventDragDisabled } from '../utils';
 import { DaySegment, segmentsByDisplayDay } from '../core/events';
@@ -42,6 +42,12 @@ const DayViewImpl: React.FC<DayViewProps> = ({
   locale,
   readonly
 }) => {
+  // Only the day on screen gets segments, so endless events stay cheap.
+  const visibleRange = React.useMemo(() => {
+    const start = startOfDay(currentDate);
+    return { start, end: addDays(start, 1) };
+  }, [currentDate]);
+
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const [now, setNow] = React.useState(() => new Date());
 
@@ -59,7 +65,7 @@ const DayViewImpl: React.FC<DayViewProps> = ({
   }, [timezone]);
 
   const dayKey = format(currentDate, 'yyyy-MM-dd');
-  const positioned = layoutDayEvents(segmentsByDisplayDay(events, timezone).get(dayKey) ?? NO_SEGMENTS);
+  const positioned = layoutDayEvents(segmentsByDisplayDay(events, timezone, visibleRange).get(dayKey) ?? NO_SEGMENTS);
   const isToday = isSameDay(currentDate, displayToday(timezone, now));
   const zonedNow = toDisplay(now, timezone);
   const nowTop = (minutesSinceDisplayMidnight(now, timezone) / 60) * HOUR_HEIGHT;
@@ -161,6 +167,7 @@ const DayViewImpl: React.FC<DayViewProps> = ({
                          <DraggableEvent
                             key={`${event.id}-${dayKey}`}
                             dragId={`${event.id}@${dayKey}`}
+                            grabOffsetMs={start.getTime() - zonedStart.getTime()}
                             event={event}
                             className={`absolute z-10 transition-all ${readonly ? "cursor-default" : ""}`}
                             style={{

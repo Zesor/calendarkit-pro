@@ -248,6 +248,7 @@ export const useCalendarLogic = ({
       event: dragged,
       overDate,
       overResourceId: over.data.current?.resourceId,
+      grabOffsetMs: active.data.current?.grabOffsetMs,
       view,
       tz: timezone,
     });

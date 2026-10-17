@@ -1,8 +1,17 @@
 const warned = new Set<string>()
 
+// Bundlers replace `process.env.NODE_ENV` statically; without a bundler `process` may not exist.
+function isProductionBuild(): boolean {
+  try {
+    return process.env.NODE_ENV === 'production'
+  } catch {
+    return false
+  }
+}
+
 /** Logs a development warning once per key; silent in production builds. */
 export function warnOnce(key: string, message: string): void {
-  if (process.env.NODE_ENV === 'production' || warned.has(key)) return
+  if (isProductionBuild() || warned.has(key)) return
   warned.add(key)
   console.warn(`[calendarkit-pro] ${message}`)
 }
