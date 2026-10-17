@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
-import { format, isSameDay, isToday, isTomorrow, addDays, startOfDay, differenceInMinutes } from 'date-fns';
-import { CalendarEvent } from '../types';
+import { format, isSameDay, isToday, isTomorrow, addDays, startOfDay, differenceInMinutes, Locale } from 'date-fns';
+import { CalendarEvent, CalendarTranslations } from '../types';
 import { cn } from '../utils';
+import { uses24HourClock } from '../lib/date';
 import { AgendaEmptyState } from '../components/EmptyState';
 import { motion } from 'framer-motion';
 import { Clock, MapPin, Users, Paperclip, Bell } from 'lucide-react';
@@ -11,6 +12,8 @@ interface AgendaViewProps {
   events: CalendarEvent[];
   onEventClick?: (event: CalendarEvent) => void;
   onCreateEvent?: () => void;
+  locale?: Locale;
+  translations?: Partial<CalendarTranslations>;
 }
 
 const formatDuration = (start: Date, end: Date): string => {
@@ -22,10 +25,14 @@ const formatDuration = (start: Date, end: Date): string => {
   return `${hours}h ${remainingMinutes}m`;
 };
 
-const getDateLabel = (date: Date): string => {
-  if (isToday(date)) return 'Today';
-  if (isTomorrow(date)) return 'Tomorrow';
-  return format(date, 'EEEE');
+const getDateLabel = (
+  date: Date,
+  locale?: Locale,
+  translations?: Partial<CalendarTranslations>
+): string => {
+  if (isToday(date)) return translations?.today || 'Today';
+  if (isTomorrow(date)) return translations?.tomorrow || 'Tomorrow';
+  return format(date, 'EEEE', { locale });
 };
 
 export const AgendaView: React.FC<AgendaViewProps> = ({
@@ -33,7 +40,14 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
   events,
   onEventClick,
   onCreateEvent,
+  locale,
+  translations,
 }) => {
+  // Times follow the locale's clock convention (e.g. 24h for pt-BR/fr); the
+  // historical 12h format stays the default without a locale.
+  const is24h = uses24HourClock(locale);
+  const timePattern = is24h ? 'H:mm' : 'h:mm a';
+  const compactTimePattern = is24h ? 'H:mm' : 'h:mm';
   // Group events by day for the next 30 days starting from currentDate
   const groupedEvents = useMemo(() => {
     const startDate = startOfDay(currentDate);
@@ -74,7 +88,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
   return (
     <div className="flex flex-col h-full bg-background overflow-y-auto">
       {groupedEvents.length === 0 ? (
-        <AgendaEmptyState onCreateEvent={onCreateEvent} />
+        <AgendaEmptyState onCreateEvent={onCreateEvent} translations={translations} />
       ) : (
         <motion.div
           className="max-w-3xl mx-auto w-full pb-10 px-4 md:px-6"
@@ -102,7 +116,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                             {format(group.date, 'd')}
                           </span>
                           <span className="text-xs font-medium uppercase tracking-wide opacity-80">
-                            {format(group.date, 'MMM')}
+                            {format(group.date, 'MMM', { locale })}
                           </span>
                         </div>
 
@@ -112,10 +126,13 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                             "text-lg font-semibold",
                             isToday(group.date) && "text-primary"
                           )}>
-                            {getDateLabel(group.date)}
+                            {getDateLabel(group.date, locale, translations)}
                           </span>
                           <span className="text-sm text-muted-foreground">
-                            {group.events.length} event{group.events.length !== 1 ? 's' : ''}
+                            {group.events.length}{' '}
+                            {group.events.length !== 1
+                              ? (translations?.eventPlural || 'events')
+                              : (translations?.eventSingular || 'event')}
                           </span>
                         </div>
                       </div>
@@ -147,17 +164,19 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                                     {event.allDay ? (
                                         <div className="flex flex-col items-center">
                                           <span className="text-xs font-semibold text-muted-foreground bg-muted/80 px-2.5 py-1 rounded-full">
-                                            All Day
+                                            {translations?.allDay || 'All Day'}
                                           </span>
                                         </div>
                                     ) : (
                                         <div className="flex flex-col items-center">
                                           <span className="text-base font-semibold text-foreground">
-                                            {format(event.start, 'h:mm')}
+                                            {format(event.start, compactTimePattern, { locale })}
                                           </span>
-                                          <span className="text-xs text-muted-foreground uppercase">
-                                            {format(event.start, 'a')}
-                                          </span>
+                                          {!is24h && (
+                                            <span className="text-xs text-muted-foreground uppercase">
+                                              {format(event.start, 'a')}
+                                            </span>
+                                          )}
                                           <div className="w-px h-3 bg-border my-1" />
                                           <span className="text-xs text-muted-foreground/70 font-medium">
                                             {formatDuration(event.start, event.end)}
@@ -190,14 +209,19 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                                       {!event.allDay && (
                                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                           <Clock className="w-3.5 h-3.5" />
-                                          <span>{format(event.start, 'h:mm a')} - {format(event.end, 'h:mm a')}</span>
+                                          <span>{format(event.start, timePattern, { locale })} - {format(event.end, timePattern, { locale })}</span>
                                         </div>
                                       )}
 
                                       {event.guests && event.guests.length > 0 && (
                                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                           <Users className="w-3.5 h-3.5" />
-                                          <span>{event.guests.length} guest{event.guests.length !== 1 ? 's' : ''}</span>
+                                          <span>
+                                            {event.guests.length}{' '}
+                                            {event.guests.length !== 1
+                                              ? (translations?.guestsCount || 'guests')
+                                              : (translations?.guestCount || 'guest')}
+                                          </span>
                                         </div>
                                       )}
 

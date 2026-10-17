@@ -51,14 +51,21 @@ export const MonthView: React.FC<MonthViewProps> = ({
   timezone,
   locale
 }) => {
-  const days = useMemo(() => getMonthGrid(currentDate), [currentDate]);
-  
+  // Week start follows the locale's convention (historical Monday fallback).
+  // The same value drives the grid AND the weekday header row — they were
+  // previously built with different starts, shifting the labels by one day.
+  const weekStartsOn = locale?.options?.weekStartsOn ?? 1;
+  const days = useMemo(
+    () => getMonthGrid(currentDate, weekStartsOn),
+    [currentDate, weekStartsOn],
+  );
+
   // Dynamic week days generation
   const weekDays = useMemo(() => {
-    const start = startOfWeek(currentDate, { weekStartsOn: 1 });
-    const end = endOfWeek(currentDate, { weekStartsOn: 1 });
+    const start = startOfWeek(currentDate, { weekStartsOn });
+    const end = endOfWeek(currentDate, { weekStartsOn });
     return eachDayOfInterval({ start, end });
-  }, [currentDate]);
+  }, [currentDate, weekStartsOn]);
 
   // Timezone adjustment helper
   const getZonedDate = useCallback((date: Date) => {

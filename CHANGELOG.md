@@ -1,5 +1,17 @@
 # Pro-Scheduler Changelog
 
+## 1.2.0
+
+### Features
+- Per-event `draggable` / `resizable` flags on `CalendarEvent` to lock individual events (#4, thanks @jesusvillamarin)
+
+### Bug Fixes
+- Event resizing now persists (stale closure in `ResizableEvent`) and is no longer hijacked by drag (#3)
+- Month view grid and weekday headers share the same week start, derived from the `locale` (#3, fixes #5)
+- `language` / `locale` / `translations` are honored in Agenda view, Sidebar, mini calendar, context menu and drag overlay (#3, thanks @eduBKR)
+- Times follow the locale's 12h/24h clock convention in every view (#3)
+- `CalendarTranslations` type is now derived from the built-in English pack and lists every key
+
 ## Features Added
 
 ### Event Resizing

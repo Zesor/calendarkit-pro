@@ -4,7 +4,7 @@ import { Plus, ChevronDown, Globe, Download, Upload } from 'lucide-react';
 import { MiniCalendar } from './MiniCalendar';
 import { cn } from '../utils';
 import { toZonedTime } from 'date-fns-tz';
-import { format } from 'date-fns';
+import { format, Locale } from 'date-fns';
 
 import { ViewType, CalendarEvent } from '../types';
 
@@ -27,6 +27,7 @@ interface SidebarProps {
   translations?: any;
   events?: CalendarEvent[];
   onImport?: (events: Partial<CalendarEvent>[]) => void;
+  locale?: Locale;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -41,6 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   calendars,
   onCalendarToggle,
   translations,
+  locale,
 }) => {
   const [calendarsOpen, setCalendarsOpen] = useState(true);
   const [timezoneOpen, setTimezoneOpen] = useState(false);
@@ -74,7 +76,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const timezones = [
-    { value: '', label: 'Local Time', acronym: 'LOC' },
+    { value: '', label: translations?.localTime || 'Local Time', acronym: 'LOC' },
     { value: 'UTC', label: 'UTC', acronym: 'UTC' },
     { value: 'America/New_York', label: 'New York', acronym: 'EST' },
     { value: 'America/Chicago', label: 'Chicago', acronym: 'CST' },
@@ -148,7 +150,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       )}
 
-      <MiniCalendar currentDate={currentDate} onDateChange={onDateChange} onViewChange={onViewChange} />
+      <MiniCalendar currentDate={currentDate} onDateChange={onDateChange} onViewChange={onViewChange} locale={locale} />
 
       <div className="flex-1 px-4 space-y-5 mt-5">
         {/* Calendars List */}

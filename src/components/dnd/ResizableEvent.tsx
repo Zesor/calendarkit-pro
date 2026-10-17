@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { CalendarEvent } from '../../types';
-import { cn } from '../../utils';
+import { cn, isEventResizeDisabled } from '../../utils';
 
 interface ResizableEventProps {
   event: CalendarEvent;
@@ -23,11 +23,15 @@ export const ResizableEvent: React.FC<ResizableEventProps> = ({
   style,
   readonly,
 }) => {
+  const resizeLocked = readonly || isEventResizeDisabled(event);
   const [isResizing, setIsResizing] = useState(false);
   const [resizeHeight, setResizeHeight] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const startYRef = useRef<number>(0);
   const startHeightRef = useRef<number>(0);
+  // Mirrors resizeHeight so the mouseup handler (registered at mousedown)
+  // reads the final value instead of the state captured in a stale closure.
+  const resizeHeightRef = useRef<number | null>(null);
 
   const handleResizeStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
@@ -52,16 +56,19 @@ export const ResizableEvent: React.FC<ResizableEventProps> = ({
         startHeightRef.current + snappedDelta
       );
 
+      resizeHeightRef.current = newHeight;
       setResizeHeight(newHeight);
     };
 
     const handleEnd = () => {
       setIsResizing(false);
 
-      if (resizeHeight !== null && containerRef.current && onResize) {
+      const finalHeight = resizeHeightRef.current;
+
+      if (finalHeight !== null && containerRef.current && onResize) {
         // Calculate new end time based on resize
         const originalHeight = startHeightRef.current;
-        const heightDiff = (resizeHeight || originalHeight) - originalHeight;
+        const heightDiff = finalHeight - originalHeight;
         const minutesDiff = (heightDiff / hourHeight) * 60;
 
         const newEnd = new Date(event.end);
@@ -73,6 +80,7 @@ export const ResizableEvent: React.FC<ResizableEventProps> = ({
         }
       }
 
+      resizeHeightRef.current = null;
       setResizeHeight(null);
 
       document.removeEventListener('mousemove', handleMove);
@@ -85,7 +93,14 @@ export const ResizableEvent: React.FC<ResizableEventProps> = ({
     document.addEventListener('mouseup', handleEnd);
     document.addEventListener('touchmove', handleMove, { passive: false });
     document.addEventListener('touchend', handleEnd);
-  }, [event, hourHeight, minDuration, onResize, resizeHeight]);
+  }, [event, hourHeight, minDuration, onResize]);
+
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    // dnd-kit's PointerSensor activates on pointerdown, which mousedown's
+    // stopPropagation doesn't reach — without this the whole-event drag
+    // hijacks the resize gesture.
+    e.stopPropagation();
+  }, []);
 
   return (
     <div
@@ -101,13 +116,14 @@ export const ResizableEvent: React.FC<ResizableEventProps> = ({
       {/* Resize Handle */}
       <div
         className={cn(
-          readonly ? "cursor-default" : "cursor-ns-resize group-hover:opacity-100",
+          resizeLocked ? "cursor-default" : "cursor-ns-resize group-hover:opacity-100",
           "absolute bottom-0 left-0 right-0 h-3 z-20 flex items-center justify-center",
           "opacity-0 transition-opacity",
           isResizing && "opacity-100"
         )}
-        onMouseDown={readonly ? undefined : handleResizeStart}
-        onTouchStart={readonly ? undefined : handleResizeStart}
+        onPointerDown={resizeLocked ? undefined : handlePointerDown}
+        onMouseDown={resizeLocked ? undefined : handleResizeStart}
+        onTouchStart={resizeLocked ? undefined : handleResizeStart}
       >
         <div className={cn(
           "w-8 h-1 rounded-full transition-all",

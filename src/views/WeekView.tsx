@@ -2,7 +2,8 @@ import React from 'react';
 import { format, isSameDay, differenceInMinutes, isToday, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { CalendarEvent } from '../types';
-import { cn } from '../utils';
+import { cn, isEventDragDisabled } from '../utils';
+import { uses24HourClock } from '../lib/date';
 import { DraggableEvent } from '../components/dnd/DraggableEvent';
 import { DroppableCell } from '../components/dnd/DroppableCell';
 import { ResizableEvent } from '../components/dnd/ResizableEvent';
@@ -29,9 +30,11 @@ export const WeekView: React.FC<WeekViewProps> = ({
   locale,
   readonly,
 }) => {
-  // Generate days for the week
-  const start = startOfWeek(currentDate, { weekStartsOn: 1 });
-  const end = endOfWeek(currentDate, { weekStartsOn: 1 });
+  // Generate days for the week following the locale's convention (falls
+  // back to the historical Monday start without a locale).
+  const weekStartsOn = locale?.options?.weekStartsOn ?? 1;
+  const start = startOfWeek(currentDate, { weekStartsOn });
+  const end = endOfWeek(currentDate, { weekStartsOn });
   const weekDays = eachDayOfInterval({ start, end });
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
@@ -108,17 +111,20 @@ export const WeekView: React.FC<WeekViewProps> = ({
       );
   };
 
-  const timeFormat = locale?.code === 'fr' ? 'H:mm' : 'h a';
-  const eventTimeFormat = locale?.code === 'fr' ? 'H:mm' : 'h:mm a';
-  const nowFormat = locale?.code === 'fr' ? 'H:mm' : 'h:mm';
+  const is24h = uses24HourClock(locale);
+  const timeFormat = is24h ? 'H:mm' : 'h a';
+  const eventTimeFormat = is24h ? 'H:mm' : 'h:mm a';
+  const nowFormat = is24h ? 'H:mm' : 'h:mm';
 
   return (
     <div className="flex flex-col h-full bg-background border-[0.5px] border-border/50 rounded-2xl overflow-hidden min-w-[800px] md:min-w-0 shadow-sm">
-      {/* Scrollable Container - includes header for proper alignment */}
+      {/* Scrollable Container - includes header for proper alignment.
+          No scrollbar-gutter here: the scrollbar is hidden (scrollbar-hide),
+          so reserving its space just leaves a blank strip after the last
+          day column on classic-scrollbar platforms. */}
       <div
         ref={scrollContainerRef}
         className="flex-1 overflow-y-auto scrollbar-hide relative bg-background scroll-smooth"
-        style={{ scrollbarGutter: 'stable' }}
       >
         {/* Header - sticky inside scroll container */}
         <div className="flex border-b-[0.5px] border-border/50 bg-gradient-to-r from-muted/20 via-background to-muted/20 z-20 sticky top-0 backdrop-blur-sm">
@@ -275,7 +281,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
                                         className={cn(
                                             "rounded-md border shadow-sm transition-all hover:shadow-md group overflow-hidden relative",
                                             "glass",
-                                            readonly ? "cursor-default" : "cursor-grab active:cursor-grabbing",
+                                            readonly || isEventDragDisabled(event) ? "cursor-default" : "cursor-grab active:cursor-grabbing",
                                             !event.color && "border-primary/20 bg-primary/10",
                                             isShortEvent ? "px-1 flex items-center justify-center" : "p-2",
                                             // Add active border for overlapped events to distinguish them

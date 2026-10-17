@@ -112,6 +112,9 @@ export const AgendaEmptyState: React.FC<{
   onCreateEvent?: () => void;
   translations?: {
     noUpcoming?: string;
+    noUpcomingHint?: string;
+    allCaughtUp?: string;
+    noEventsScheduled?: string;
     createEvent?: string;
   };
 }> = ({ onCreateEvent, translations }) => (
@@ -125,8 +128,8 @@ export const AgendaEmptyState: React.FC<{
             </svg>
           </div>
           <div className="text-left">
-            <div className="font-medium text-foreground">All caught up!</div>
-            <div className="text-sm text-muted-foreground">No events scheduled</div>
+            <div className="font-medium text-foreground">{translations?.allCaughtUp || 'All caught up!'}</div>
+            <div className="text-sm text-muted-foreground">{translations?.noEventsScheduled || 'No events scheduled'}</div>
           </div>
         </div>
       </div>
@@ -137,7 +140,7 @@ export const AgendaEmptyState: React.FC<{
         {translations?.noUpcoming || 'Your schedule is clear'}
       </h3>
       <p className="text-sm text-muted-foreground mb-6">
-        No upcoming events to show. Create a new event to start planning.
+        {translations?.noUpcomingHint || 'No upcoming events to show. Create a new event to start planning.'}
       </p>
 
       {onCreateEvent && (

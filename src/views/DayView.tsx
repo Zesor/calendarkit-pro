@@ -2,7 +2,8 @@ import React from 'react';
 import { format, differenceInMinutes, isToday, isSameDay } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { CalendarEvent } from '../types';
-import { cn } from '../utils';
+import { cn, isEventDragDisabled } from '../utils';
+import { uses24HourClock } from '../lib/date';
 import { DraggableEvent } from '../components/dnd/DraggableEvent';
 import { DroppableCell } from '../components/dnd/DroppableCell';
 import { ResizableEvent } from '../components/dnd/ResizableEvent';
@@ -65,9 +66,10 @@ export const DayView: React.FC<DayViewProps> = ({
     return isSameDay(zonedStart, currentDate);
   });
 
-  const timeFormat = locale?.code === 'fr' ? 'H:mm' : 'h a';
-  const eventTimeFormat = locale?.code === 'fr' ? 'H:mm' : 'h:mm a';
-  const nowFormat = locale?.code === 'fr' ? 'H:mm' : 'h:mm a';
+  const is24h = uses24HourClock(locale);
+  const timeFormat = is24h ? 'H:mm' : 'h a';
+  const eventTimeFormat = is24h ? 'H:mm' : 'h:mm a';
+  const nowFormat = is24h ? 'H:mm' : 'h:mm a';
 
   return (
     <div className="flex flex-col h-full bg-background border-[0.5px] border-border/50 rounded-2xl overflow-hidden shadow-sm">
@@ -214,7 +216,7 @@ export const DayView: React.FC<DayViewProps> = ({
                                     className={cn(
                                         "h-full rounded-lg border-[0.5px] shadow-sm overflow-hidden transition-all hover:shadow-lg hover:z-20 group",
                                         "glass backdrop-blur-sm",
-                                        readonly ? "cursor-default" : "cursor-grab active:cursor-grabbing",
+                                        readonly || isEventDragDisabled(event) ? "cursor-default" : "cursor-grab active:cursor-grabbing",
                                         !event.color && "bg-primary/10 border-primary/20",
                                         isShortEvent ? "px-2 flex items-center" : "px-3 py-2",
                                         count > 1 && "border-l-4"
