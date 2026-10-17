@@ -1,6 +1,6 @@
 import React from 'react';
 import { format, isSameMonth, isSameDay, isToday, addMonths, subMonths, Locale } from 'date-fns';
-import { getMonthGrid } from '../lib/date';
+import { getMonthGrid, resolveWeekStartsOn } from '../core/week';
 import { Button } from './ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../utils';
@@ -31,7 +31,7 @@ export const MiniCalendar: React.FC<MiniCalendarProps> = ({
 
   // Week start follows the locale's convention (Sunday fallback, matching
   // the hardcoded initials below).
-  const weekStartsOn = locale?.options?.weekStartsOn ?? 0;
+  const weekStartsOn = resolveWeekStartsOn(locale, 0);
   const days = React.useMemo(
     () => getMonthGrid(viewDate, weekStartsOn),
     [viewDate, weekStartsOn],

@@ -5,6 +5,7 @@ import { MiniCalendar } from './MiniCalendar';
 import { cn } from '../utils';
 import { toZonedTime } from 'date-fns-tz';
 import { format, Locale } from 'date-fns';
+import { timeZoneAbbreviation } from '../core/format';
 
 import { ViewType, CalendarEvent } from '../types';
 
@@ -66,14 +67,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const displayCalendars = calendars || defaultCalendars;
 
-  const getAcronym = (tz: string) => {
-      if (!tz || !now) return 'LOC';
-      try {
-        return new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'short' })
-            .formatToParts(now)
-            .find(part => part.type === 'timeZoneName')?.value || '';
-      } catch { return ''; }
-  };
+  // Cached Intl formatters (C4): building one per zone per render was expensive.
+  const getAcronym = (tz: string) => (!tz || !now ? 'LOC' : timeZoneAbbreviation(now, tz));
 
   const timezones = [
     { value: '', label: translations?.localTime || 'Local Time', acronym: 'LOC' },
@@ -104,12 +99,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       try {
           if (!tz.value) {
               time = format(now, 'HH:mm');
-              // Try to get real local acronym
-              try {
-                  acronym = new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' })
-                      .formatToParts(now)
-                      .find(part => part.type === 'timeZoneName')?.value || 'LOC';
-              } catch { /* keep the static acronym */ }
+              // Real local acronym, falling back to the static one
+              acronym = timeZoneAbbreviation(now) || 'LOC';
           } else {
               const zDate = toZonedTime(now, tz.value);
               time = format(zDate, 'HH:mm');

@@ -1,8 +1,8 @@
 import React, { useRef } from 'react';
-import { format, startOfDay, differenceInMinutes, isSameDay } from 'date-fns';
+import { format, startOfDay, differenceInMinutes, Locale } from 'date-fns';
 import { CalendarEvent, Resource } from '../types';
-import { uses24HourClock } from '../lib/date';
-import { Locale } from 'date-fns';
+import { timeFormats } from '../core/format';
+import { isSameDisplayDay, toDisplay } from '../core/timezone';
 import { DraggableEvent } from '../components/dnd/DraggableEvent';
 import { DroppableCell } from '../components/dnd/DroppableCell';
 
@@ -11,8 +11,9 @@ interface ResourceViewProps {
   events: CalendarEvent[];
   resources: Resource[];
   onEventClick?: (event: CalendarEvent) => void;
-  onTimeSlotClick?: (date: Date, resourceId: string) => void;
+  onTimeSlotClick?: (date: Date, resourceId?: string) => void;
   locale?: Locale;
+  timezone?: string;
 }
 
 export const ResourceView: React.FC<ResourceViewProps> = ({
@@ -21,7 +22,8 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
   resources,
   onEventClick,
   onTimeSlotClick,
-  locale
+  locale,
+  timezone
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -30,11 +32,12 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const hourWidth = 100; // px per hour
 
-  const timeFormat = uses24HourClock(locale) ? 'H:mm' : 'h a';
+  const timeFormat = timeFormats(locale).hour;
 
+  // Positions use display (wall-clock) times so the timeline matches the chosen zone (T1).
   const getEventStyle = (event: CalendarEvent) => {
-    const start = new Date(event.start);
-    const end = new Date(event.end);
+    const start = toDisplay(event.start, timezone);
+    const end = toDisplay(event.end, timezone);
     const dayStart = startOfDay(currentDate);
     
     // Calculate minutes from start of day
@@ -78,7 +81,7 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
             {resources.map(resource => {
                 const resourceEvents = events.filter(e => 
                     e.resourceId === resource.id && 
-                    isSameDay(new Date(e.start), currentDate)
+                    isSameDisplayDay(e.start, currentDate, timezone)
                 );
 
                 return (
@@ -119,9 +122,7 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
                                                 date={slotDate}
                                                 resourceId={resource.id}
                                                 className="h-full flex-1 border-r border-border/10 last:border-border/30 hover:bg-accent/10 transition-colors"
-                                                onClick={() => {
-                                                    onTimeSlotClick?.(slotDate, resource.id);
-                                                }}
+                                                onSlotClick={onTimeSlotClick}
                                             />
                                         );
                                     })}

@@ -1,8 +1,10 @@
 import React, { useMemo } from 'react';
-import { format, isSameDay, isToday, isTomorrow, addDays, startOfDay, differenceInMinutes, Locale } from 'date-fns';
+import { format, isSameDay, addDays, startOfDay, differenceInMinutes, Locale } from 'date-fns';
 import { CalendarEvent, CalendarTranslations } from '../types';
 import { cn } from '../utils';
-import { uses24HourClock } from '../lib/date';
+import { eventsByStartDay } from '../core/events';
+import { timeFormats, uses24HourClock } from '../core/format';
+import { displayToday, toDisplay } from '../core/timezone';
 import { AgendaEmptyState } from '../components/EmptyState';
 import { motion } from 'framer-motion';
 import { Clock, Users, Paperclip, Bell } from 'lucide-react';
@@ -14,6 +16,7 @@ interface AgendaViewProps {
   onCreateEvent?: () => void;
   locale?: Locale;
   translations?: Partial<CalendarTranslations>;
+  timezone?: string;
 }
 
 const formatDuration = (start: Date, end: Date): string => {
@@ -27,11 +30,12 @@ const formatDuration = (start: Date, end: Date): string => {
 
 const getDateLabel = (
   date: Date,
+  today: Date,
   locale?: Locale,
   translations?: Partial<CalendarTranslations>
 ): string => {
-  if (isToday(date)) return translations?.today || 'Today';
-  if (isTomorrow(date)) return translations?.tomorrow || 'Tomorrow';
+  if (isSameDay(date, today)) return translations?.today || 'Today';
+  if (isSameDay(date, addDays(today, 1))) return translations?.tomorrow || 'Tomorrow';
   return format(date, 'EEEE', { locale });
 };
 
@@ -42,33 +46,27 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
   onCreateEvent,
   locale,
   translations,
+  timezone,
 }) => {
   // Times follow the locale's clock convention (e.g. 24h for pt-BR/fr); the
   // historical 12h format stays the default without a locale.
   const is24h = uses24HourClock(locale);
-  const timePattern = is24h ? 'H:mm' : 'h:mm a';
-  const compactTimePattern = is24h ? 'H:mm' : 'h:mm';
-  // Group events by day for the next 30 days starting from currentDate
+  const { time: timePattern, compact: compactTimePattern } = timeFormats(locale);
+  const today = displayToday(timezone);
+
+  // Group events by display day (T1) for the next 30 days starting from currentDate.
   const groupedEvents = useMemo(() => {
-    const startDate = startOfDay(currentDate);
-
+    const byDay = eventsByStartDay(events, timezone);
     const groups: { date: Date; events: CalendarEvent[] }[] = [];
-
-    // Sort all events by start time first
-    const sortedEvents = [...events].sort((a, b) => a.start.getTime() - b.start.getTime());
-
-    // Iterate through the next 30 days
     for (let i = 0; i < 30; i++) {
-        const day = addDays(startDate, i);
-        const dayEvents = sortedEvents.filter(event => isSameDay(event.start, day));
-
-        if (dayEvents.length > 0) {
-            groups.push({ date: day, events: dayEvents });
-        }
+      const day = addDays(startOfDay(currentDate), i);
+      const dayEvents = byDay.get(format(day, 'yyyy-MM-dd'));
+      if (dayEvents?.length) {
+        groups.push({ date: day, events: [...dayEvents].sort((a, b) => a.start.getTime() - b.start.getTime()) });
+      }
     }
-
     return groups;
-  }, [currentDate, events]);
+  }, [currentDate, events, timezone]);
 
   const container = {
     hidden: { opacity: 0 },
@@ -108,7 +106,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                         {/* Date box */}
                         <div className={cn(
                           "flex flex-col items-center justify-center w-16 h-16 rounded-2xl transition-all",
-                          isToday(group.date)
+                          isSameDay(group.date, today)
                             ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
                             : "bg-muted/50 text-foreground"
                         )}>
@@ -124,9 +122,9 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                         <div className="flex flex-col">
                           <span className={cn(
                             "text-lg font-semibold",
-                            isToday(group.date) && "text-primary"
+                            isSameDay(group.date, today) && "text-primary"
                           )}>
-                            {getDateLabel(group.date, locale, translations)}
+                            {getDateLabel(group.date, today, locale, translations)}
                           </span>
                           <span className="text-sm text-muted-foreground">
                             {group.events.length}{' '}
@@ -170,11 +168,11 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                                     ) : (
                                         <div className="flex flex-col items-center">
                                           <span className="text-base font-semibold text-foreground">
-                                            {format(event.start, compactTimePattern, { locale })}
+                                            {format(toDisplay(event.start, timezone), compactTimePattern, { locale })}
                                           </span>
                                           {!is24h && (
                                             <span className="text-xs text-muted-foreground uppercase">
-                                              {format(event.start, 'a')}
+                                              {format(toDisplay(event.start, timezone), 'a')}
                                             </span>
                                           )}
                                           <div className="w-px h-3 bg-border my-1" />
@@ -209,7 +207,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                                       {!event.allDay && (
                                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                           <Clock className="w-3.5 h-3.5" />
-                                          <span>{format(event.start, timePattern, { locale })} - {format(event.end, timePattern, { locale })}</span>
+                                          <span>{format(toDisplay(event.start, timezone), timePattern, { locale })} - {format(toDisplay(event.end, timezone), timePattern, { locale })}</span>
                                         </div>
                                       )}
 

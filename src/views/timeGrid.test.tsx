@@ -1,10 +1,11 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { DndContext } from '@dnd-kit/core'
 import type { CalendarEvent } from '../types'
 import * as eventsModule from '../core/events'
 import { WeekView } from './WeekView'
 import { DayView } from './DayView'
+import { ResourceView } from './ResourceView'
 
 afterEach(() => {
   cleanup()
@@ -71,5 +72,16 @@ describe('time grids', () => {
     render(<DndContext><DayView currentDate={new Date(2026, 9, 15)} events={events} timezone="Asia/Tokyo" /></DndContext>)
     const block = screen.getByText('Call').closest('[aria-roledescription="draggable"]') as HTMLElement
     expect(block.style.top).toBe(`${23 * 80}px`)
+  })
+
+  test('clicking a resource slot reports its date and resource', () => {
+    const onTimeSlotClick = vi.fn()
+    const { container } = render(
+      <DndContext>
+        <ResourceView currentDate={new Date(2026, 9, 15)} events={[]} resources={[{ id: 'room-a', label: 'Room A' }]} onTimeSlotClick={onTimeSlotClick} />
+      </DndContext>,
+    )
+    fireEvent.click(container.querySelectorAll('.cursor-pointer')[36]) // 09:00 = 9 hours × 4 quarters
+    expect(onTimeSlotClick).toHaveBeenCalledWith(new Date(2026, 9, 15, 9, 0), 'room-a')
   })
 })

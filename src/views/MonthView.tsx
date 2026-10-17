@@ -1,12 +1,12 @@
-import React, { useMemo, useCallback } from 'react';
-import { format, isSameMonth, isToday, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
-import { getMonthGrid } from '../lib/date';
+import React, { useMemo } from 'react';
+import { format, isSameDay, isSameMonth, Locale } from 'date-fns';
 import { CalendarEvent } from '../types';
 import { cn } from '../utils';
+import { eventsByStartDay } from '../core/events';
+import { displayToday } from '../core/timezone';
+import { getMonthGrid, getWeekDays, resolveWeekStartsOn } from '../core/week';
 import { DraggableEvent } from '../components/dnd/DraggableEvent';
 import { DroppableCell } from '../components/dnd/DroppableCell';
-import { Locale } from 'date-fns';
 
 interface MonthViewProps {
   currentDate: Date;
@@ -51,45 +51,15 @@ export const MonthView: React.FC<MonthViewProps> = ({
   timezone,
   locale
 }) => {
-  // Week start follows the locale's convention (historical Monday fallback).
-  // The same value drives the grid AND the weekday header row — they were
-  // previously built with different starts, shifting the labels by one day.
-  const weekStartsOn = locale?.options?.weekStartsOn ?? 1;
-  const days = useMemo(
-    () => getMonthGrid(currentDate, weekStartsOn),
-    [currentDate, weekStartsOn],
-  );
+  // Week start follows the locale (historical Monday fallback). The same value drives the grid
+  // AND the weekday header row.
+  const weekStartsOn = resolveWeekStartsOn(locale, 1);
+  const days = useMemo(() => getMonthGrid(currentDate, weekStartsOn), [currentDate, weekStartsOn]);
+  const weekDays = useMemo(() => getWeekDays(currentDate, weekStartsOn), [currentDate, weekStartsOn]);
 
-  // Dynamic week days generation
-  const weekDays = useMemo(() => {
-    const start = startOfWeek(currentDate, { weekStartsOn });
-    const end = endOfWeek(currentDate, { weekStartsOn });
-    return eachDayOfInterval({ start, end });
-  }, [currentDate, weekStartsOn]);
-
-  // Timezone adjustment helper
-  const getZonedDate = useCallback((date: Date) => {
-    return timezone ? toZonedTime(date, timezone) : date;
-  }, [timezone]);
-
-  // Pre-calculate event buckets for O(1) access during render
-  // This is crucial for handling 10000+ events
-  const eventsByDay = useMemo(() => {
-    const map = new Map<string, CalendarEvent[]>();
-    
-    events.forEach(event => {
-      const zonedStart = getZonedDate(event.start);
-      // Use date string as key (YYYY-MM-DD)
-      const key = format(zonedStart, 'yyyy-MM-dd');
-      
-      if (!map.has(key)) {
-        map.set(key, []);
-      }
-      map.get(key)!.push(event);
-    });
-    
-    return map;
-  }, [events, getZonedDate]);
+  // O(1) bucket lookup per cell, computed once per (events, zone) and cached (C2).
+  const eventsByDay = eventsByStartDay(events, timezone);
+  const today = displayToday(timezone);
 
   return (
     <div className="flex flex-col h-full bg-background border-[0.5px] scrollbar-hide border-border/50 rounded-2xl overflow-hidden min-w-[800px] md:min-w-0 shadow-sm">
@@ -121,14 +91,14 @@ export const MonthView: React.FC<MonthViewProps> = ({
               className={cn(
                 "h-[130px] p-2 border-b-[0.5px] border-r-[0.5px] border-border/30 last:border-r-0 relative transition-all duration-200 hover:bg-accent/5 flex flex-col gap-1.5 overflow-hidden group",
                 !isCurrentMonth && "bg-muted/5 text-muted-foreground/60",
-                isToday(day) && "bg-primary/5 ring-1 ring-inset ring-primary/20"
+                isSameDay(day, today) && "bg-primary/5 ring-1 ring-inset ring-primary/20"
               )}
               onClick={() => onDateClick?.(day)}
             >
               <div className="flex justify-between items-start">
                 <div className={cn(
                   "text-sm font-semibold w-7 h-7 flex items-center justify-center rounded-full transition-all duration-200",
-                  isToday(day)
+                  isSameDay(day, today)
                     ? "bg-primary text-primary-foreground shadow-md shadow-primary/30"
                     : "group-hover:bg-accent"
                 )}>

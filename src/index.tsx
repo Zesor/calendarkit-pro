@@ -340,6 +340,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                     onCreateEvent={handleCreateEvent}
                                     locale={locale}
                                     translations={t}
+                                    timezone={timezone}
                                 />
                             )}
                             {view === 'resource' && resources && (
@@ -350,6 +351,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                     onEventClick={handleEventClickInternal}
                                     onTimeSlotClick={handleTimeSlotClick}
                                     locale={locale}
+                                    timezone={timezone}
                                 />
                             )}
                         </motion.div>
