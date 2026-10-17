@@ -14,6 +14,8 @@ export default defineConfig({
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
       exclude: ['src/app/**', 'src/**/*.test.{ts,tsx}'],
+      // The pure core carries the date/recurrence logic: keep it thoroughly tested.
+      thresholds: { 'src/core/**': { lines: 90 } },
     },
   },
 })
