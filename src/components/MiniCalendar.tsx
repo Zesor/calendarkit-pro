@@ -1,5 +1,5 @@
 import React from 'react';
-import { format, isSameMonth, isSameDay, isToday, addMonths, subMonths } from 'date-fns';
+import { format, isSameMonth, isSameDay, isToday, addMonths, subMonths, Locale } from 'date-fns';
 import { getMonthGrid } from '../lib/date';
 import { Button } from './ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -12,23 +12,36 @@ interface MiniCalendarProps {
   onDateChange: (date: Date) => void;
   onViewChange?: (view: ViewType) => void;
   className?: string;
+  locale?: Locale;
 }
 
 export const MiniCalendar: React.FC<MiniCalendarProps> = ({
   currentDate,
   onDateChange,
   onViewChange,
-  className
+  className,
+  locale
 }) => {
   const [viewDate, setViewDate] = React.useState(currentDate);
-  
+
   // Sync viewDate with currentDate when it changes externally
   React.useEffect(() => {
     setViewDate(currentDate);
   }, [currentDate]);
 
-  const days = React.useMemo(() => getMonthGrid(viewDate), [viewDate]);
-  const weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  // Week start follows the locale's convention (Sunday fallback, matching
+  // the hardcoded initials below).
+  const weekStartsOn = locale?.options?.weekStartsOn ?? 0;
+  const days = React.useMemo(
+    () => getMonthGrid(viewDate, weekStartsOn),
+    [viewDate, weekStartsOn],
+  );
+  const weekDays = locale?.localize
+    ? [0, 1, 2, 3, 4, 5, 6].map(d => {
+        const dayIndex = ((d + weekStartsOn) % 7) as 0 | 1 | 2 | 3 | 4 | 5 | 6;
+        return locale.localize.day(dayIndex, { width: 'narrow' });
+      })
+    : ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
   const handlePrev = () => {
     const newDate = subMonths(viewDate, 1);
@@ -56,7 +69,7 @@ export const MiniCalendar: React.FC<MiniCalendarProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <span className="text-sm font-semibold text-foreground capitalize">
-          {format(viewDate, 'MMMM yyyy')}
+          {format(viewDate, 'MMMM yyyy', { locale })}
         </span>
         <div className="flex items-center bg-muted/40 rounded-lg p-0.5">
             <Button

@@ -56,10 +56,20 @@ export const en = {
     endRepeat: 'End repeat',
     never: 'Never',
     afterOccurrences: 'After occurrences',
-    onDate: 'On date'
+    onDate: 'On date',
+    tomorrow: 'Tomorrow',
+    edit: 'Edit',
+    duplicate: 'Duplicate',
+    eventSingular: 'event',
+    eventPlural: 'events',
+    allCaughtUp: 'All caught up!',
+    noEventsScheduled: 'No events scheduled',
+    noUpcoming: 'Your schedule is clear',
+    noUpcomingHint: 'No upcoming events to show. Create a new event to start planning.'
 };
 
-export const fr = {
+// Typed against the English pack so the dictionaries can't drift apart.
+export const fr: typeof en = {
     today: "Aujourd'hui",
     month: 'Mois',
     week: 'Semaine',
@@ -117,5 +127,14 @@ export const fr = {
     endRepeat: 'Fin de répétition',
     never: 'Jamais',
     afterOccurrences: 'Après occurrences',
-    onDate: 'À la date'
+    onDate: 'À la date',
+    tomorrow: 'Demain',
+    edit: 'Modifier',
+    duplicate: 'Dupliquer',
+    eventSingular: 'événement',
+    eventPlural: 'événements',
+    allCaughtUp: 'Tout est à jour !',
+    noEventsScheduled: 'Aucun événement prévu',
+    noUpcoming: 'Votre planning est libre',
+    noUpcomingHint: 'Aucun événement à venir. Créez un nouvel événement pour commencer à planifier.'
 };

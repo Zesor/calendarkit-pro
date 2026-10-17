@@ -13,8 +13,10 @@ import { EventModal } from './components/EventModal';
 import { MonthViewSkeleton, WeekViewSkeleton, DayViewSkeleton, AgendaViewSkeleton } from './components/Skeleton';
 import { EventContextMenu, useEventContextMenu } from './components/ContextMenu';
 import { CalendarProps, CalendarEvent } from './types';
+import { en, fr } from './locales';
 import { cn } from './utils';
 import { getThemeStyles } from './lib/theme';
+import { uses24HourClock } from './lib/date';
 import { useCalendarLogic } from './hooks/useCalendarLogic';
 import { differenceInMinutes, format } from 'date-fns';
 import { useViewSwipe } from './hooks/useSwipeGesture';
@@ -151,34 +153,18 @@ export const Scheduler: React.FC<CalendarProps> = ({
   // Mobile swipe gesture support
   const swipeRef = useViewSwipe<HTMLDivElement>(handlePrev, handleNext, true);
 
-  // Default Translations
+  // Base translations come from the built-in language packs (making the
+  // `language` prop actually apply everywhere); the consumer's `translations`
+  // prop overrides individual keys.
+  const languagePack = language === 'fr' ? fr : en;
+
   const t = {
-    today: 'Today',
-    month: 'Month',
-    week: 'Week',
-    day: 'Day',
-    agenda: 'Agenda',
-    resource: 'Resource',
-    createEvent: 'Create Event',
-    editEvent: 'Edit Event',
-    delete: 'Delete',
-    save: 'Save',
-    cancel: 'Cancel',
-    title: 'Title',
-    start: 'Start',
-    end: 'End',
-    allDay: 'All Day',
-    description: 'Description',
-    repeat: 'Repeat',
-    noRepeat: 'Does not repeat',
-    selectCalendar: 'Select Calendar',
-    selectType: 'Select Type',
-    daily: 'Daily',
-    weekly: 'Weekly',
-    monthly: 'Monthly',
-    yearly: 'Yearly',
+    ...languagePack,
     ...translations
   };
+
+  // Drag ghost times follow the locale's clock convention.
+  const overlayTimeFormat = uses24HourClock(locale) ? 'H:mm' : 'h:mm a';
 
   const handleDragStart = (event: any) => {
     const { active } = event;
@@ -296,6 +282,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                     calendars={calendars}
                     onCalendarToggle={onCalendarToggle}
                     translations={t}
+                    locale={locale}
                 />
             </motion.div>
 
@@ -377,6 +364,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                     events={filteredEvents}
                                     onEventClick={handleEventClickInternal}
                                     onCreateEvent={handleCreateEvent}
+                                    locale={locale}
+                                    translations={t}
                                 />
                             )}
                             {view === 'resource' && resources && (
@@ -463,9 +452,9 @@ export const Scheduler: React.FC<CalendarProps> = ({
             closeContextMenu();
           }}
           translations={{
-            edit: t.editEvent || 'Edit',
+            edit: t.edit || t.editEvent || 'Edit',
             delete: t.delete || 'Delete',
-            duplicate: 'Duplicate',
+            duplicate: t.duplicate || 'Duplicate',
           }}
         />
 
@@ -503,7 +492,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                 <circle cx="12" cy="12" r="10"/>
                                 <path d="M12 6v6l4 2"/>
                               </svg>
-                              {format(activeDragEvent.start, 'h:mm a')} - {format(activeDragEvent.end, 'h:mm a')}
+                              {format(activeDragEvent.start, overlayTimeFormat, { locale })} - {format(activeDragEvent.end, overlayTimeFormat, { locale })}
                             </div>
                           )}
                         </div>

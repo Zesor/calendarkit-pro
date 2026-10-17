@@ -1,5 +1,7 @@
 import { Locale } from 'date-fns';
 
+import { en } from './locales';
+
 export type ViewType = 'month' | 'week' | 'day' | 'agenda' | 'resource';
 
 export interface EventAttachment {
@@ -74,50 +76,10 @@ export interface CalendarTheme {
   // Future: lightColors, darkColors
 }
 
-export interface CalendarTranslations {
-    today: string;
-    month: string;
-    week: string;
-    day: string;
-    agenda: string;
-    resource: string;
-    createEvent: string;
-    editEvent: string;
-    delete: string;
-    save: string;
-    cancel: string;
-    title: string;
-    start: string;
-    end: string;
-    allDay: string;
-    description: string;
-    repeat: string;
-    noRepeat: string;
-    selectCalendar: string;
-    selectType: string;
-    daily: string;
-    weekly: string;
-    monthly: string;
-    yearly: string;
-    event: string;
-    task: string;
-    appointmentSchedule: string;
-    new: string;
-    dateAndTime: string;
-    timezone: string;
-    whosJoining: string;
-    suggestedTimes: string;
-    viewSuggestions: string;
-    whereWillItBe: string;
-    location: string;
-    descriptionAndAttachments: string;
-    dragAndDrop: string;
-    guests: string;
-    addAttachment: string;
-    moreOptions: string;
-    doesNotRepeat: string;
-    locationHelpText: string;
-}
+// Derived from the English language pack so the type always matches every
+// key the components can actually read (the previous hand-written interface
+// had drifted from the runtime keys).
+export type CalendarTranslations = typeof en;
 
 export interface CalendarProps {
   events?: CalendarEvent[];

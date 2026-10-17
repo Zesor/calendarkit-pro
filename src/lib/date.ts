@@ -43,6 +43,16 @@ export const getMonthGrid = (date: Date, weekStartOn: 0 | 1 | 2 | 3 | 4 | 5 | 6 
   });
 };
 
+/**
+ * Whether the locale renders times on a 24-hour clock (fr, pt-BR, de, ...).
+ * Detected from the locale's own localized time pattern instead of
+ * hardcoding language codes. Defaults to false (12h) without a locale.
+ */
+export const uses24HourClock = (locale?: Locale): boolean => {
+  if (!locale) return false;
+  return !/[ap]\.?m/i.test(format(new Date(2000, 0, 1, 13, 0), 'p', { locale }));
+};
+
 export const getWeekDays = (date: Date, weekStartOn: 0 | 1 | 2 | 3 | 4 | 5 | 6 = 0): Date[] => {
   const start = startOfWeek(date, { weekStartsOn: weekStartOn });
   const end = endOfWeek(date, { weekStartsOn: weekStartOn });

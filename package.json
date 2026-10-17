@@ -29,6 +29,7 @@
     "build:lib": "tsup",
     "start": "next start",
     "lint": "next lint",
+    "prepare": "npm run build:lib",
     "prepublishOnly": "npm run build:lib"
   },
   "keywords": [

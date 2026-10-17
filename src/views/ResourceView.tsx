@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { format, addHours, startOfDay, differenceInMinutes, isSameDay } from 'date-fns';
 import { CalendarEvent, Resource } from '../types';
 import { cn } from '../utils';
+import { uses24HourClock } from '../lib/date';
 import { Locale } from 'date-fns';
 import { DraggableEvent } from '../components/dnd/DraggableEvent';
 import { DroppableCell } from '../components/dnd/DroppableCell';
@@ -30,7 +31,7 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const hourWidth = 100; // px per hour
 
-  const timeFormat = locale?.code === 'fr' ? 'H:mm' : 'h a';
+  const timeFormat = uses24HourClock(locale) ? 'H:mm' : 'h a';
 
   const getEventStyle = (event: CalendarEvent) => {
     const start = new Date(event.start);
