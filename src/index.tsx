@@ -16,8 +16,10 @@ import { CalendarProps, CalendarEvent } from './types';
 import { cn } from './utils';
 import { getThemeStyles } from './lib/theme';
 import { resolveTranslations, timeFormats } from './core/format';
+import { toDisplay } from './core/timezone';
+import { resolveWeekStartsOn } from './core/week';
 import { useCalendarLogic } from './hooks/useCalendarLogic';
-import { differenceInMinutes, format } from 'date-fns';
+import { differenceInMinutes, format, startOfWeek } from 'date-fns';
 import { useViewSwipe } from './hooks/useSwipeGesture';
 
 // Re-export types for consumers
@@ -75,6 +77,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
   const {
     contextMenuEvent,
     contextMenuPosition,
+    openContextMenu,
     closeContextMenu,
   } = useEventContextMenu();
 
@@ -188,17 +191,25 @@ export const Scheduler: React.FC<CalendarProps> = ({
       return '150px'; 
   };
 
-  // Filter events based on active calendars
+  // Filter events by active calendars. Keyed on the active ids (not the `calendars` array), so an
+  // inline `calendars` prop does not recreate the list and defeat the grid caches.
+  const activeCalendarKey = calendars ? calendars.filter(c => c.active !== false).map(c => c.id).join('\u0000') : null;
   const filteredEvents = useMemo(() => {
-      if (!calendars) return expandedEvents;
-      const activeCalendarIds = calendars.filter(c => c.active !== false).map(c => c.id);
-      return expandedEvents.filter(e => {
-          // If event has no calendarId, show it by default OR hide it? 
-          // Usually events belong to a calendar. If undefined, maybe show it.
-          if (!e.calendarId) return true; 
-          return activeCalendarIds.includes(e.calendarId);
-      });
-  }, [expandedEvents, calendars]);
+      if (activeCalendarKey === null) return expandedEvents;
+      const activeCalendarIds = new Set(activeCalendarKey.split('\u0000'));
+      // Events without a calendar are always shown.
+      return expandedEvents.filter(e => !e.calendarId || activeCalendarIds.has(e.calendarId));
+  }, [expandedEvents, activeCalendarKey]);
+
+  // U8: animate when the view or the displayed period changes, not on every date click inside it.
+  const periodKey = view === 'month'
+    ? format(currentDate, 'yyyy-MM')
+    : view === 'week'
+      ? format(startOfWeek(currentDate, { weekStartsOn: resolveWeekStartsOn(locale, 1) }), 'yyyy-MM-dd')
+      : format(currentDate, 'yyyy-MM-dd');
+
+  const slotClickHandler = readOnly ? undefined : handleTimeSlotClick;
+  const contextMenuHandler = readOnly ? undefined : openContextMenu;
 
   return (
     <DndContext 
@@ -276,7 +287,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                   <div className="h-full min-w-full">
                     <AnimatePresence mode="wait" initial={false}>
                         <motion.div
-                            key={`${view}-${currentDate.toISOString()}-${timezone || 'local'}`}
+                            key={`${view}-${periodKey}-${timezone || 'local'}`}
                             initial={{ opacity: 0, scale: 0.98, y: 15 }}
                             animate={{
                               opacity: 1,
@@ -306,6 +317,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                 onDateClick={handleDateClick}
                                 timezone={timezone}
                                 locale={locale}
+                                translations={t}
+                                onEventContextMenu={contextMenuHandler}
                                 />
                             )}
                             {view === 'week' && (
@@ -313,11 +326,12 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                 currentDate={currentDate}
                                 events={filteredEvents}
                                 onEventClick={handleEventClickInternal}
-                                onTimeSlotClick={handleTimeSlotClick}
+                                onTimeSlotClick={slotClickHandler}
                                 onEventResize={handleEventResize}
                                 timezone={timezone}
                                 locale={locale}
                                 readonly={readOnly}
+                                onEventContextMenu={contextMenuHandler}
                                 />
                             )}
                             {view === 'day' && (
@@ -325,11 +339,13 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                     currentDate={currentDate}
                                     events={filteredEvents}
                                     onEventClick={handleEventClickInternal}
-                                    onTimeSlotClick={handleTimeSlotClick}
+                                    onTimeSlotClick={slotClickHandler}
                                     onEventResize={handleEventResize}
                                     timezone={timezone}
                                     locale={locale}
                                     readonly={readOnly}
+                                    translations={t}
+                                    onEventContextMenu={contextMenuHandler}
                                 />
                             )}
                             {view === 'agenda' && (
@@ -341,6 +357,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                     locale={locale}
                                     translations={t}
                                     timezone={timezone}
+                                    onEventContextMenu={contextMenuHandler}
                                 />
                             )}
                             {view === 'resource' && resources && (
@@ -349,9 +366,11 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                     events={filteredEvents}
                                     resources={resources}
                                     onEventClick={handleEventClickInternal}
-                                    onTimeSlotClick={handleTimeSlotClick}
+                                    onTimeSlotClick={slotClickHandler}
                                     locale={locale}
                                     timezone={timezone}
+                                    translations={t}
+                                    onEventContextMenu={contextMenuHandler}
                                 />
                             )}
                         </motion.div>
@@ -360,15 +379,18 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 </div>
                 )}
 
-                {/* Mobile Create Button (FAB) */}
+                {/* Mobile Create Button (FAB), hidden in read-only mode (U3) */}
+                {!readOnly && (
                 <div className="md:hidden absolute bottom-6 right-6 z-50">
-                    <button 
+                    <button
                         onClick={handleCreateEvent}
+                        aria-label={t.createEvent}
                         className="w-14 h-14 bg-blue-600 rounded-full shadow-lg flex items-center justify-center text-white active:scale-90 transition-transform"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
                     </button>
                 </div>
+                )}
             </div>
         </div>
         
@@ -454,7 +476,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                 <circle cx="12" cy="12" r="10"/>
                                 <path d="M12 6v6l4 2"/>
                               </svg>
-                              {format(activeDragEvent.start, overlayTimeFormat, { locale })} - {format(activeDragEvent.end, overlayTimeFormat, { locale })}
+                              {format(toDisplay(activeDragEvent.start, timezone), overlayTimeFormat, { locale })}{' - '}{format(toDisplay(activeDragEvent.end, timezone), overlayTimeFormat, { locale })}
                             </div>
                           )}
                         </div>

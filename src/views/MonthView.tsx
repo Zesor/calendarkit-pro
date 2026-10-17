@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { format, isSameDay, isSameMonth, Locale } from 'date-fns';
-import { CalendarEvent } from '../types';
+import { CalendarEvent, CalendarTranslations } from '../types';
+import { interpolate } from '../core/format';
 import { cn } from '../utils';
 import { eventsByStartDay } from '../core/events';
 import { displayToday } from '../core/timezone';
@@ -15,10 +16,18 @@ interface MonthViewProps {
   onDateClick?: (date: Date) => void;
   timezone?: string;
   locale?: Locale;
+  translations?: Partial<CalendarTranslations>;
+  onEventContextMenu?: (event: CalendarEvent, e: React.MouseEvent) => void;
+}
+
+interface EventItemProps {
+  event: CalendarEvent;
+  onEventClick?: (e: CalendarEvent) => void;
+  onEventContextMenu?: (event: CalendarEvent, e: React.MouseEvent) => void;
 }
 
 // Memoized Event Item Component for performance
-const EventItem = React.memo(({ event, onEventClick }: { event: CalendarEvent, onEventClick?: (e: CalendarEvent) => void }) => (
+const EventItem = React.memo(({ event, onEventClick, onEventContextMenu }: EventItemProps) => (
     <DraggableEvent event={event}>
         <div
             className={cn(
@@ -35,6 +44,7 @@ const EventItem = React.memo(({ event, onEventClick }: { event: CalendarEvent, o
               e.stopPropagation();
               onEventClick?.(event);
             }}
+            onContextMenu={onEventContextMenu ? (e) => onEventContextMenu(event, e) : undefined}
         >
             <span className="font-medium">{event.title}</span>
         </div>
@@ -49,7 +59,9 @@ export const MonthView: React.FC<MonthViewProps> = ({
   onEventClick,
   onDateClick,
   timezone,
-  locale
+  locale,
+  translations,
+  onEventContextMenu
 }) => {
   // Week start follows the locale (historical Monday fallback). The same value drives the grid
   // AND the weekday header row.
@@ -113,12 +125,20 @@ export const MonthView: React.FC<MonthViewProps> = ({
 
               <div className="flex-1 flex flex-col gap-1 scrollbar-hide overflow-y-auto overflow-x-hidden">
                 {dayEvents.slice(0, 4).map(event => (
-                   <EventItem key={`${event.id}-${dayKey}`} event={event} onEventClick={onEventClick} />
+                   <EventItem key={`${event.id}-${dayKey}`} event={event} onEventClick={onEventClick} onEventContextMenu={onEventContextMenu} />
                 ))}
                 {dayEvents.length > 4 && (
-                    <div className="text-[10px] text-primary font-semibold text-center py-1 px-2 rounded-md bg-primary/5 hover:bg-primary/10 cursor-pointer transition-colors">
-                        +{dayEvents.length - 4} more
-                    </div>
+                    // U7: "+N more" opens the day instead of doing nothing.
+                    <button
+                        type="button"
+                        className="text-[10px] text-primary font-semibold text-center py-1 px-2 rounded-md bg-primary/5 hover:bg-primary/10 cursor-pointer transition-colors"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onDateClick?.(day);
+                        }}
+                    >
+                        {interpolate(translations?.moreEvents || '+{n} more', { n: dayEvents.length - 4 })}
+                    </button>
                 )}
               </div>
             </DroppableCell>
