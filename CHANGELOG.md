@@ -1,5 +1,23 @@
 # Pro-Scheduler Changelog
 
+## 1.4.0
+
+### Added
+- All-day and multi-day events: continuous bars in the month view, and a collapsible all-day row in the week and day views (2 lanes, then "+N more" / "Show less"). Timed events of 24 hours or more are shown with them. Lane packing ported from #1 by @HannanSolo.
+- Drag a bar to move it by whole days (recurring series included) or stretch its right edge; click the all-day row to create an all-day event.
+- All Day switch in the event form: it shows the last day included and saves an exclusive end. `renderEventForm` receives `initialAllDay`.
+- Translation keys `showLess`, `continuesBefore`, `continuesAfter`, `durationDay`, `durationDays` (en/fr).
+
+### Changed
+- The week and day views always show the all-day row (one empty lane when there are no all-day events).
+- Month cells share their height between bars and timed events, so nothing is clipped; the "+N more" link is slightly more compact.
+- Size budget raised to 35 kB.
+
+### Fixed
+- Multi-day and all-day events no longer appear only on their first day in the month view, or as full-height blocks in the time grid.
+- Date-only all-day values (`new Date('2026-10-12')`) no longer last one day too long east of Greenwich, or start the day before west of it; all-day series no longer drift when the display timezone differs from the browser's.
+- `dist/` is ignored by git.
+
 ## 1.3.1
 
 ### Fixed
