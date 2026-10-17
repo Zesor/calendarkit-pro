@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { enUS, fr } from 'date-fns/locale'
-import { getDateTimeFormat, resolveTranslations, timeFormats, timeZoneAbbreviation, uses24HourClock } from './format'
+import { getDateTimeFormat, interpolate, resolveTranslations, timeFormats, timeZoneAbbreviation, uses24HourClock } from './format'
 
 describe('format', () => {
   test('uses24HourClock', () => {
@@ -42,5 +42,11 @@ describe('format', () => {
   test('resolveTranslations merges overrides over the language pack', () => {
     expect(resolveTranslations('fr').today).toBe("Aujourd'hui")
     expect(resolveTranslations(undefined, { today: 'Now' }).today).toBe('Now')
+  })
+
+  test('I2: interpolate replaces known placeholders and keeps unknown ones', () => {
+    expect(interpolate('{n} minutes before', { n: 5 })).toBe('5 minutes before')
+    expect(interpolate('{h} h {m} min', { h: 1, m: 30 })).toBe('1 h 30 min')
+    expect(interpolate('+{n} more {x}', { n: 3 })).toBe('+3 more {x}')
   })
 })
