@@ -9,6 +9,22 @@ const ev = (id: string, start: Date | string, end: Date | string, extra: Partial
 afterEach(() => resetWarnings())
 
 describe('normalizeEvents', () => {
+  test('all-day date-only values (UTC midnight) become local midnights of the same dates', () => {
+    const offsite = {
+      id: 'o', title: 'o', allDay: true, start: '2026-10-24', end: new Date('2026-10-25'),
+      recurrence: { freq: 'WEEKLY', exdates: ['2026-10-31'] },
+    } as unknown as CalendarEvent
+    const [a] = normalizeEvents([offsite])
+    expect(a.start).toEqual(new Date(2026, 9, 24))
+    expect(a.end).toEqual(new Date(2026, 9, 25))
+    expect(a.recurrence?.exdates).toEqual([new Date(2026, 9, 31)])
+    // Timed events and local midnights are untouched
+    const [b] = normalizeEvents([ev('b', '2026-10-24T00:00:00Z', '2026-10-24T01:00:00Z')])
+    expect(b.start).toEqual(new Date('2026-10-24T00:00:00Z'))
+    const local = { id: 'l', title: 'l', allDay: true, start: new Date(2026, 9, 24), end: new Date(2026, 9, 25) }
+    expect(normalizeEvents([local])[0]).toBe(local)
+  })
+
   test('coerces ISO strings and timestamps to Date', () => {
     const [a] = normalizeEvents([ev('a', '2026-10-17T09:00:00Z', 1_792_227_600_000 as unknown as string)])
     expect(a.start).toEqual(new Date('2026-10-17T09:00:00Z'))

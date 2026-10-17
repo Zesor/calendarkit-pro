@@ -1,8 +1,10 @@
 import React from 'react';
 import { addDays, format, differenceInMinutes, isSameDay, Locale } from 'date-fns';
-import { CalendarEvent } from '../types';
+import { CalendarEvent, CalendarTranslations } from '../types';
 import { cn, isEventDragDisabled } from '../utils';
 import { DaySegment, segmentsByDisplayDay } from '../core/events';
+import { partitionDayEvents } from '../core/allDay';
+import { AllDayRow } from '../components/AllDayRow';
 import { timeFormats, timeZoneAbbreviation } from '../core/format';
 import { layoutDayEvents } from '../core/layout';
 import { displayToday, minutesSinceDisplayMidnight, resolveTimeZone, toDisplay } from '../core/timezone';
@@ -21,6 +23,9 @@ interface WeekViewProps {
   locale?: Locale;
   readonly?: boolean;
   onEventContextMenu?: (event: CalendarEvent, e: React.MouseEvent) => void;
+  onDayEventResize?: (event: CalendarEvent, newLastDay: Date) => void;
+  onAllDaySlotClick?: (day: Date) => void;
+  translations?: Partial<CalendarTranslations>;
 }
 
 const HOUR_HEIGHT = 60; // px
@@ -44,6 +49,9 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
   locale,
   readonly,
   onEventContextMenu,
+  onDayEventResize,
+  onAllDaySlotClick,
+  translations,
 }) => {
   // Week start follows the locale (historical Monday fallback without a locale).
   const weekDays = React.useMemo(
@@ -73,7 +81,9 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
     }
   }, [timezone]);
 
-  const segmentsByDay = segmentsByDisplayDay(events, timezone, visibleRange);
+  // All-day and 24 h+ events go to the all-day row; the grid only shows timed events.
+  const { dayEvents, timedEvents } = partitionDayEvents(events, timezone);
+  const segmentsByDay = segmentsByDisplayDay(timedEvents, timezone, visibleRange);
   const today = displayToday(timezone, now);
   const zonedNow = toDisplay(now, timezone);
   const nowTop = (minutesSinceDisplayMidnight(now, timezone) / 60) * HOUR_HEIGHT;
@@ -92,8 +102,9 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
         ref={scrollContainerRef}
         className="flex-1 overflow-y-auto scrollbar-hide relative bg-background scroll-smooth"
       >
-        {/* Header - sticky inside scroll container */}
-        <div className="flex border-b-[0.5px] border-border/50 bg-gradient-to-r from-muted/20 via-background to-muted/20 z-20 sticky top-0 backdrop-blur-sm">
+        {/* Header + all-day row - sticky inside scroll container */}
+        <div className="sticky top-0 z-20">
+        <div className="flex border-b-[0.5px] border-border/50 bg-gradient-to-r from-muted/20 via-background to-muted/20 backdrop-blur-sm">
           <div className="flex-none p-3 text-center text-xs font-semibold text-muted-foreground w-16 flex items-center justify-center border-r-[0.5px] border-border/30 bg-muted/10">
             <div className="flex flex-col items-center justify-center leading-tight">
               <span>{format(zonedNow, 'HH:mm')}</span>
@@ -115,6 +126,20 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
               </div>
               ))}
           </div>
+        </div>
+        <AllDayRow
+          days={weekDays}
+          dayEvents={dayEvents}
+          timezone={timezone}
+          locale={locale}
+          translations={translations}
+          readonly={readonly}
+          gutterClassName="w-16"
+          onEventClick={onEventClick}
+          onEventContextMenu={onEventContextMenu}
+          onDayEventResize={onDayEventResize}
+          onSlotClick={onAllDaySlotClick}
+        />
         </div>
 
         {/* Grid Content */}

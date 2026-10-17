@@ -3,6 +3,8 @@ import { addDays, format, differenceInMinutes, isSameDay, Locale, startOfDay } f
 import { CalendarEvent, CalendarTranslations } from '../types';
 import { cn, isEventDragDisabled } from '../utils';
 import { DaySegment, segmentsByDisplayDay } from '../core/events';
+import { partitionDayEvents } from '../core/allDay';
+import { AllDayRow } from '../components/AllDayRow';
 import { timeFormats } from '../core/format';
 import { layoutDayEvents } from '../core/layout';
 import { displayToday, minutesSinceDisplayMidnight, toDisplay } from '../core/timezone';
@@ -21,6 +23,8 @@ interface DayViewProps {
   readonly?: boolean;
   onEventContextMenu?: (event: CalendarEvent, e: React.MouseEvent) => void;
   translations?: Partial<CalendarTranslations>;
+  onDayEventResize?: (event: CalendarEvent, newLastDay: Date) => void;
+  onAllDaySlotClick?: (day: Date) => void;
 }
 
 const HOUR_HEIGHT = 80; // Larger height for Day View
@@ -44,7 +48,9 @@ const DayViewImpl: React.FC<DayViewProps> = ({
   locale,
   readonly,
   onEventContextMenu,
-  translations
+  translations,
+  onDayEventResize,
+  onAllDaySlotClick
 }) => {
   // Only the day on screen gets segments, so endless events stay cheap.
   const visibleRange = React.useMemo(() => {
@@ -69,7 +75,10 @@ const DayViewImpl: React.FC<DayViewProps> = ({
   }, [timezone]);
 
   const dayKey = format(currentDate, 'yyyy-MM-dd');
-  const positioned = layoutDayEvents(segmentsByDisplayDay(events, timezone, visibleRange).get(dayKey) ?? NO_SEGMENTS);
+  // All-day and 24 h+ events go to the all-day row; the grid only shows timed events.
+  const { dayEvents, timedEvents } = partitionDayEvents(events, timezone);
+  const rowDays = React.useMemo(() => [visibleRange.start], [visibleRange]);
+  const positioned = layoutDayEvents(segmentsByDisplayDay(timedEvents, timezone, visibleRange).get(dayKey) ?? NO_SEGMENTS);
   const isToday = isSameDay(currentDate, displayToday(timezone, now));
   const zonedNow = toDisplay(now, timezone);
   const nowTop = (minutesSinceDisplayMidnight(now, timezone) / 60) * HOUR_HEIGHT;
@@ -90,6 +99,20 @@ const DayViewImpl: React.FC<DayViewProps> = ({
                 )}
             </div>
         </div>
+
+        <AllDayRow
+          days={rowDays}
+          dayEvents={dayEvents}
+          timezone={timezone}
+          locale={locale}
+          translations={translations}
+          readonly={readonly}
+          gutterClassName="w-20"
+          onEventClick={onEventClick}
+          onEventContextMenu={onEventContextMenu}
+          onDayEventResize={onDayEventResize}
+          onSlotClick={onAllDaySlotClick}
+        />
 
         {/* Grid */}
         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto relative">

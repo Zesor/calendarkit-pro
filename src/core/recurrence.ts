@@ -97,18 +97,20 @@ function cachedMonth(event: CalendarEvent, monthStart: Date, tz?: string): Calen
  */
 export function expandRecurrences(events: CalendarEvent[], range: DateRange, anchorTz?: string): CalendarEvent[] {
   const result: CalendarEvent[] = []
-  const lastMonth = startOfMonth(toDisplay(range.end, anchorTz))
   for (const event of events) {
     if (!event.recurrence) {
       result.push(event)
       continue
     }
+    // All-day series are calendar dates: expanded in local time, never in the display zone.
+    const tz = event.allDay ? undefined : anchorTz
+    const lastMonth = startOfMonth(toDisplay(range.end, tz))
     // Start from the month of (range start − duration): an occurrence may begin before the range.
     const duration = event.end.getTime() - event.start.getTime()
-    const firstMonth = startOfMonth(toDisplay(new Date(range.start.getTime() - duration), anchorTz))
+    const firstMonth = startOfMonth(toDisplay(new Date(range.start.getTime() - duration), tz))
     try {
       for (let month = firstMonth; month <= lastMonth; month = addMonths(month, 1)) {
-        for (const occurrence of cachedMonth(event, fromDisplay(month, anchorTz), anchorTz)) {
+        for (const occurrence of cachedMonth(event, fromDisplay(month, tz), tz)) {
           if (occurrence.end >= range.start && occurrence.start <= range.end) result.push(occurrence)
         }
       }

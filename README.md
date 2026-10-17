@@ -10,6 +10,7 @@ A professional, feature-rich React calendar component with drag-and-drop, recurr
 - **5 Views** - Month, Week, Day, Agenda, and Resource views
 - **Drag & Drop** - Move events with smooth animations and grid snapping
 - **Event Resize** - Drag event edges to adjust duration
+- **All-day & Multi-day Events** - Continuous bars, collapsible all-day row, move by days and stretch
 - **Recurring Events** - Daily, weekly, monthly, yearly with RRule support
 - **Timezone Support** - Full IANA timezone handling
 - **i18n Ready** - Built-in English/French, fully customizable
@@ -165,19 +166,35 @@ interface CalendarTheme {
 ## Views
 
 ### Month View
-Full month grid with event indicators. Click a date to switch to day view.
+Full month grid. All-day and multi-day events are continuous bars across their days. Click a date to switch to day view.
 
 ### Week View
-7-day view with hourly time slots. Drag events to reschedule, resize from bottom edge.
+7-day view with hourly time slots and an all-day row on top. Drag events to reschedule, resize from bottom edge.
 
 ### Day View
-Single day with 15-minute time slots. Ideal for detailed scheduling.
+Single day with 15-minute time slots and the all-day row. Ideal for detailed scheduling.
 
 ### Agenda View
 Chronological list of upcoming events for 30 days. Shows event details and metadata.
 
 ### Resource View
 Horizontal timeline for scheduling across resources (rooms, people, equipment).
+
+## All-day and Multi-day Events
+
+```tsx
+const events = [
+  // All-day: the end is exclusive, this offsite covers 12–14 October
+  { id: 'offsite', title: 'Offsite', start: new Date(2026, 9, 12), end: new Date(2026, 9, 15), allDay: true },
+  // Timed events of 24 hours or more are shown with the all-day events
+  { id: 'flight', title: 'Flight', start: new Date(2026, 9, 14, 22), end: new Date(2026, 9, 16, 4) },
+];
+```
+
+- All-day events are calendar dates: `timezone` never shifts them. The end is exclusive (midnight after the last day); an end at 23:59 on the same day, or equal to the start, means one day. Date-only values such as `new Date('2026-10-12')` keep their date in every timezone.
+- The week and day views show them in a collapsible row above the grid (2 lanes, then "+N more"). The month view draws continuous bars (up to 3 lanes per week); its "+N more" counts the hidden bars and events of the day.
+- Drag a bar to move it by whole days, or stretch its right edge to change its last day. `onEventDrop` / `onEventResize` then `onEventUpdate` fire as for timed events; `draggable: false`, `resizable: false` and `readOnly` apply.
+- Click an empty day of the all-day row to create an all-day event. The event form has an All Day switch and shows the last day included.
 
 ## Recurring Events
 
@@ -313,6 +330,8 @@ const calendars = [
   )}
 />
 ```
+
+`initialAllDay` is `true` when the form is opened from the all-day row.
 
 ## Exports
 

@@ -155,3 +155,68 @@ describe('useCalendarLogic', () => {
     expect(result.current.handleTimeSlotClick).toBe(before)
   })
 })
+
+describe('all-day events', () => {
+  const conference: CalendarEvent = { id: 'conf', title: 'Conférence', start: new Date(2026, 9, 12), end: new Date(2026, 9, 15), allDay: true }
+  const birthday: CalendarEvent = { id: 'bday', title: 'Anniversaire', start: new Date(2026, 8, 30), end: new Date(2026, 9, 1), allDay: true, recurrence: { freq: 'YEARLY' } }
+  const dayDrag = (event: CalendarEvent, overDate: Date, grabDayOffset: number, allDayRow = true) =>
+    ({ active: { data: { current: { event, grabDayOffset } } }, over: { data: { current: { date: overDate, allDayRow } } } }) as unknown as DragEndEvent
+
+  test('dragging a bar moves it by whole days and calls onEventDrop then onEventUpdate', () => {
+    const onEventDrop = vi.fn()
+    const onEventUpdate = vi.fn()
+    const { result } = setup({ events: [conference], onEventDrop, onEventUpdate })
+    act(() => result.current.handleDragEnd(dayDrag(conference, new Date(2026, 9, 16), 2))) // grab Wed, drop on Fri
+    expect(onEventDrop).toHaveBeenCalledWith(conference, new Date(2026, 9, 14), new Date(2026, 9, 17))
+    expect(onEventUpdate.mock.calls[0][0]).toMatchObject({ id: 'conf', start: new Date(2026, 9, 14), end: new Date(2026, 9, 17), allDay: true })
+  })
+
+  test('stretching a bar sets an exclusive end and calls onEventResize then onEventUpdate', () => {
+    const onEventResize = vi.fn()
+    const onEventUpdate = vi.fn()
+    const { result } = setup({ events: [conference], onEventResize, onEventUpdate })
+    act(() => result.current.handleDayEventResize(conference, new Date(2026, 9, 16)))
+    expect(onEventResize).toHaveBeenCalledWith(conference, new Date(2026, 9, 12), new Date(2026, 9, 17))
+    expect(onEventUpdate.mock.calls[0][0].end).toEqual(new Date(2026, 9, 17))
+  })
+
+  test('moving an all-day occurrence shifts the whole series by days (no timezone drift)', () => {
+    const onEventUpdate = vi.fn()
+    const { result } = setup({ events: [birthday], timezone: 'Asia/Tokyo', date: new Date(2026, 8, 15), onEventUpdate })
+    const occurrence = result.current.expandedEvents.find((e) => e.originalEventId === 'bday')!
+    act(() => result.current.handleDragEnd(dayDrag(occurrence, new Date(2026, 9, 2), 0)))
+    expect(onEventUpdate.mock.calls[0][0]).toMatchObject({ id: 'bday', start: new Date(2026, 9, 2), end: new Date(2026, 9, 3) })
+  })
+
+  test('all-day series stay on their dates when the display zone differs from the browser (DST)', () => {
+    const weekly: CalendarEvent = { id: 'wk', title: 'Sport', start: new Date(2026, 9, 12), end: new Date(2026, 9, 13), allDay: true, recurrence: { freq: 'WEEKLY' } }
+    const onEventUpdate = vi.fn()
+    const { result } = setup({ events: [weekly], timezone: 'Asia/Tokyo', date: new Date(2026, 9, 15), onEventUpdate })
+    const occurrences = result.current.expandedEvents.filter((e) => e.originalEventId === 'wk')
+    expect(occurrences.map((e) => e.start)).toContainEqual(new Date(2026, 9, 26)) // after Paris leaves summer time
+    expect(occurrences.every((e) => e.start.getHours() === 0)).toBe(true)
+    // Editing an occurrence in the modal across the DST change shifts the series by whole days
+    const oct19 = occurrences.find((e) => e.start.getTime() === new Date(2026, 9, 19).getTime())!
+    act(() => result.current.handleEventClickInternal(oct19))
+    act(() => result.current.handleModalSave({ ...oct19, start: new Date(2026, 9, 26), end: new Date(2026, 9, 27) }))
+    expect(onEventUpdate.mock.calls[0][0]).toMatchObject({ id: 'wk', start: new Date(2026, 9, 19), end: new Date(2026, 9, 20) })
+  })
+
+  test('a timed event dropped in the all-day row only changes day', () => {
+    const onEventUpdate = vi.fn()
+    const { result } = setup({ onEventUpdate })
+    act(() => result.current.handleDragEnd({ active: { data: { current: { event: single } } }, over: { data: { current: { date: new Date(2026, 9, 17), allDayRow: true } } } } as unknown as DragEndEvent))
+    expect(onEventUpdate.mock.calls[0][0]).toMatchObject({ start: new Date(2026, 9, 17, 14), end: new Date(2026, 9, 17, 15) })
+  })
+
+  test('clicking the all-day row opens the form preset to all-day; readOnly ignores it', () => {
+    const { result } = setup()
+    act(() => result.current.handleAllDaySlotClick(new Date(2026, 9, 14)))
+    expect(result.current.isModalOpen).toBe(true)
+    expect(result.current.modalInitialAllDay).toBe(true)
+    expect(result.current.modalInitialDate).toEqual(new Date(2026, 9, 14))
+    const readOnly = setup({ readOnly: true })
+    act(() => readOnly.result.current.handleAllDaySlotClick(new Date(2026, 9, 14)))
+    expect(readOnly.result.current.isModalOpen).toBe(false)
+  })
+})
