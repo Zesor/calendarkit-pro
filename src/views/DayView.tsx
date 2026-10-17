@@ -41,15 +41,11 @@ export const DayView: React.FC<DayViewProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-scroll to 8am on mount
+  // Scroll a few hours above the current time once, on mount.
   React.useEffect(() => {
     if (scrollContainerRef.current) {
-        const scrollToActualTime = () => {
-            const currentHour = now.getHours();
-            const offsetHour = 3; // Scroll a bit above current hour
-            return (currentHour - offsetHour) * hourHeight;
-        }
-      scrollContainerRef.current.scrollTop = scrollToActualTime();
+      const offsetHour = 3;
+      scrollContainerRef.current.scrollTop = (new Date().getHours() - offsetHour) * hourHeight;
     }
   }, []);
 

@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '../utils';
 
 // Base skeleton component
-export const Skeleton: React.FC<{ className?: string; style?: React.CSSProperties }> = ({ className, style }) => (
+const Skeleton: React.FC<{ className?: string; style?: React.CSSProperties }> = ({ className, style }) => (
   <div className={cn("animate-pulse bg-muted/40 rounded", className)} style={style} />
 );
 
@@ -137,82 +137,6 @@ export const AgendaViewSkeleton: React.FC = () => (
           </div>
         </div>
       ))}
-    </div>
-  </div>
-);
-
-// Calendar Header Skeleton
-export const CalendarHeaderSkeleton: React.FC = () => (
-  <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-muted/10">
-    <div className="flex items-center gap-3">
-      <Skeleton className="h-8 w-8 rounded-lg" />
-      <div className="flex items-center gap-2">
-        <Skeleton className="h-8 w-8 rounded-lg" />
-        <Skeleton className="h-8 w-8 rounded-lg" />
-        <Skeleton className="h-8 w-20 rounded-lg" />
-      </div>
-      <Skeleton className="h-6 w-40" />
-    </div>
-    <div className="flex items-center gap-2">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <Skeleton key={i} className="h-8 w-16 rounded-lg" />
-      ))}
-    </div>
-  </div>
-);
-
-// Sidebar Skeleton
-export const SidebarSkeleton: React.FC = () => (
-  <div className="w-[260px] h-full bg-background border-r border-border/50 p-4 space-y-6">
-    {/* Create button */}
-    <Skeleton className="h-12 w-full rounded-2xl" />
-
-    {/* Mini calendar */}
-    <div className="space-y-2">
-      <div className="flex justify-between items-center mb-2">
-        <Skeleton className="h-4 w-20" />
-        <div className="flex gap-1">
-          <Skeleton className="h-6 w-6 rounded" />
-          <Skeleton className="h-6 w-6 rounded" />
-        </div>
-      </div>
-      <div className="grid grid-cols-7 gap-1">
-        {Array.from({ length: 7 }).map((_, i) => (
-          <Skeleton key={i} className="h-4 w-4 mx-auto" />
-        ))}
-        {Array.from({ length: 35 }).map((_, i) => (
-          <Skeleton key={i} className="h-7 w-7 mx-auto rounded" />
-        ))}
-      </div>
-    </div>
-
-    {/* Calendars section */}
-    <div className="bg-muted/20 rounded-2xl p-3">
-      <Skeleton className="h-4 w-20 mb-3" />
-      <div className="space-y-2">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <Skeleton className="h-5 w-5 rounded" />
-            <Skeleton className="h-4 flex-1" />
-          </div>
-        ))}
-      </div>
-    </div>
-  </div>
-);
-
-// Full Calendar Skeleton (combines all)
-export const CalendarSkeleton: React.FC<{ view?: string }> = ({ view = 'month' }) => (
-  <div className="flex flex-col h-full">
-    <CalendarHeaderSkeleton />
-    <div className="flex flex-1 overflow-hidden">
-      <SidebarSkeleton />
-      <div className="flex-1 p-4">
-        {view === 'month' && <MonthViewSkeleton />}
-        {view === 'week' && <WeekViewSkeleton />}
-        {view === 'day' && <DayViewSkeleton />}
-        {view === 'agenda' && <AgendaViewSkeleton />}
-      </div>
     </div>
   </div>
 );

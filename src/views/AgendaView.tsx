@@ -5,7 +5,7 @@ import { cn } from '../utils';
 import { uses24HourClock } from '../lib/date';
 import { AgendaEmptyState } from '../components/EmptyState';
 import { motion } from 'framer-motion';
-import { Clock, MapPin, Users, Paperclip, Bell } from 'lucide-react';
+import { Clock, Users, Paperclip, Bell } from 'lucide-react';
 
 interface AgendaViewProps {
   currentDate: Date;
@@ -96,7 +96,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
           initial="hidden"
           animate="show"
         >
-            {groupedEvents.map((group, groupIndex) => (
+            {groupedEvents.map((group) => (
                 <motion.div
                   key={group.date.toISOString()}
                   className="relative"
@@ -140,7 +140,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
 
                     {/* Events List */}
                     <div className="py-4 space-y-3">
-                        {group.events.map((event, eventIndex) => (
+                        {group.events.map((event) => (
                             <motion.div
                                 key={event.id}
                                 onClick={() => onEventClick?.(event)}

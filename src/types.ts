@@ -45,7 +45,6 @@ export interface CalendarEvent {
     until?: Date;
     byweekday?: number[]; // 0=MO, 6=SU
   };
-  // eslint-disable-next-line
   [key: string]: any;
 }
 

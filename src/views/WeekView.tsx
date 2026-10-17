@@ -48,15 +48,11 @@ export const WeekView: React.FC<WeekViewProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-scroll to 8am on mount for better UX
+  // Scroll a few hours above the current time once, on mount.
   React.useEffect(() => {
     if (scrollContainerRef.current) {
-        const scrollToActualTime = () => {
-            const currentHour = now.getHours();
-            const offsetHour = 4; // Scroll a bit above current hour
-            return (currentHour - offsetHour) * hourHeight;
-        }
-      scrollContainerRef.current.scrollTop = scrollToActualTime();
+      const offsetHour = 4;
+      scrollContainerRef.current.scrollTop = (new Date().getHours() - offsetHour) * hourHeight;
     }
   }, []);
 
@@ -81,7 +77,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
              acronym = new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' })
               .formatToParts(date)
               .find(part => part.type === 'timeZoneName')?.value || '';
-          } catch (e) { acronym = 'LOC'; }
+          } catch { acronym = 'LOC'; }
       } else {
           try {
               const zDate = toZonedTime(date, tz);
@@ -92,7 +88,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
               acronym = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'short' })
                   .formatToParts(date)
                   .find(part => part.type === 'timeZoneName')?.value || '';
-          } catch (e) {
+          } catch {
               // Fallback
               displayTime = format(date, 'HH:mm');
               acronym = tz;

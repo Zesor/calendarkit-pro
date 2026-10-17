@@ -3,7 +3,7 @@
  * @param color - The color string (e.g., "#3b82f6", "3b82f6", "rgb(0, 84, 97)")
  * @returns The HSL string (e.g., "217 91% 60%") or null if invalid
  */
-export function colorToHsl(color: string): string | null {
+function colorToHsl(color: string): string | null {
   let r = 0, g = 0, b = 0;
 
   // Handle Hex
@@ -34,7 +34,7 @@ export function colorToHsl(color: string): string | null {
   const min = Math.min(r, g, b);
   let h = 0;
   let s = 0;
-  let l = (max + min) / 2;
+  const l = (max + min) / 2;
 
   if (max !== min) {
     const d = max - min;
@@ -54,21 +54,6 @@ export function colorToHsl(color: string): string | null {
   const lPct = Math.round(l * 100);
 
   return `${hDeg} ${sPct}% ${lPct}%`;
-}
-
-export interface ThemeVariables {
-  '--background'?: string;
-  '--foreground'?: string;
-  '--primary'?: string;
-  '--primary-foreground'?: string;
-  '--secondary'?: string;
-  '--secondary-foreground'?: string;
-  '--muted'?: string;
-  '--muted-foreground'?: string;
-  '--accent'?: string;
-  '--accent-foreground'?: string;
-  '--border'?: string;
-  '--radius'?: string;
 }
 
 import { CalendarTheme } from '../types';

@@ -27,8 +27,16 @@
     "dev": "next dev",
     "build": "next build",
     "build:lib": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "knip": "knip",
+    "check:package": "node scripts/check-dist.mjs && publint --strict && attw --pack .",
+    "size": "size-limit",
+    "ci": "npm run typecheck && npm run lint && npm run knip && npm run test && npm run build:lib && npm run check:package && npm run size",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build:lib"
   },
   "keywords": [
@@ -50,7 +58,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Zesor/calendarkit-pro.git"
+    "url": "git+https://github.com/Zesor/calendarkit-pro.git"
   },
   "bugs": {
     "url": "https://github.com/Zesor/calendarkit-pro/issues"
@@ -63,9 +71,7 @@
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/modifiers": "^9.0.0",
-    "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "@tanstack/react-virtual": "^3.13.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
@@ -76,14 +82,31 @@
     "tailwind-merge": "^2.6.0"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@eslint/js": "^9.39.5",
+    "@size-limit/file": "^14.2.0",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "@vitest/coverage-v8": "^5.0.5",
     "autoprefixer": "^10.4.20",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
+    "jsdom": "^30.1.3",
+    "knip": "^6.41.0",
     "next": "^15.0.0",
     "postcss": "^8.4.49",
+    "publint": "^0.3.25",
+    "size-limit": "^14.2.0",
     "tailwindcss": "^3.4.17",
     "tsup": "^8.3.5",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.71.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.5"
   }
 }

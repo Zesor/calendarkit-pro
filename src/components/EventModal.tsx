@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from './ui/Modal';
 import { CalendarEvent, EventType, EventAttachment, EventReminder } from '../types';
-import { format, formatDistanceToNow, differenceInMinutes } from 'date-fns';
+import { format, differenceInMinutes } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Clock, MapPin, AlignLeft, Trash2, X, Edit2,
-    Users, Paperclip, File, XCircle, Calendar, ChevronDown, Check, Download,
-    Bell, BellRing, Plus, Repeat, Tag, Palette, ChevronRight, Mail,
-    ExternalLink, Copy, Share2, MoreHorizontal
+    Users, Paperclip, File, Calendar, ChevronDown, Check, Download,
+    Bell, BellRing, Plus, Repeat, Tag,
+    ExternalLink
   } from 'lucide-react';
 import { cn } from '../utils';
 
@@ -58,12 +58,9 @@ export const EventModal: React.FC<EventModalProps> = ({
   initialDate,
   onSave,
   onDelete,
-  calendars,
-  eventTypes,
-  translations
+  calendars
 }) => {
   const [mode, setMode] = useState<'view' | 'edit' | 'create'>('create');
-  const [activeTab, setActiveTab] = useState<'details' | 'guests' | 'options'>('details');
 
   const [formData, setFormData] = useState<Partial<CalendarEvent>>({
     title: '',
@@ -93,7 +90,6 @@ export const EventModal: React.FC<EventModalProps> = ({
     'evan@example.com'
   ];
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedGuests, setSelectedGuests] = useState<string[]>([]);
 
   useEffect(() => {
@@ -127,7 +123,6 @@ export const EventModal: React.FC<EventModalProps> = ({
           reminders: [{ id: '1', type: 'notification', time: 30, label: '30 minutes before' }],
         });
         setSelectedGuests([]);
-        setActiveTab('details');
       }
     }
   }, [isOpen, event, initialDate, calendars]);
@@ -211,28 +206,6 @@ export const EventModal: React.FC<EventModalProps> = ({
     setFormData(prev => ({
       ...prev,
       reminders: prev.reminders?.filter(r => r.id !== id)
-    }));
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const newAttachments: EventAttachment[] = Array.from(e.target.files).map(file => ({
-        id: Math.random().toString(36).substr(2, 9),
-        name: file.name,
-        type: 'file',
-        size: `${(file.size / 1024).toFixed(1)} KB`
-      }));
-      setFormData(prev => ({
-        ...prev,
-        attachments: [...(prev.attachments || []), ...newAttachments]
-      }));
-    }
-  };
-
-  const removeAttachment = (id: string) => {
-    setFormData(prev => ({
-      ...prev,
-      attachments: prev.attachments?.filter(a => a.id !== id)
     }));
   };
 
