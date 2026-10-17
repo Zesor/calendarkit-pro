@@ -1,5 +1,8 @@
 import { addDays, addMonths, addWeeks, format, startOfDay, subDays, subMonths, subWeeks } from 'date-fns'
 import type { CalendarEvent, ViewType } from '../types'
+import { applyChange, deletionFor, duplicateEvent, masterOf } from './changes'
+import { computeDayMove, computeDayResize, computeDrop } from './dnd'
+import { shiftSeries, stripOccurrenceFields } from './recurrence'
 import { expansionRange } from './changes'
 import { normalizeEvents } from './events'
 import { type ParsedToken, parseEventSentence, type SentenceLanguage } from './nlp'
@@ -104,6 +107,15 @@ export interface CalendarStore {
   updateDraft(patch: Partial<Pick<Draft, 'title' | 'start' | 'end' | 'allDay' | 'resourceId' | 'calendarId' | 'recurrence'>>): void
   closeDialog(): void
   toggleCalendar(calendarId: string): void
+  saveDraft(): void
+  create(event: Partial<CalendarEvent> & Pick<CalendarEvent, 'title' | 'start' | 'end'>): void
+  update(event: CalendarEvent): void
+  move(eventId: string, target: MoveTarget): void
+  resize(eventId: string, end: Date): void
+  resizeDays(eventId: string, lastDay: Date): void
+  remove(eventId: string): void
+  duplicate(eventId: string): void
+  undo(): void
 }
 
 const HOUR = 60 * 60 * 1000
@@ -125,12 +137,13 @@ function step(view: ViewType, date: Date, dir: 1 | -1): Date {
  */
 export function createCalendar(initial: CalendarOptions = {}): CalendarStore {
   let options: CalendarOptions = { ...initial }
-  const ownEvents = initial.defaultEvents ?? []
+  let ownEvents = initial.defaultEvents ?? []
   let ownView: ViewType = initial.defaultView ?? 'week'
   let ownDate: Date = initial.defaultDate ?? (initial.now ?? (() => new Date()))()
   let dialog: Dialog | null = null
   let hidden: readonly string[] = []
-  const lastChange: LastChange | null = null
+  let lastChange: LastChange | null = null
+  let undoEntry: { prev: CalendarEvent[]; inverse: () => void } | null = null
   let snapshot: CalendarState | null = null
   const listeners = new Set<() => void>()
   const memo: { normalized?: CalendarEvent[]; rangeKey?: string; range?: DateRange; tz?: string; occurrences?: CalendarEvent[] } = {}
@@ -177,6 +190,34 @@ export function createCalendar(initial: CalendarOptions = {}): CalendarStore {
     return makeDraft(event.start, event.end, { title: event.title, allDay: !!event.allDay, resourceId: event.resourceId, calendarId: event.calendarId, recurrence: event.recurrence })
   }
 
+  const controlledEvents = () => options.events !== undefined
+
+  function commit(kind: ChangeKind, next: CalendarEvent[], subject: CalendarEvent, notify: () => void, inverse: () => void) {
+    const prev = source()
+    if (!controlledEvents()) ownEvents = next
+    notify()
+    options.onEventsChange?.(next)
+    undoEntry = { prev, inverse }
+    lastChange = { kind, eventId: subject.id, title: subject.title }
+    dialog = null
+    emit()
+  }
+
+  const replace = (list: CalendarEvent[], event: CalendarEvent) => list.map((e) => (e.id === event.id ? event : e))
+  const without = (list: CalendarEvent[], id: string) => list.filter((e) => e.id !== id)
+
+  function applyDates(event: CalendarEvent, start: Date, end: Date, kind: 'move' | 'resize', resourceId?: string) {
+    const state = store.getState()
+    const change = applyChange(event, start, end, state.events, options.timezone)
+    if (!change) return
+    const updated = resourceId !== undefined ? { ...change.updated, resourceId } : change.updated
+    const original = change.original
+    commit(kind, replace(source(), updated), updated, () => {
+      if (kind === 'move') options.onEventDrop?.(original, updated.start, updated.end)
+      else options.onEventResize?.(original, updated.start, updated.end)
+      options.onEventUpdate?.(updated)
+    }, () => options.onEventUpdate?.(original))
+  }
 
   const store: CalendarStore = {
     getState: () => (snapshot ??= compute()),
@@ -250,6 +291,91 @@ export function createCalendar(initial: CalendarOptions = {}): CalendarStore {
     },
     toggleCalendar(calendarId) {
       hidden = hidden.includes(calendarId) ? hidden.filter((id) => id !== calendarId) : [...hidden, calendarId]
+      emit()
+    },
+    saveDraft() {
+      if (options.readOnly || !dialog || (dialog.kind !== 'quick' && dialog.kind !== 'editor')) return
+      const { draft } = dialog
+      const parsed = parseEventSentence(draft.title, { now: now(), language: options.language ?? 'en' })
+      const title = (parsed.title || draft.title).trim() || 'Untitled'
+      const fields = { title, start: draft.start, end: draft.end, allDay: draft.allDay || undefined, resourceId: draft.resourceId, calendarId: draft.calendarId, recurrence: draft.recurrence }
+      const eventId = dialog.kind === 'editor' ? dialog.eventId : undefined
+      if (eventId === undefined) return store.create(fields)
+      const event = find(eventId)
+      if (!event) return
+      if (event.originalEventId) {
+        // R5: editing one occurrence updates the series, shifted by the same delta.
+        const master = masterOf(event, store.getState().events)
+        if (!master) return
+        const edited = { ...master, ...stripOccurrenceFields({ ...event, ...fields } as CalendarEvent), id: master.id, start: master.start, end: master.end }
+        return store.update(shiftSeries(edited, event, fields.start, fields.end, edited.allDay ? undefined : options.timezone))
+      }
+      store.update({ ...event, ...fields })
+    },
+    create(fields) {
+      if (options.readOnly) return
+      const event = { ...fields, id: fields.id ?? (options.createId ?? (() => `evt-${now().getTime()}-${Math.random().toString(36).slice(2, 7)}`))() } as CalendarEvent
+      commit('create', [...source(), event], event, () => options.onEventCreate?.(event), () => options.onEventDelete?.(event.id))
+    },
+    update(event) {
+      if (options.readOnly) return
+      const before = source().find((e) => e.id === event.id)
+      if (!before) return warnOnce(`missing-event:${event.id}`, `update: no event with id "${event.id}".`)
+      commit('update', replace(source(), event), event, () => options.onEventUpdate?.(event), () => options.onEventUpdate?.(before))
+    },
+    move(eventId, target) {
+      if (options.readOnly) return
+      const event = find(eventId)
+      if (!event) return
+      if (target.grabDayOffset !== undefined) {
+        const move = computeDayMove(event, target.date, target.grabDayOffset, options.timezone)
+        if (move) applyDates(event, move.start, move.end, 'move')
+        return
+      }
+      const view = target.allDayRow ? 'month' : store.getState().view
+      const drop = computeDrop({ event, overDate: target.date, overResourceId: target.resourceId, grabOffsetMs: target.grabOffsetMs, view, tz: options.timezone })
+      if (drop) applyDates(event, drop.start, drop.end, 'move', drop.resourceId)
+    },
+    resize(eventId, end) {
+      if (options.readOnly) return
+      const event = find(eventId)
+      if (event && end.getTime() > event.start.getTime() && end.getTime() !== event.end.getTime()) applyDates(event, event.start, end, 'resize')
+    },
+    resizeDays(eventId, lastDay) {
+      if (options.readOnly) return
+      const event = find(eventId)
+      const end = event && computeDayResize(event, lastDay, options.timezone)
+      if (event && end) applyDates(event, event.start, end, 'resize')
+    },
+    remove(eventId) {
+      if (options.readOnly) return
+      const event = find(eventId)
+      if (!event) return
+      const state = store.getState()
+      const deletion = deletionFor(event, state.events, !!options.onOccurrenceDelete || !controlledEvents())
+      if (deletion.kind === 'occurrence') {
+        const master = masterOf(event, state.events)!
+        commit('delete', replace(source(), deletion.series), event, () => options.onOccurrenceDelete?.(deletion.occurrence, deletion.series), () => options.onEventUpdate?.(master))
+      } else {
+        const removed = source().find((e) => e.id === deletion.id) ?? event
+        commit('delete', without(source(), deletion.id), removed, () => options.onEventDelete?.(deletion.id), () => options.onEventCreate?.(removed))
+      }
+    },
+    duplicate(eventId) {
+      if (options.readOnly) return
+      const event = find(eventId)
+      if (!event) return
+      const copy = duplicateEvent(event, (options.createId ?? (() => `${event.originalEventId ?? event.id}-copy-${now().getTime()}`))())
+      commit('duplicate', [...source(), copy], copy, () => options.onEventCreate?.(copy), () => options.onEventDelete?.(copy.id))
+    },
+    undo() {
+      if (!undoEntry) return
+      const { prev, inverse } = undoEntry
+      undoEntry = null
+      if (!controlledEvents()) ownEvents = prev
+      inverse()
+      options.onEventsChange?.(prev)
+      lastChange = null
       emit()
     },
   }
