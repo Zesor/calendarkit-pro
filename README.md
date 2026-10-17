@@ -84,7 +84,9 @@ function MyCalendar() {
 | `onEventCreate` | `(event: Partial<CalendarEvent>) => void` | Event creation callback |
 | `onEventUpdate` | `(event: CalendarEvent) => void` | Event update callback |
 | `onEventDelete` | `(eventId: string) => void` | Event deletion callback |
-| `onEventResize` | `(event, start, end) => void` | Event resize callback |
+| `onEventDrop` | `(event, start, end) => void` | Called when an event is dropped (with the event before the move and its new dates), alongside `onEventUpdate` |
+| `onEventResize` | `(event, start, end) => void` | Called when an event is resized, alongside `onEventUpdate` (both fire, so update your state in only one of them) |
+| `onOccurrenceDelete` | `(occurrence, updatedSeries) => void` | Delete a single occurrence of a recurring event: persist `updatedSeries` (it has the date in `recurrence.exdates`). Without it, deleting an occurrence deletes the series |
 | `calendars` | `Calendar[]` | Multiple calendar support |
 | `resources` | `Resource[]` | Resources for resource view |
 | `eventTypes` | `EventType[]` | Pre-defined event types |
@@ -125,7 +127,8 @@ interface CalendarEvent {
     interval?: number;
     count?: number;
     until?: Date;
-    byweekday?: number[];
+    byweekday?: number[]; // 0 = Monday … 6 = Sunday
+    exdates?: Date[];     // occurrence starts excluded from the series
   };
 }
 ```
@@ -191,6 +194,25 @@ const recurringEvent: CalendarEvent = {
   },
 };
 ```
+
+Occurrences keep their wall-clock time across daylight-saving changes, in the `timezone` prop's zone (or the browser's).
+
+Moving, resizing or editing one occurrence updates the whole series by the same amount (`onEventUpdate` receives the recurring event). To delete a single occurrence, handle `onOccurrenceDelete`:
+
+```tsx
+<Scheduler
+  events={events}
+  onOccurrenceDelete={(occurrence, updatedSeries) => {
+    setEvents(events.map(e => (e.id === updatedSeries.id ? updatedSeries : e)));
+  }}
+/>
+```
+
+### Invalid data
+
+Dates may be `Date` objects, ISO strings or timestamps. Events with an invalid date or an end before their start are skipped, with a warning in development. Event ids must be unique (duplicates are rendered but warned about, and break drag & drop).
+
+Treat events as immutable: to change an event, pass a new object (`events.map(e => e.id === id ? { ...e, title } : e)`). Computations are cached per event object, so mutating an event in place may not be reflected.
 
 ## Timezone Support
 

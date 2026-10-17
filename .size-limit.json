@@ -1,4 +1,4 @@
 [
-  { "name": "ESM bundle", "path": "dist/index.mjs", "limit": "26 kB" },
-  { "name": "CJS bundle", "path": "dist/index.js", "limit": "26 kB" }
+  { "name": "ESM bundle", "path": "dist/index.mjs", "limit": "30 kB" },
+  { "name": "CJS bundle", "path": "dist/index.js", "limit": "30 kB" }
 ]

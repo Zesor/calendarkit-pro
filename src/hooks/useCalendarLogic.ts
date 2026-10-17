@@ -1,12 +1,14 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
-  addMonths, subMonths, addWeeks, subWeeks, addDays, subDays,
-  differenceInMilliseconds
+  addDays, addMonths, addWeeks, endOfMonth, format, startOfMonth, startOfWeek,
+  subDays, subMonths, subWeeks,
 } from 'date-fns';
-import { toZonedTime, fromZonedTime } from 'date-fns-tz';
-import { RRule } from 'rrule';
 import { DragEndEvent } from '@dnd-kit/core';
 import { ViewType, CalendarEvent } from '../types';
+import { computeDrop } from '../core/dnd';
+import { normalizeEvents } from '../core/events';
+import { DateRange, excludeOccurrence, expandRecurrences, shiftSeries, stripOccurrenceFields } from '../core/recurrence';
+import { useStableCallback } from './useStableCallback';
 
 interface UseCalendarLogicProps {
   events: CalendarEvent[];
@@ -18,9 +20,22 @@ interface UseCalendarLogicProps {
   onEventUpdate?: (event: CalendarEvent) => void;
   onEventCreate?: (event: Partial<CalendarEvent>) => void;
   onEventDelete?: (eventId: string) => void;
+  onEventDrop?: (event: CalendarEvent, start: Date, end: Date) => void;
+  onEventResize?: (event: CalendarEvent, start: Date, end: Date) => void;
+  onOccurrenceDelete?: (occurrence: CalendarEvent, updatedSeries: CalendarEvent) => void;
   readOnly?: boolean;
   timezone?: string;
 }
+
+/** Occurrences are expanded for the focused month ± one month, plus the agenda's 30 days (R4). */
+export function expansionRange(monthStart: Date): DateRange {
+  return {
+    start: startOfWeek(startOfMonth(subMonths(monthStart, 1))),
+    end: addDays(endOfMonth(addMonths(monthStart, 1)), 37),
+  };
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const useCalendarLogic = ({
   events,
@@ -32,82 +47,57 @@ export const useCalendarLogic = ({
   onEventUpdate,
   onEventCreate,
   onEventDelete,
+  onEventDrop,
+  onEventResize,
+  onOccurrenceDelete,
   readOnly,
   timezone
 }: UseCalendarLogicProps) => {
   const [internalView, setInternalView] = useState<ViewType>('week');
-  const [internalDate, setInternalDate] = useState(new Date());
+  const [internalDate, setInternalDate] = useState(() => new Date());
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  
+
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [modalInitialDate, setModalInitialDate] = useState<Date | undefined>(undefined);
+  const [modalInitialResourceId, setModalInitialResourceId] = useState<string | undefined>(undefined);
 
   const view = controlledView ?? internalView;
   const currentDate = controlledDate ?? internalDate;
 
-  // Expand recurring events
-  const expandedEvents = useMemo(() => {
-    const allEvents: CalendarEvent[] = [];
-    
-    // Define a range for expansion (e.g., +/- 1 year from current date)
-    // For better performance, we could limit this based on the current view range
-    const rangeStart = subDays(currentDate, 365);
-    const rangeEnd = addDays(currentDate, 365);
+  // Coerce dates and drop invalid events once per `events` array (cached in the core).
+  const normalizedEvents = useMemo(() => normalizeEvents(events), [events]);
 
-    events.forEach(event => {
-      if (event.recurrence) {
-        try {
-            const rule = new RRule({
-                freq: RRule[event.recurrence.freq],
-                interval: event.recurrence.interval || 1,
-                dtstart: new Date(event.start),
-                until: event.recurrence.until ? new Date(event.recurrence.until) : undefined,
-                count: event.recurrence.count,
-            });
+  // The expansion range only changes with the focused month, not with every day change (R4).
+  const monthKey = format(currentDate, 'yyyy-MM');
+  const range = useMemo(() => expansionRange(new Date(`${monthKey}-01T00:00:00`)), [monthKey]);
 
-            const dates = rule.between(rangeStart, rangeEnd);
-            
-            dates.forEach(date => {
-                const duration = differenceInMilliseconds(new Date(event.end), new Date(event.start));
-                allEvents.push({
-                    ...event,
-                    id: `${event.id}-${date.getTime()}`, // Unique ID for each instance
-                    originalEventId: event.id, // Reference to original
-                    start: date,
-                    end: new Date(date.getTime() + duration),
-                });
-            });
-        } catch (e) {
-            console.error("Error parsing recurrence rule", e);
-            allEvents.push(event); // Fallback to original
-        }
-      } else {
-        allEvents.push(event);
-      }
-    });
+  const expandedEvents = useMemo(
+    () => expandRecurrences(normalizedEvents, range, timezone),
+    [normalizedEvents, range, timezone],
+  );
 
-    return allEvents;
-  }, [events, currentDate]);
+  const masterOf = (occurrence: CalendarEvent) =>
+    normalizedEvents.find((e) => e.id === occurrence.originalEventId);
 
-  const handleViewChange = (newView: ViewType) => {
+  const handleViewChange = useStableCallback((newView: ViewType) => {
     if (controlledOnViewChange) {
       controlledOnViewChange(newView);
     } else {
       setInternalView(newView);
     }
-  };
+  });
 
-  const handleDateChange = (newDate: Date) => {
+  const handleDateChange = useStableCallback((newDate: Date) => {
     if (controlledOnDateChange) {
       controlledOnDateChange(newDate);
     } else {
       setInternalDate(newDate);
     }
-  };
+  });
 
-  const handlePrev = () => {
+  const handlePrev = useStableCallback(() => {
     switch (view) {
       case 'month':
         handleDateChange(subMonths(currentDate, 1));
@@ -123,9 +113,9 @@ export const useCalendarLogic = ({
         handleDateChange(subDays(currentDate, 7));
         break;
     }
-  };
+  });
 
-  const handleNext = () => {
+  const handleNext = useStableCallback(() => {
     switch (view) {
       case 'month':
         handleDateChange(addMonths(currentDate, 1));
@@ -141,162 +131,145 @@ export const useCalendarLogic = ({
         handleDateChange(addDays(currentDate, 7));
         break;
     }
-  };
+  });
 
-  const handleToday = () => {
+  const handleToday = useStableCallback(() => {
     handleDateChange(new Date());
-  };
+  });
 
-  const handleDateClick = (date: Date) => {
+  const handleDateClick = useStableCallback((date: Date) => {
     handleDateChange(date);
     handleViewChange('day');
-  };
+  });
 
-  const handleTimeSlotClick = (date: Date) => {
-      if (readOnly) return;
-      setSelectedEvent(null);
-      setModalInitialDate(date);
+  const handleTimeSlotClick = useStableCallback((date: Date, resourceId?: string) => {
+    if (readOnly) return;
+    setSelectedEvent(null);
+    setModalInitialDate(date);
+    setModalInitialResourceId(resourceId);
+    setIsModalOpen(true);
+  });
+
+  const handleEventClickInternal = useStableCallback((event: CalendarEvent) => {
+    onEventClick?.(event);
+    if (!readOnly) {
+      setSelectedEvent(event);
+      setModalInitialDate(undefined);
+      setModalInitialResourceId(undefined);
       setIsModalOpen(true);
-  };
-  
-  const handleEventClickInternal = (event: CalendarEvent) => {
-      if (onEventClick) {
-          onEventClick(event);
-      }
-      
-      if (!readOnly) {
-        setSelectedEvent(event);
-        setModalInitialDate(undefined);
-        setIsModalOpen(true);
-      }
-  };
+    }
+  });
 
-  const handleCreateEvent = () => {
-      if (readOnly) return;
-      setSelectedEvent(null);
-      setModalInitialDate(new Date());
-      setIsModalOpen(true);
-  };
+  const handleCreateEvent = useStableCallback(() => {
+    if (readOnly) return;
+    setSelectedEvent(null);
+    setModalInitialDate(new Date());
+    setModalInitialResourceId(undefined);
+    setIsModalOpen(true);
+  });
 
-  const handleModalSave = (eventData: Partial<CalendarEvent>) => {
-      // If we are editing an instance of a recurring event, we might want to split it
-      // For simplicity in this version, we just update the original event if it has an ID,
-      // or create a new one.
-      
-      // Check if it's a recurrence instance (has ID like "originalId-timestamp")
-      let effectiveEventId = selectedEvent?.id;
-      if (selectedEvent?.originalEventId) {
-          effectiveEventId = selectedEvent.originalEventId;
-      }
-
-      if (effectiveEventId) {
-          // Update existing
-          if (onEventUpdate) {
-              onEventUpdate({
-                  ...eventData,
-                  id: effectiveEventId
-              } as CalendarEvent);
-          }
-      } else {
-          // Create new
-          if (onEventCreate) {
-              onEventCreate(eventData);
-          }
-      }
-  };
-  
-  const handleModalDelete = (eventId: string) => {
-      // Handle deletion of recurring instances
-      let effectiveEventId = eventId;
-      if (selectedEvent?.originalEventId && selectedEvent.id === eventId) {
-          effectiveEventId = selectedEvent.originalEventId;
-      }
-
-      if (onEventDelete) {
-          onEventDelete(effectiveEventId);
-      }
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (!over) return;
-
-    const activeEvent = active.data.current?.event as CalendarEvent;
-    const overDate = over.data.current?.date as Date;
-
-    if (!activeEvent || !overDate) return;
-
-    const originalStart = new Date(activeEvent.start);
-    const originalEnd = new Date(activeEvent.end);
-    const duration = differenceInMilliseconds(originalEnd, originalStart);
-
-    let newStart: Date;
-
-    if (view === 'month') {
-        // For month view, overDate is the day cell
-        // We need to preserve the original time but change the date
-        if (timezone) {
-          // Get the original time in the target timezone
-          const zonedOriginal = toZonedTime(originalStart, timezone);
-          // Create new date with overDate's date but original's time
-          const zonedNew = new Date(overDate);
-          zonedNew.setHours(zonedOriginal.getHours());
-          zonedNew.setMinutes(zonedOriginal.getMinutes());
-          zonedNew.setSeconds(zonedOriginal.getSeconds());
-          zonedNew.setMilliseconds(zonedOriginal.getMilliseconds());
-          // Convert back from zoned time to UTC
-          newStart = fromZonedTime(zonedNew, timezone);
-        } else {
-          newStart = new Date(overDate);
-          newStart.setHours(originalStart.getHours());
-          newStart.setMinutes(originalStart.getMinutes());
-          newStart.setSeconds(originalStart.getSeconds());
-          newStart.setMilliseconds(originalStart.getMilliseconds());
-        }
+  const handleModalSave = useStableCallback((eventData: Partial<CalendarEvent>) => {
+    if (selectedEvent?.originalEventId) {
+      // R5: editing one occurrence updates the series, shifted by the same delta.
+      const master = masterOf(selectedEvent);
+      if (!master) return;
+      const edited = {
+        ...master,
+        ...stripOccurrenceFields(eventData as CalendarEvent),
+        id: master.id,
+        start: master.start,
+        end: master.end,
+      };
+      onEventUpdate?.(
+        shiftSeries(edited, selectedEvent, eventData.start ?? selectedEvent.start, eventData.end ?? selectedEvent.end, timezone),
+      );
+    } else if (selectedEvent) {
+      onEventUpdate?.({ ...eventData, id: selectedEvent.id } as CalendarEvent);
     } else {
-        // Week / Day / Resource View Logic
-        // overDate represents the time slot in "display timezone"
-        if (timezone) {
-          // overDate is already in the display timezone representation
-          // We need to convert it back to UTC for storage
-          // The cell date was created as local time representing the target timezone
-          newStart = fromZonedTime(overDate, timezone);
-        } else {
-          // No timezone set - use the date directly
-          newStart = new Date(overDate);
-        }
-
-        newStart.setSeconds(0);
-        newStart.setMilliseconds(0);
+      // A slot clicked in the resource view pre-assigns its resource.
+      onEventCreate?.(
+        modalInitialResourceId && eventData.resourceId === undefined
+          ? { ...eventData, resourceId: modalInitialResourceId }
+          : eventData,
+      );
     }
+  });
 
-    const newEnd = new Date(newStart.getTime() + duration);
-
-    // Resource Handling
-    let newResourceId = activeEvent.resourceId;
-    const overResourceId = over.data.current?.resourceId;
-    if (overResourceId) {
-        newResourceId = overResourceId;
-    }
-
-    // Check if event has actually changed
-    if (newStart.getTime() === originalStart.getTime() &&
-        newEnd.getTime() === originalEnd.getTime() &&
-        newResourceId === activeEvent.resourceId
-    ) {
+  /** R6: deleting an occurrence removes only that date when `onOccurrenceDelete` is provided. */
+  const handleEventDelete = useStableCallback((event: CalendarEvent) => {
+    if (!event.originalEventId) {
+      onEventDelete?.(event.id);
       return;
     }
-
-    if (onEventUpdate) {
-      onEventUpdate({
-        ...activeEvent,
-        start: newStart,
-        end: newEnd,
-        resourceId: newResourceId
-      });
+    const master = masterOf(event);
+    if (onOccurrenceDelete && master) {
+      onOccurrenceDelete(event, excludeOccurrence(master, event.occurrenceStart ?? event.start));
+    } else {
+      onEventDelete?.(event.originalEventId);
     }
+  });
+
+  const handleModalDelete = useStableCallback((eventId: string) => {
+    if (selectedEvent && selectedEvent.id === eventId) {
+      handleEventDelete(selectedEvent);
+    } else {
+      onEventDelete?.(eventId);
+    }
+  });
+
+  /** R7: a duplicate is always a single event, one day later. */
+  const handleEventDuplicate = useStableCallback((event: CalendarEvent) => {
+    const { recurrence: _recurrence, ...copy } = stripOccurrenceFields(event);
+    onEventCreate?.({
+      ...copy,
+      id: `${event.originalEventId ?? event.id}-copy-${Date.now()}`,
+      title: `${event.title} (Copy)`,
+      start: new Date(event.start.getTime() + DAY_MS),
+      end: new Date(event.end.getTime() + DAY_MS),
+    });
+  });
+
+  /** Applies new dates to an event, or to its whole series when it is an occurrence (R5, D1). */
+  const applyChange = (event: CalendarEvent, start: Date, end: Date): { original: CalendarEvent; updated: CalendarEvent } | null => {
+    if (!event.originalEventId) return { original: event, updated: { ...event, start, end } };
+    const master = masterOf(event);
+    if (!master) return null;
+    return { original: master, updated: shiftSeries(master, event, start, end, timezone) };
   };
+
+  const handleDragEnd = useStableCallback((dragEvent: DragEndEvent) => {
+    const { active, over } = dragEvent;
+    if (!over) return;
+    const dragged = active.data.current?.event as CalendarEvent | undefined;
+    const overDate = over.data.current?.date as Date | undefined;
+    if (!dragged || !overDate) return;
+
+    const drop = computeDrop({
+      event: dragged,
+      overDate,
+      overResourceId: over.data.current?.resourceId,
+      grabOffsetMs: active.data.current?.grabOffsetMs,
+      view,
+      tz: timezone,
+    });
+    if (!drop) return;
+
+    const change = applyChange(dragged, drop.start, drop.end);
+    if (!change) return;
+    const updated = { ...change.updated, resourceId: drop.resourceId };
+    // D2: onEventDrop is finally called, alongside onEventUpdate.
+    onEventDrop?.(change.original, updated.start, updated.end);
+    onEventUpdate?.(updated);
+  });
+
+  const handleEventResize = useStableCallback((event: CalendarEvent, newEnd: Date) => {
+    if (readOnly) return;
+    const change = applyChange(event, event.start, newEnd);
+    if (!change) return;
+    // Both callbacks are kept in 1.x for backwards compatibility (documented in the README).
+    onEventResize?.(change.original, change.updated.start, change.updated.end);
+    onEventUpdate?.(change.updated);
+  });
 
   return {
     view,
@@ -319,6 +292,9 @@ export const useCalendarLogic = ({
     handleCreateEvent,
     handleModalSave,
     handleModalDelete,
+    handleEventDelete,
+    handleEventDuplicate,
+    handleEventResize,
     handleDragEnd
   };
 };

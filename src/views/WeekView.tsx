@@ -1,13 +1,15 @@
 import React from 'react';
-import { format, isSameDay, differenceInMinutes, isToday, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
+import { addDays, format, differenceInMinutes, isSameDay, Locale } from 'date-fns';
 import { CalendarEvent } from '../types';
 import { cn, isEventDragDisabled } from '../utils';
-import { uses24HourClock } from '../lib/date';
+import { DaySegment, segmentsByDisplayDay } from '../core/events';
+import { timeFormats, timeZoneAbbreviation } from '../core/format';
+import { layoutDayEvents } from '../core/layout';
+import { displayToday, minutesSinceDisplayMidnight, resolveTimeZone, toDisplay } from '../core/timezone';
+import { getWeekDays, resolveWeekStartsOn } from '../core/week';
 import { DraggableEvent } from '../components/dnd/DraggableEvent';
 import { DroppableCell } from '../components/dnd/DroppableCell';
 import { ResizableEvent } from '../components/dnd/ResizableEvent';
-import { Locale } from 'date-fns';
 
 interface WeekViewProps {
   currentDate: Date;
@@ -20,7 +22,18 @@ interface WeekViewProps {
   readonly?: boolean;
 }
 
-export const WeekView: React.FC<WeekViewProps> = ({
+const HOUR_HEIGHT = 60; // px
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const QUARTERS = [0, 15, 30, 45];
+const NO_SEGMENTS: DaySegment[] = [];
+
+const slotDate = (day: Date, hour: number, minute: number) => {
+  const date = new Date(day);
+  date.setHours(hour, minute, 0, 0);
+  return date;
+};
+
+const WeekViewImpl: React.FC<WeekViewProps> = ({
   currentDate,
   events,
   onEventClick,
@@ -30,87 +43,42 @@ export const WeekView: React.FC<WeekViewProps> = ({
   locale,
   readonly,
 }) => {
-  // Generate days for the week following the locale's convention (falls
-  // back to the historical Monday start without a locale).
-  const weekStartsOn = locale?.options?.weekStartsOn ?? 1;
-  const start = startOfWeek(currentDate, { weekStartsOn });
-  const end = endOfWeek(currentDate, { weekStartsOn });
-  const weekDays = eachDayOfInterval({ start, end });
-  const hours = Array.from({ length: 24 }, (_, i) => i);
+  // Week start follows the locale (historical Monday fallback without a locale).
+  const weekDays = React.useMemo(
+    () => getWeekDays(currentDate, resolveWeekStartsOn(locale, 1)),
+    [currentDate, locale],
+  );
 
-  const hourHeight = 60; // px
+  // Only the days on screen get segments, so endless events stay cheap.
+  const visibleRange = React.useMemo(
+    () => ({ start: weekDays[0], end: addDays(weekDays[weekDays.length - 1], 1) }),
+    [weekDays],
+  );
+
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
-
-  const [now, setNow] = React.useState(new Date());
+  const [now, setNow] = React.useState(() => new Date());
 
   React.useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 60000);
     return () => clearInterval(interval);
   }, []);
 
-  // Scroll a few hours above the current time once, on mount.
+  // Scroll a few hours above the current time (in the display zone) on mount.
   React.useEffect(() => {
     if (scrollContainerRef.current) {
       const offsetHour = 4;
-      scrollContainerRef.current.scrollTop = (new Date().getHours() - offsetHour) * hourHeight;
+      scrollContainerRef.current.scrollTop = (toDisplay(new Date(), timezone).getHours() - offsetHour) * HOUR_HEIGHT;
     }
-  }, []);
+  }, [timezone]);
 
-  // Timezone adjustment helper
-  const getZonedDate = (date: Date) => {
-    return timezone ? toZonedTime(date, timezone) : date;
-  };
-
-  const zonedNow = getZonedDate(new Date());
-
-  const getTimezoneDisplay = (tz: string | undefined) => {
-      // Use zonedNow if tz matches, otherwise calculate for specific tz if needed
-      // But here tz IS the current view timezone.
-      const date = now;
-      let displayTime = '';
-      let acronym = '';
-
-      if (!tz) {
-          // Local time
-          displayTime = format(date, 'HH:mm');
-          try {
-             acronym = new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' })
-              .formatToParts(date)
-              .find(part => part.type === 'timeZoneName')?.value || '';
-          } catch { acronym = 'LOC'; }
-      } else {
-          try {
-              const zDate = toZonedTime(date, tz);
-              displayTime = format(zDate, 'HH:mm');
-              
-              // Get acronym
-              // Note: Intl.DateTimeFormat needs the IANA timezone string
-              acronym = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'short' })
-                  .formatToParts(date)
-                  .find(part => part.type === 'timeZoneName')?.value || '';
-          } catch {
-              // Fallback
-              displayTime = format(date, 'HH:mm');
-              acronym = tz;
-          }
-      }
-      
-      // Simplify generic long names if necessary, though 'short' usually works well.
-      // E.g. "GMT-5" is often returned for offsets. The user asked for "EST", "PST".
-      // Chrome/Node usually return "EST" for America/New_York.
-      
-      return (
-        <div className="flex flex-col items-center justify-center leading-tight">
-            <span>{displayTime}</span>
-            <span className="text-[10px] opacity-75">({acronym})</span>
-        </div>
-      );
-  };
-
-  const is24h = uses24HourClock(locale);
-  const timeFormat = is24h ? 'H:mm' : 'h a';
-  const eventTimeFormat = is24h ? 'H:mm' : 'h:mm a';
-  const nowFormat = is24h ? 'H:mm' : 'h:mm';
+  const segmentsByDay = segmentsByDisplayDay(events, timezone, visibleRange);
+  const today = displayToday(timezone, now);
+  const zonedNow = toDisplay(now, timezone);
+  const nowTop = (minutesSinceDisplayMidnight(now, timezone) / 60) * HOUR_HEIGHT;
+  const showsToday = weekDays.some((day) => isSameDay(day, today));
+  const zone = resolveTimeZone(timezone);
+  const zoneLabel = timeZoneAbbreviation(now, zone) || zone || 'LOC';
+  const formats = timeFormats(locale);
 
   return (
     <div className="flex flex-col h-full bg-background border-[0.5px] border-border/50 rounded-2xl overflow-hidden min-w-[800px] md:min-w-0 shadow-sm">
@@ -125,7 +93,10 @@ export const WeekView: React.FC<WeekViewProps> = ({
         {/* Header - sticky inside scroll container */}
         <div className="flex border-b-[0.5px] border-border/50 bg-gradient-to-r from-muted/20 via-background to-muted/20 z-20 sticky top-0 backdrop-blur-sm">
           <div className="flex-none p-3 text-center text-xs font-semibold text-muted-foreground w-16 flex items-center justify-center border-r-[0.5px] border-border/30 bg-muted/10">
-            {getTimezoneDisplay(timezone)}
+            <div className="flex flex-col items-center justify-center leading-tight">
+              <span>{format(zonedNow, 'HH:mm')}</span>
+              <span className="text-[10px] opacity-75">({zoneLabel})</span>
+            </div>
           </div>
           <div className="flex-1 grid grid-cols-7">
               {weekDays.map((day, index) => (
@@ -133,7 +104,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
                   <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">{format(day, 'EEE', { locale })}</div>
                   <div className={cn(
                     "w-9 h-9 flex items-center justify-center rounded-xl mx-auto text-sm font-semibold transition-all duration-200",
-                    isToday(day)
+                    isSameDay(day, today)
                       ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-110"
                       : "text-foreground hover:bg-accent/80"
                   )}>
@@ -147,113 +118,93 @@ export const WeekView: React.FC<WeekViewProps> = ({
         {/* Grid Content */}
         <div
           className="flex min-w-full relative"
-          style={{ height: hours.length * hourHeight }}
+          style={{ height: HOURS.length * HOUR_HEIGHT }}
         >
           {/* Time Labels Column */}
           <div className="flex-none w-16 border-r-[0.5px] border-border/30 relative bg-muted/5">
-            {hours.map((hour) => (
+            {HOURS.map((hour) => (
                  <div
                    key={hour}
                    className="relative w-full text-[11px] text-muted-foreground/80 text-right pr-3 font-medium tabular-nums box-border"
-                   style={{ height: hourHeight }}
+                   style={{ height: HOUR_HEIGHT }}
                  >
                    <span className="block -translate-y-1/2">
-                    {hour !== 0 && format(new Date().setHours(hour, 0, 0, 0), timeFormat, { locale })}
+                    {hour !== 0 && format(slotDate(currentDate, hour, 0), formats.hour, { locale })}
                    </span>
                  </div>
             ))}
+
+            {/* Current Time Label (Left Axis), positioned in the grid so no header offset is needed */}
+            {showsToday && (
+              <div
+                className="absolute left-0 w-full pointer-events-none z-30 flex justify-end pr-2"
+                style={{ top: `${nowTop}px` }}
+              >
+                <span className="text-[10px] font-bold text-primary-foreground bg-primary px-1.5 py-0.5 rounded-md shadow-md -translate-y-1/2 backdrop-blur-none">
+                  {format(zonedNow, formats.compact, { locale })}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Days Columns */}
           <div className="flex-1 grid grid-cols-7 relative">
             {weekDays.map((day, dayIndex) => {
-                // Filter events for this day
-                const dayEvents = events.filter(e => {
-                    const zonedStart = getZonedDate(e.start);
-                    return isSameDay(zonedStart, day);
-                });
+                const dayKey = format(day, 'yyyy-MM-dd');
+                const positioned = layoutDayEvents(segmentsByDay.get(dayKey) ?? NO_SEGMENTS);
 
                 return (
-                <div key={day.toISOString()} className={cn("relative h-full", dayIndex > 0 && "border-l-[0.5px] border-border/30")}>
+                <div key={dayKey} className={cn("relative h-full", dayIndex > 0 && "border-l-[0.5px] border-border/30")}>
                     {/* Grid Rows (Droppable Cells) */}
-                    {hours.map((hour) => {
-                        return (
-                            <div
-                                key={hour}
-                                className="w-full border-b-[0.5px] border-dashed border-border/20 box-border relative hover:bg-accent/5 transition-colors"
-                                style={{ height: hourHeight }}
-                            >
-                                {/* 4 x 15-minute intervals */}
-                                {[0, 15, 30, 45].map((minute) => {
-                                    const cellDate = new Date(day);
-                                    cellDate.setHours(hour, minute, 0, 0);
-                                    const cellId = cellDate.toISOString();
-                                    
-                                    return (
-                                        <DroppableCell 
-                                            key={minute}
-                                            id={cellId}
-                                            date={cellDate}
-                                            className="w-full absolute left-0 right-0 z-0 transition-colors"
-                                            style={{ 
-                                                height: '25%', 
-                                                top: `${(minute / 60) * 100}%` 
-                                            }}
-                                        >
-                                            <div 
-                                                className="w-full h-full bg-transparent cursor-pointer"
-                                                onClick={() => onTimeSlotClick?.(cellDate)}
-                                            />
-                                        </DroppableCell>
-                                    );
-                                })}
-                            </div>
-                        );
-                    })}
-                    
+                    {HOURS.map((hour) => (
+                        <div
+                            key={hour}
+                            className="w-full border-b-[0.5px] border-dashed border-border/20 box-border relative hover:bg-accent/5 transition-colors"
+                            style={{ height: HOUR_HEIGHT }}
+                        >
+                            {/* 4 x 15-minute intervals */}
+                            {QUARTERS.map((minute) => {
+                                const cellDate = slotDate(day, hour, minute);
+                                return (
+                                    <DroppableCell
+                                        key={minute}
+                                        id={cellDate.toISOString()}
+                                        date={cellDate}
+                                        className="w-full absolute left-0 right-0 z-0 transition-colors"
+                                        style={{
+                                            height: '25%',
+                                            top: `${(minute / 60) * 100}%`
+                                        }}
+                                        onSlotClick={onTimeSlotClick}
+                                    />
+                                );
+                            })}
+                        </div>
+                    ))}
+
                     {/* Events Overlay */}
-                    {dayEvents.map((event) => {
-                        // Calculate layout for overlapping events
-                        // Find all events that overlap with this one
-                        const overlappingEvents = dayEvents.filter(e => {
-                            if (e.id === event.id) return false;
-                            const s1 = getZonedDate(event.start).getTime();
-                            const e1 = getZonedDate(event.end).getTime();
-                            const s2 = getZonedDate(e.start).getTime();
-                            const e2 = getZonedDate(e.end).getTime();
-                            return s1 < e2 && e1 > s2;
-                        });
+                    {positioned.map(({ event, start, end, column, columns }) => {
+                        const widthPercent = 100 / columns;
+                        const leftPercent = column * widthPercent;
 
-                        // Calculate horizontal position (simple version)
-                        // A more robust algorithm would use graph coloring or column packing
-                        // For now, we can check how many simultaneous events exist and assign width/left
-                        
-                        // Sort overlapping group by start time
-                        const group = [event, ...overlappingEvents].sort((a, b) => 
-                            getZonedDate(a.start).getTime() - getZonedDate(b.start).getTime() ||
-                            (a.id > b.id ? 1 : -1) // stable sort
-                        );
-                        
-                        const index = group.findIndex(e => e.id === event.id);
-                        const count = group.length;
-                        
-                        const widthPercent = 100 / count;
-                        const leftPercent = index * widthPercent;
+                        const zonedEventStart = toDisplay(event.start, timezone);
+                        const zonedEventEnd = toDisplay(event.end, timezone);
 
-                        const zonedEventStart = getZonedDate(event.start);
-                        const zonedEventEnd = getZonedDate(event.end);
-                        
-                        const startMinutes = zonedEventStart.getHours() * 60 + zonedEventStart.getMinutes();
-                        const durationMinutes = differenceInMinutes(zonedEventEnd, zonedEventStart);
-                        
-                        const top = (startMinutes / 60) * hourHeight;
-                        const height = (durationMinutes / 60) * hourHeight;
-                        
+                        const startMinutes = start.getHours() * 60 + start.getMinutes();
+                        const durationMinutes = differenceInMinutes(end, start);
+
+                        const top = (startMinutes / 60) * HOUR_HEIGHT;
+                        const height = (durationMinutes / 60) * HOUR_HEIGHT;
+
                         const isShortEvent = durationMinutes < 60;
-                    
+                        // Only the segment holding the event's real end can be resized.
+                        const isLastSegment = end.getTime() === zonedEventEnd.getTime();
+
                         return (
                             <DraggableEvent
-                                key={`${event.id}-${day.toISOString()}`}
+                                key={`${event.id}-${dayKey}`}
+                                dragId={`${event.id}@${dayKey}`}
+                                grabOffsetMs={start.getTime() - zonedEventStart.getTime()}
                                 event={event}
                                 className={`absolute z-10 transition-all ${readonly ? "cursor-default" : ""}`}
                                 style={{
@@ -262,13 +213,13 @@ export const WeekView: React.FC<WeekViewProps> = ({
                                     left: `${leftPercent}%`,
                                     width: `${widthPercent}%`,
                                     // Add minimal spacing between overlapping events
-                                    paddingRight: count > 1 ? '2px' : '0'
+                                    paddingRight: columns > 1 ? '2px' : '0'
                                 }}
                             >
                                 <ResizableEvent
-                                    readonly={readonly}
+                                    readonly={readonly || !isLastSegment}
                                     event={event}
-                                    hourHeight={hourHeight}
+                                    hourHeight={HOUR_HEIGHT}
                                     onResize={onEventResize}
                                     className="h-full"
                                     style={{ height: '100%' }}
@@ -281,7 +232,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
                                             !event.color && "border-primary/20 bg-primary/10",
                                             isShortEvent ? "px-1 flex items-center justify-center" : "p-2",
                                             // Add active border for overlapped events to distinguish them
-                                            count > 1 && "border-l-4 border-l-primary/50"
+                                            columns > 1 && "border-l-4 border-l-primary/50"
                                         )}
                                         style={{
                                             height: '100%',
@@ -294,7 +245,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
                                             e.stopPropagation();
                                             onEventClick?.(event);
                                         }}
-                                        title={count > 1 ? `${event.title} (${index + 1}/${count})` : undefined}
+                                        title={columns > 1 ? `${event.title} (${column + 1}/${columns})` : undefined}
                                     >
                                         <div className="flex flex-col h-full overflow-hidden w-full">
                                             <div className={cn("font-semibold truncate text-foreground/90 leading-tight",
@@ -305,7 +256,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
                                             {!isShortEvent && (
                                                 <>
                                                     <div className="text-[10px] text-muted-foreground truncate mt-0.5 font-medium leading-tight">
-                                                        {format(zonedEventStart, eventTimeFormat, { locale })} - {format(zonedEventEnd, eventTimeFormat, { locale })}
+                                                        {format(zonedEventStart, formats.time, { locale })} - {format(zonedEventEnd, formats.time, { locale })}
                                                     </div>
                                                     {event.description && height > 50 && (
                                                         <div className="text-[10px] text-muted-foreground/80 truncate mt-1 leading-tight opacity-80">
@@ -315,9 +266,9 @@ export const WeekView: React.FC<WeekViewProps> = ({
                                                 </>
                                             )}
                                             {/* Overlap Badge */}
-                                            {count > 1 && !isShortEvent && (
+                                            {columns > 1 && !isShortEvent && (
                                                 <div className="absolute top-1 right-1 bg-background/80 backdrop-blur-sm rounded-full w-4 h-4 flex items-center justify-center text-[9px] font-bold text-muted-foreground border border-border shadow-sm">
-                                                    {count}
+                                                    {columns}
                                                 </div>
                                             )}
                                         </div>
@@ -326,14 +277,12 @@ export const WeekView: React.FC<WeekViewProps> = ({
                             </DraggableEvent>
                         );
                     })}
-                    
+
                     {/* Current Time Indicator */}
-                    {isToday(day) && (
+                    {isSameDay(day, today) && (
                     <div
                         className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
-                        style={{
-                          top: `${(zonedNow.getHours() * 60 + zonedNow.getMinutes()) / 60 * hourHeight}px`
-                        }}
+                        style={{ top: `${nowTop}px` }}
                     >
                         <div className="h-[2px] w-full bg-gradient-to-r from-primary via-primary to-primary/50" />
                         <div className="absolute -left-1.5 w-3 h-3 bg-primary rounded-full shadow-lg shadow-primary/40 ring-2 ring-background animate-pulse" />
@@ -344,19 +293,10 @@ export const WeekView: React.FC<WeekViewProps> = ({
             })}
           </div>
         </div>
-        
-        {/* Current Time Label (Left Axis) */}
-        <div 
-            className="absolute left-0 w-16 pointer-events-none z-30 flex justify-end pr-2"
-            style={{
-                top: `${(zonedNow.getHours() * 60 + zonedNow.getMinutes()) / 60 * hourHeight + 80}px`,
-            }}
-        >
-            <span className="text-[10px] font-bold text-primary-foreground bg-primary px-1.5 py-0.5 rounded-md shadow-md -translate-y-1/2 backdrop-blur-none">
-                {format(zonedNow, nowFormat, { locale })}
-            </span>
-        </div>
       </div>
     </div>
   );
 };
+
+// C6: skip re-rendering the whole grid when the scheduler re-renders with the same props.
+export const WeekView = React.memo(WeekViewImpl);

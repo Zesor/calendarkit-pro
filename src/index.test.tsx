@@ -38,7 +38,7 @@ const calendarPropKeys: Array<keyof CalendarProps> = [
   'onEventDelete', 'theme', 'locale', 'timezone', 'onTimezoneChange', 'className',
   'readOnly', 'calendars', 'resources', 'eventTypes', 'onCalendarToggle', 'isLoading',
   'isDarkMode', 'onThemeToggle', 'hideViewSwitcher', 'language', 'onLanguageChange',
-  'renderEventForm',
+  'renderEventForm', 'onOccurrenceDelete',
 ]
 
 describe('public API', () => {
@@ -46,8 +46,8 @@ describe('public API', () => {
     expect(Object.keys(publicApi).sort()).toEqual(['Scheduler', 'cn'])
   })
 
-  test('CalendarProps keeps its 29 documented props', () => {
-    expect(new Set(calendarPropKeys).size).toBe(29)
+  test('CalendarProps keeps its 30 documented props', () => {
+    expect(new Set(calendarPropKeys).size).toBe(30)
   })
 })
 

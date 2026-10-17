@@ -44,7 +44,13 @@ export interface CalendarEvent {
     count?: number;
     until?: Date;
     byweekday?: number[]; // 0=MO, 6=SU
+    /** Occurrence start dates excluded from the series. */
+    exdates?: Date[];
   };
+  /** Set on expanded occurrences: id of the recurring (master) event. */
+  originalEventId?: string;
+  /** Set on expanded occurrences: start of this occurrence. */
+  occurrenceStart?: Date;
   [key: string]: any;
 }
 
@@ -97,6 +103,12 @@ export interface CalendarProps {
   onEventCreate?: (event: Partial<CalendarEvent>) => void;
   onEventUpdate?: (event: CalendarEvent) => void;
   onEventDelete?: (eventId: string) => void;
+  /**
+   * Called when a single occurrence of a recurring event is deleted. `updatedSeries` is the master
+   * event with that occurrence added to `recurrence.exdates`: persist it to delete only this
+   * occurrence. Without this prop, deleting an occurrence deletes the whole series (`onEventDelete`).
+   */
+  onOccurrenceDelete?: (occurrence: CalendarEvent, updatedSeries: CalendarEvent) => void;
   theme?: CalendarTheme;
   locale?: Locale; // from date-fns
   timezone?: string; // e.g. "America/New_York"

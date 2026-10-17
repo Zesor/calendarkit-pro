@@ -6,14 +6,18 @@ import { cn, isEventDragDisabled } from '../../utils';
 
 interface DraggableEventProps extends React.HTMLAttributes<HTMLDivElement> {
   event: CalendarEvent;
+  /** Unique drag id when one event renders several blocks (e.g. one per day). Defaults to `event.id`. */
+  dragId?: string;
+  /** Wall-clock ms from the event start to this block's start (blocks after midnight). */
+  grabOffsetMs?: number;
   children: React.ReactNode;
 }
 
-export const DraggableEvent: React.FC<DraggableEventProps> = ({ event, children, className, style: propStyle, ...props }) => {
+const DraggableEventImpl: React.FC<DraggableEventProps> = ({ event, dragId, grabOffsetMs, children, className, style: propStyle, ...props }) => {
   const dragDisabled = isEventDragDisabled(event);
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: event.id,
-    data: { event },
+    id: dragId ?? event.id,
+    data: { event, grabOffsetMs },
     disabled: dragDisabled,
   });
 
@@ -21,12 +25,8 @@ export const DraggableEvent: React.FC<DraggableEventProps> = ({ event, children,
     ...propStyle,
     transform: CSS.Translate.toString(transform),
     zIndex: isDragging ? 100 : propStyle?.zIndex,
-    // When dragging, we want the ORIGINAL element to be almost invisible (or fully invisible)
-    // so that the DragOverlay (the "ghost") is the only thing the user focuses on.
-    // If we set opacity: 0, it disappears. If 0.1, it's a faint placeholder.
-    // The user asked for "Make the entire dragged item transparent". 
-    // Usually this means the original item should be faded out while the drag overlay is moving.
-    opacity: isDragging ? 0 : propStyle?.opacity, // Hiding original element completely
+    // Hide the original while dragging: the DragOverlay ghost is what the user follows.
+    opacity: isDragging ? 0 : propStyle?.opacity,
   };
 
   return (
@@ -42,3 +42,6 @@ export const DraggableEvent: React.FC<DraggableEventProps> = ({ event, children,
     </div>
   );
 };
+
+// C6: avoid re-rendering every event block when the scheduler re-renders (e.g. during a drag).
+export const DraggableEvent = React.memo(DraggableEventImpl);

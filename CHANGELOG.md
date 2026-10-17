@@ -1,5 +1,21 @@
 # Pro-Scheduler Changelog
 
+## 1.3.0
+
+### Added
+- `recurrence.exdates` to exclude occurrences, and `onOccurrenceDelete(occurrence, updatedSeries)` to delete a single occurrence of a recurring event.
+
+### Fixed
+- Recurring events: `byweekday` is honoured, occurrences keep their wall-clock time across daylight-saving changes, and moving, resizing, editing or duplicating one occurrence no longer corrupts the series.
+- `onEventDrop` is now called when an event is dropped (alongside `onEventUpdate`).
+- Week, day, agenda and resource views use the `timezone` prop everywhere ("today", the current-time line, initial scroll, grouping); overlapping events are laid out in columns, and events crossing midnight are split per day.
+- Clicking a slot in the resource view pre-assigns that resource to the new event.
+
+### Changed
+- Events with an invalid date or an end before their start are skipped (with a development warning) instead of rendering incorrectly; duplicate ids are still rendered but warned about.
+- Computations are cached per event object: treat events as immutable (pass a new object to change one).
+- Faster rendering: cached recurrence expansion, day buckets, layouts and `Intl` formatters; memoized grid cells and event blocks.
+
 ## 1.2.1
 
 ### Fixed
