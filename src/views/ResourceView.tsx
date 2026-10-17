@@ -1,7 +1,6 @@
 import React, { useRef } from 'react';
-import { format, addHours, startOfDay, differenceInMinutes, isSameDay } from 'date-fns';
+import { format, startOfDay, differenceInMinutes, isSameDay } from 'date-fns';
 import { CalendarEvent, Resource } from '../types';
-import { cn } from '../utils';
 import { uses24HourClock } from '../lib/date';
 import { Locale } from 'date-fns';
 import { DraggableEvent } from '../components/dnd/DraggableEvent';

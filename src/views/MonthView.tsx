@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback } from 'react';
-import { format, isSameMonth, isSameDay, isToday, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
+import { format, isSameMonth, isToday, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { getMonthGrid } from '../lib/date';
 import { CalendarEvent } from '../types';

@@ -1,4 +1,4 @@
-import React, { useId, useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import React, { useId, useState, useMemo } from 'react';
 import { DndContext, useSensor, useSensors, PointerSensor, Modifier, DragOverlay } from '@dnd-kit/core';
 import { createSnapModifier, restrictToWindowEdges } from '@dnd-kit/modifiers';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -74,7 +74,6 @@ export const Scheduler: React.FC<CalendarProps> = ({
   const {
     contextMenuEvent,
     contextMenuPosition,
-    openContextMenu,
     closeContextMenu,
   } = useEventContextMenu();
 
@@ -189,13 +188,6 @@ export const Scheduler: React.FC<CalendarProps> = ({
 
       if (view !== 'week' && view !== 'day') return undefined;
       const duration = differenceInMinutes(activeDragEvent.end, activeDragEvent.start);
-      // 60px per hour
-      const height = (duration / 60) * 60; // 60px height base
-      // If DayView uses 80px, we should account for that. 
-      // Current implementation: WeekView = 60px, DayView = 80px.
-      // But DayView uses 80px in DayView.tsx.
-      // Let's assume 60px for now as default or pass a prop.
-      // Or check view state.
       const hourHeight = view === 'day' ? 80 : 60;
       return (duration / 60) * hourHeight;
   };
@@ -374,7 +366,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                     events={filteredEvents}
                                     resources={resources}
                                     onEventClick={handleEventClickInternal}
-                                    onTimeSlotClick={(date, resourceId) => {
+                                    onTimeSlotClick={(date) => {
                                         // Handle resource time slot click
                                         // Ideally useCalendarLogic should support resourceId in handleTimeSlotClick
                                         // For now, we can manually trigger the modal

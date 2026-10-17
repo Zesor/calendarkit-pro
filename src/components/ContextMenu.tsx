@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { CalendarEvent } from '../types';
 import { cn } from '../utils';
-import { Edit3, Trash2, Copy, Calendar, Clock, X } from 'lucide-react';
+import { Edit3, Trash2, Copy } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 interface ContextMenuAction {

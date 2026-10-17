@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
-import { Plus, ChevronDown, Globe, Download, Upload } from 'lucide-react';
+import { Plus, ChevronDown, Globe } from 'lucide-react';
 import { MiniCalendar } from './MiniCalendar';
 import { cn } from '../utils';
 import { toZonedTime } from 'date-fns-tz';
@@ -72,7 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         return new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'short' })
             .formatToParts(now)
             .find(part => part.type === 'timeZoneName')?.value || '';
-      } catch (e) { return ''; }
+      } catch { return ''; }
   };
 
   const timezones = [
@@ -109,7 +109,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   acronym = new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' })
                       .formatToParts(now)
                       .find(part => part.type === 'timeZoneName')?.value || 'LOC';
-              } catch (e) {}
+              } catch { /* keep the static acronym */ }
           } else {
               const zDate = toZonedTime(now, tz.value);
               time = format(zDate, 'HH:mm');
@@ -119,7 +119,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   acronym = dynAcronym;
               }
           }
-      } catch (e) {
+      } catch {
           return <span>{tz.label}</span>;
       }
 
