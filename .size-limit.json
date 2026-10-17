@@ -1,4 +1,17 @@
 [
-  { "name": "ESM bundle", "path": "dist/index.mjs", "limit": "35 kB" },
-  { "name": "CJS bundle", "path": "dist/index.js", "limit": "35 kB" }
+  {
+    "name": "ESM bundle",
+    "path": "dist/index.mjs",
+    "limit": "35 kB"
+  },
+  {
+    "name": "CJS bundle",
+    "path": "dist/index.js",
+    "limit": "35 kB"
+  },
+  {
+    "name": "Core (calendarkit-pro/core, ESM)",
+    "path": "dist/core.mjs",
+    "limit": "12 kB"
+  }
 ]
