@@ -135,6 +135,8 @@ export interface CalendarProps {
     onClose: () => void;
     event?: CalendarEvent | null;
     initialDate?: Date;
+    /** True when the form is opened from the all-day row (preset to an all-day event). */
+    initialAllDay?: boolean;
     onSave: (event: Partial<CalendarEvent>) => void;
     onDelete?: (eventId: string) => void;
   }) => React.ReactNode;

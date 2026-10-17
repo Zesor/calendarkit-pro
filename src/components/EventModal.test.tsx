@@ -14,6 +14,47 @@ const start = new Date(2026, 9, 15, 9, 0)
 const openCreate = (props: Partial<React.ComponentProps<typeof EventModal>> = {}) =>
   render(<EventModal isOpen onClose={() => {}} onSave={() => {}} initialDate={start} translations={en} {...props} />)
 
+describe('EventModal all-day', () => {
+  const save = () => fireEvent.submit(screen.getByLabelText('Add title').closest('form')!)
+
+  test('opened from the all-day row: preset to an all-day event with an exclusive end', () => {
+    const onSave = vi.fn()
+    render(<EventModal isOpen onClose={() => {}} onSave={onSave} initialDate={new Date(2026, 9, 14, 0, 0)} initialAllDay translations={en} />)
+    expect(screen.getByRole('switch', { name: 'All Day' }).getAttribute('aria-checked')).toBe('true')
+    expect((screen.getByLabelText('End') as HTMLInputElement).type).toBe('date')
+    expect((screen.getByLabelText('End') as HTMLInputElement).value).toBe('2026-10-14')
+    fireEvent.change(screen.getByLabelText('Add title'), { target: { value: 'Off' } })
+    save()
+    expect(onSave.mock.calls[0][0]).toMatchObject({ allDay: true, start: new Date(2026, 9, 14), end: new Date(2026, 9, 15) })
+  })
+
+  test('the end field shows the last day included; saving converts it to an exclusive end', () => {
+    const onSave = vi.fn()
+    render(<EventModal isOpen onClose={() => {}} onSave={onSave} initialDate={new Date(2026, 9, 14)} initialAllDay translations={en} />)
+    fireEvent.change(screen.getByLabelText('End'), { target: { value: '2026-10-16' } })
+    expect(screen.getByText('3 days')).toBeTruthy()
+    fireEvent.change(screen.getByLabelText('Add title'), { target: { value: 'Conference' } })
+    save()
+    expect(onSave.mock.calls[0][0]).toMatchObject({ start: new Date(2026, 9, 14), end: new Date(2026, 9, 17) })
+  })
+
+  test('toggling all-day on and off', () => {
+    const onSave = vi.fn()
+    openCreate({ onSave }) // 15 Oct 09:00 → 10:00
+    fireEvent.click(screen.getByRole('switch', { name: 'All Day' }))
+    expect((screen.getByLabelText('Start') as HTMLInputElement).value).toBe('2026-10-15')
+    fireEvent.click(screen.getByRole('switch', { name: 'All Day' }))
+    expect((screen.getByLabelText('Start') as HTMLInputElement).value).toBe('2026-10-15T09:00')
+  })
+
+  test('the read view shows the day range and an "All Day" badge', async () => {
+    const event: CalendarEvent = { id: 'c', title: 'Conference', start: new Date(2026, 9, 12), end: new Date(2026, 9, 15), allDay: true }
+    render(<EventModal isOpen event={event} onClose={() => {}} onSave={() => {}} translations={en} />)
+    expect(await screen.findByText('Mon 12 Oct – Wed 14 Oct')).toBeTruthy()
+    expect(screen.getByText('All Day')).toBeTruthy()
+  })
+})
+
 describe('EventModal', () => {
   test('I1/I3: the form is fully translated (French) and times follow the locale', () => {
     openCreate({ translations: fr, locale: frLocale })

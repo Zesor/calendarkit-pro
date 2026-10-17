@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useInsertionEffect, useRef } from 'react';
 import { Modal } from './ui/Modal';
 import { CalendarEvent, CalendarTranslations, EventType, EventAttachment, EventReminder } from '../types';
-import { format, differenceInMinutes, Locale } from 'date-fns';
+import { addDays, differenceInCalendarDays, format, differenceInMinutes, Locale, startOfDay } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Clock, MapPin, AlignLeft, Trash2, X, Edit2,
@@ -11,6 +11,7 @@ import {
   } from 'lucide-react';
 import { cn } from '../utils';
 import { interpolate, timeFormats } from '../core/format';
+import { dayEventSpan } from '../core/allDay';
 
 interface EventModalProps {
   isOpen: boolean;
@@ -23,6 +24,8 @@ interface EventModalProps {
   eventTypes?: EventType[];
   translations: CalendarTranslations;
   locale?: Locale;
+  /** Opens the create form preset to an all-day event (click in the all-day row). */
+  initialAllDay?: boolean;
 }
 
 // Predefined reminder offsets, in minutes before the event
@@ -85,7 +88,8 @@ export const EventModal: React.FC<EventModalProps> = ({
   onDelete,
   calendars,
   translations: t,
-  locale
+  locale,
+  initialAllDay
 }) => {
   const [mode, setMode] = useState<'view' | 'edit' | 'create'>('create');
   // Read through a ref so a new translations object (e.g. an inline prop) does not reset the form.
@@ -132,9 +136,10 @@ export const EventModal: React.FC<EventModalProps> = ({
         });
       } else {
         setMode('create');
-        const start = initialDate || new Date();
-        const end = new Date(start);
-        end.setHours(start.getHours() + 1);
+        const base = initialDate || new Date();
+        // All-day: exclusive end at midnight after the day. Otherwise one hour.
+        const start = initialAllDay ? startOfDay(base) : base;
+        const end = initialAllDay ? addDays(start, 1) : new Date(base.getTime() + 60 * 60 * 1000);
 
         setFormData({
           title: '',
@@ -142,7 +147,7 @@ export const EventModal: React.FC<EventModalProps> = ({
           location: '',
           start,
           end,
-          allDay: false,
+          allDay: !!initialAllDay,
           color: '#3b82f6',
           calendarId: calendars?.[0]?.id,
           attachments: [],
@@ -151,7 +156,7 @@ export const EventModal: React.FC<EventModalProps> = ({
         });
       }
     }
-  }, [isOpen, event, initialDate, calendars]);
+  }, [isOpen, event, initialDate, calendars, initialAllDay]);
 
   const guests = formData.guests || [];
 
@@ -212,7 +217,43 @@ export const EventModal: React.FC<EventModalProps> = ({
     return format(date, "yyyy-MM-dd'T'HH:mm");
   };
 
+  // All-day events edit days: the end field shows the last day *included* (the end is exclusive).
+  const allDaySpan = formData.allDay && formData.start && formData.end
+    ? dayEventSpan({ ...(formData as CalendarEvent), allDay: true })
+    : null;
+
+  const handleAllDayToggle = () => {
+    if (!formData.start || !formData.end) return;
+    if (!formData.allDay) {
+      const firstDay = startOfDay(formData.start);
+      const lastDay = startOfDay(new Date(Math.max(formData.end.getTime() - 1, formData.start.getTime())));
+      setFormData(prev => ({ ...prev, allDay: true, start: firstDay, end: addDays(lastDay, 1) }));
+    } else {
+      const start = new Date(formData.start);
+      start.setHours(9, 0, 0, 0);
+      setFormData(prev => ({ ...prev, allDay: false, start, end: new Date(start.getTime() + 60 * 60 * 1000) }));
+    }
+  };
+
+  const handleAllDayDateChange = (field: 'start' | 'end', value: string) => {
+    const [y, m, d] = value.split('-').map(Number);
+    if (!y || !m || !d || !allDaySpan) return;
+    const day = new Date(y, m - 1, d);
+    if (field === 'start') {
+      // Keep the number of days when moving the start.
+      const days = differenceInCalendarDays(allDaySpan.lastDay, allDaySpan.firstDay);
+      setFormData(prev => ({ ...prev, start: day, end: addDays(day, days + 1) }));
+    } else {
+      const firstDay = day < allDaySpan.firstDay ? day : allDaySpan.firstDay;
+      setFormData(prev => ({ ...prev, start: firstDay, end: addDays(day, 1) }));
+    }
+  };
+
   const handleDateChange = (field: 'start' | 'end', value: string) => {
+    if (formData.allDay) {
+      handleAllDayDateChange(field, value);
+      return;
+    }
     const date = new Date(value);
     if (isNaN(date.getTime())) return;
 
@@ -255,6 +296,10 @@ export const EventModal: React.FC<EventModalProps> = ({
 
   const getDurationText = () => {
     if (!formData.start || !formData.end) return '';
+    if (allDaySpan) {
+      const days = differenceInCalendarDays(allDaySpan.lastDay, allDaySpan.firstDay) + 1;
+      return days === 1 ? t.durationDay : interpolate(t.durationDays, { n: days });
+    }
     const mins = differenceInMinutes(formData.end, formData.start);
     if (mins < 60) return interpolate(t.durationMinutes, { n: mins });
     const hours = Math.floor(mins / 60);
@@ -264,6 +309,8 @@ export const EventModal: React.FC<EventModalProps> = ({
   };
 
   const { time: timeFormat } = timeFormats(locale);
+  // Day span shown in the read view for all-day and multi-day events.
+  const viewSpan = event ? dayEventSpan({ ...event, start: new Date(event.start), end: new Date(event.end) }) : null;
 
   const renderAttachment = (att: EventAttachment) => {
     const content = (
@@ -348,15 +395,23 @@ export const EventModal: React.FC<EventModalProps> = ({
           <div className="flex items-center gap-2 px-3 py-1.5 bg-background/60 backdrop-blur-sm rounded-lg border border-border/30">
             <Calendar className="w-4 h-4 text-muted-foreground" />
             <span className="font-medium">
-              {event?.start && format(new Date(event.start), 'EEE, MMM d', { locale })}
+              {viewSpan && viewSpan.lastDay > viewSpan.firstDay
+                ? `${format(viewSpan.firstDay, 'EEE d MMM', { locale })} – ${format(viewSpan.lastDay, 'EEE d MMM', { locale })}`
+                : event?.start && format(new Date(event.start), 'EEE, MMM d', { locale })}
             </span>
           </div>
+          {event?.allDay ? (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-lg border border-primary/20">
+              <span className="font-medium text-primary">{t.allDay}</span>
+            </div>
+          ) : (
           <div className="flex items-center gap-2 px-3 py-1.5 bg-background/60 backdrop-blur-sm rounded-lg border border-border/30">
             <Clock className="w-4 h-4 text-muted-foreground" />
             <span className="font-medium">
               {event?.start && format(new Date(event.start), timeFormat, { locale })}{' – '}{event?.end && format(new Date(event.end), timeFormat, { locale })}
             </span>
           </div>
+          )}
         </div>
       </div>
 
@@ -555,6 +610,29 @@ export const EventModal: React.FC<EventModalProps> = ({
             />
           </div>
 
+          {/* All-day toggle (ported from PR #1) */}
+          <div className="flex items-center justify-between px-1">
+            <span id="calendarkit-all-day-label" className="text-sm font-medium text-foreground">{t.allDay}</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={!!formData.allDay}
+              aria-labelledby="calendarkit-all-day-label"
+              onClick={handleAllDayToggle}
+              className={cn(
+                "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors cursor-pointer",
+                formData.allDay ? "bg-primary" : "bg-muted"
+              )}
+            >
+              <span
+                className={cn(
+                  "pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow transition-transform",
+                  formData.allDay ? "translate-x-5" : "translate-x-0"
+                )}
+              />
+            </button>
+          </div>
+
           {/* Date & Time Row */}
           <div className="flex items-center gap-3 p-4 rounded-2xl bg-muted/20 border border-border/30">
             <div className="p-2 bg-primary/10 rounded-xl shrink-0">
@@ -565,9 +643,9 @@ export const EventModal: React.FC<EventModalProps> = ({
                 <label htmlFor="calendarkit-event-start" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">{t.start}</label>
                 <input
                   id="calendarkit-event-start"
-                  type="datetime-local"
+                  type={allDaySpan ? "date" : "datetime-local"}
                   className="w-full bg-background border border-border/50 rounded-xl px-3 py-2 text-sm font-medium text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                  value={formatDateForInput(formData.start)}
+                  value={allDaySpan ? format(allDaySpan.firstDay, 'yyyy-MM-dd') : formatDateForInput(formData.start)}
                   onChange={e => handleDateChange('start', e.target.value)}
                 />
               </div>
@@ -575,9 +653,9 @@ export const EventModal: React.FC<EventModalProps> = ({
                 <label htmlFor="calendarkit-event-end" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">{t.end}</label>
                 <input
                   id="calendarkit-event-end"
-                  type="datetime-local"
+                  type={allDaySpan ? "date" : "datetime-local"}
                   className="w-full bg-background border border-border/50 rounded-xl px-3 py-2 text-sm font-medium text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                  value={formatDateForInput(formData.end)}
+                  value={allDaySpan ? format(allDaySpan.lastDay, 'yyyy-MM-dd') : formatDateForInput(formData.end)}
                   onChange={e => handleDateChange('end', e.target.value)}
                 />
               </div>
