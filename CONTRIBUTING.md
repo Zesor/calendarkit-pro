@@ -6,8 +6,8 @@ Thank you for your interest in contributing to CalendarKit Pro! This document pr
 
 ### Prerequisites
 
-- Node.js 18 or higher
-- npm 9 or higher
+- Node.js 22.22 or higher (CI uses Node 24)
+- npm 10 or higher
 
 ### Setup
 
@@ -44,10 +44,22 @@ npm run build:lib
 
 This generates the distributable files in the `dist/` directory.
 
+### Checks
+
+```bash
+npm test            # unit and component tests (Vitest)
+npm run lint        # ESLint
+npm run typecheck   # TypeScript
+npm run knip        # unused files, exports and dependencies
+npm run ci          # everything CI runs, including package checks and size budget
+```
+
+Run `npm run ci` before opening a pull request.
+
 ### Code Style
 
-- We use TypeScript for type safety
-- Follow the existing code patterns
+- TypeScript, following the existing code patterns
+- Every bug fix comes with a test that fails without the fix
 - Use meaningful variable and function names
 - Add comments for complex logic
 

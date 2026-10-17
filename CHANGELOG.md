@@ -1,5 +1,19 @@
 # Pro-Scheduler Changelog
 
+## 1.2.1
+
+### Fixed
+- The published bundle now starts with the `"use client"` directive. It was stripped by the build in 1.1.0 and 1.2.0, so Next.js App Router users had to wrap the component in their own client file.
+
+### Changed
+- Sourcemaps are no longer published (unpacked size ~970 kB → ~330 kB). The bundle stays unminified and readable.
+- Removed unused dependencies `@dnd-kit/sortable` and `@tanstack/react-virtual`.
+- Removed the internal, never-exported `lib/ics.ts`: ICS import/export was never reachable from the package API or UI despite earlier docs. It will come back as a real feature in a future version.
+
+### Internal
+- Test suite (Vitest + Testing Library), ESLint 9, knip, publint, attw and size-limit, chained in `npm run ci`.
+- Lightweight CI on pull requests to `main`; releases are published from GitHub releases via npm Trusted Publishing with provenance.
+
 ## 1.2.0
 
 ### Features
