@@ -27,6 +27,9 @@
     "dev": "next dev",
     "build": "next build",
     "build:lib": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "start": "next start",
     "lint": "next lint",
     "prepublishOnly": "npm run build:lib"
@@ -76,14 +79,22 @@
     "tailwind-merge": "^2.6.0"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "@vitest/coverage-v8": "^5.0.5",
     "autoprefixer": "^10.4.20",
+    "jsdom": "^30.1.3",
     "next": "^15.0.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "tsup": "^8.3.5",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.5"
   }
 }
