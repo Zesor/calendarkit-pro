@@ -17,6 +17,14 @@ const isMidnight = (date: Date) =>
 const isUtcMidnight = (date: Date) =>
   date.getUTCHours() === 0 && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0 && date.getUTCMilliseconds() === 0
 
+/**
+ * Local midnight of the same calendar date for a date-only value parsed as UTC midnight
+ * (`new Date('2026-10-12')`); any other value is returned unchanged.
+ */
+export function toCalendarMidnight(date: Date): Date {
+  return !isMidnight(date) && isUtcMidnight(date) ? new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()) : date
+}
+
 // Calendar day of an all-day boundary. Date-only values parsed as UTC midnight
 // (`new Date('2026-10-12')`) keep their date in every zone.
 function calendarDay(date: Date): { day: Date; midnight: boolean } {

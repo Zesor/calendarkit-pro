@@ -195,7 +195,7 @@ export const useCalendarLogic = ({
         end: master.end,
       };
       onEventUpdate?.(
-        shiftSeries(edited, selectedEvent, eventData.start ?? selectedEvent.start, eventData.end ?? selectedEvent.end, timezone),
+        shiftSeries(edited, selectedEvent, eventData.start ?? selectedEvent.start, eventData.end ?? selectedEvent.end, edited.allDay ? undefined : timezone),
       );
     } else if (selectedEvent) {
       onEventUpdate?.({ ...eventData, id: selectedEvent.id } as CalendarEvent);

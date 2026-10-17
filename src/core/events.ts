@@ -1,5 +1,6 @@
 import { addDays, format, startOfDay } from 'date-fns'
 import type { CalendarEvent } from '../types'
+import { toCalendarMidnight } from './allDay'
 import { toDisplay } from './timezone'
 import { warnOnce } from './warn'
 
@@ -17,15 +18,18 @@ function normalizeEvent(event: CalendarEvent): CalendarEvent | null {
   const cached = normalizedEvent.get(event)
   if (cached !== undefined) return cached
 
-  const start = toDate(event.start as DateInput)
-  const end = toDate(event.end as DateInput)
+  // All-day dates given as date-only values (UTC midnight) become local midnights once, so moving,
+  // repeating and displaying them never drifts across DST or timezones.
+  const day = (value: Date | undefined) => (event.allDay && value ? toCalendarMidnight(value) : value)
+  const start = day(toDate(event.start as DateInput))
+  const end = day(toDate(event.end as DateInput))
   let result: CalendarEvent | null = null
   if (!isValidDate(start) || !isValidDate(end)) {
     warnOnce(`invalid-date:${event.id}`, `Event "${event.id}" has an invalid start or end date and was skipped.`)
   } else if (end.getTime() < start.getTime()) {
     warnOnce(`end-before-start:${event.id}`, `Event "${event.id}" ends before it starts and was skipped.`)
   } else {
-    const needsCopy = start !== event.start || end !== event.end || needsRecurrenceCopy(event)
+    const needsCopy = start !== event.start || end !== event.end || needsRecurrenceCopy(event) || (!!event.allDay && dateOnlyRecurrence(event))
     result = needsCopy
       ? {
           ...event,
@@ -33,14 +37,20 @@ function normalizeEvent(event: CalendarEvent): CalendarEvent | null {
           end,
           recurrence: event.recurrence && {
             ...event.recurrence,
-            until: toDate(event.recurrence.until as DateInput | undefined),
-            exdates: event.recurrence.exdates?.map((d) => toDate(d as DateInput) as Date),
+            until: day(toDate(event.recurrence.until as DateInput | undefined)),
+            exdates: event.recurrence.exdates?.map((d) => day(toDate(d as DateInput)) as Date),
           },
         }
       : event
   }
   normalizedEvent.set(event, result)
   return result
+}
+
+function dateOnlyRecurrence(event: CalendarEvent): boolean {
+  const r = event.recurrence
+  const changes = (d: unknown) => d instanceof Date && toCalendarMidnight(d) !== d
+  return !!r && (changes(r.until) || !!r.exdates?.some(changes))
 }
 
 function needsRecurrenceCopy(event: CalendarEvent): boolean {

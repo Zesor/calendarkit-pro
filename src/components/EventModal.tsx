@@ -11,7 +11,7 @@ import {
   } from 'lucide-react';
 import { cn } from '../utils';
 import { interpolate, timeFormats } from '../core/format';
-import { dayEventSpan } from '../core/allDay';
+import { dayEventSpan, isDayEvent } from '../core/allDay';
 
 interface EventModalProps {
   isOpen: boolean;
@@ -310,7 +310,8 @@ export const EventModal: React.FC<EventModalProps> = ({
 
   const { time: timeFormat } = timeFormats(locale);
   // Day span shown in the read view for all-day and multi-day events.
-  const viewSpan = event ? dayEventSpan({ ...event, start: new Date(event.start), end: new Date(event.end) }) : null;
+  const viewEvent = event && { ...event, start: new Date(event.start), end: new Date(event.end) };
+  const viewSpan = viewEvent && isDayEvent(viewEvent) ? dayEventSpan(viewEvent) : null;
 
   const renderAttachment = (att: EventAttachment) => {
     const content = (

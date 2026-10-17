@@ -49,6 +49,8 @@ const AllDayBarImpl: React.FC<AllDayBarProps> = ({
   });
 
   const [resizeCols, setResizeCols] = useState(0);
+  // The click that follows a stretch (pointer released over the bar) must not open the event.
+  const ignoreClick = useRef(false);
   const canResize = !readonly && !continuesAfter && !isEventResizeDisabled(event) && !!onDayEventResize;
   const shownSpan = Math.max(1, Math.min(span + resizeCols, columns - startCol));
 
@@ -77,6 +79,8 @@ const AllDayBarImpl: React.FC<AllDayBarProps> = ({
     };
     const onUp = () => {
       stop();
+      ignoreClick.current = true;
+      setTimeout(() => { ignoreClick.current = false; }, 0);
       if (delta !== 0) onDayEventResize?.(event, addDays(rowDays[startCol + span - 1], delta));
     };
     document.addEventListener('pointermove', onMove);
@@ -111,6 +115,10 @@ const AllDayBarImpl: React.FC<AllDayBarProps> = ({
       }}
       onClick={(e) => {
         e.stopPropagation();
+        if (ignoreClick.current) {
+          ignoreClick.current = false;
+          return;
+        }
         onEventClick?.(event);
       }}
       onContextMenu={onEventContextMenu ? (e) => onEventContextMenu(event, e) : undefined}

@@ -53,6 +53,13 @@ describe('EventModal all-day', () => {
     expect(await screen.findByText('Mon 12 Oct – Wed 14 Oct')).toBeTruthy()
     expect(screen.getByText('All Day')).toBeTruthy()
   })
+
+  test('an overnight timed event (under 24 h) keeps the historical single date', async () => {
+    const event: CalendarEvent = { id: 'n', title: 'Night shift', start: new Date(2026, 9, 14, 22), end: new Date(2026, 9, 15, 2) }
+    render(<EventModal isOpen event={event} onClose={() => {}} onSave={() => {}} translations={en} />)
+    expect(await screen.findByText('Wed, Oct 14')).toBeTruthy()
+    expect(screen.queryByText(/Wed 14 Oct –/)).toBeNull()
+  })
 })
 
 describe('EventModal', () => {

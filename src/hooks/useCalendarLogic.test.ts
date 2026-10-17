@@ -188,6 +188,20 @@ describe('all-day events', () => {
     expect(onEventUpdate.mock.calls[0][0]).toMatchObject({ id: 'bday', start: new Date(2026, 9, 2), end: new Date(2026, 9, 3) })
   })
 
+  test('all-day series stay on their dates when the display zone differs from the browser (DST)', () => {
+    const weekly: CalendarEvent = { id: 'wk', title: 'Sport', start: new Date(2026, 9, 12), end: new Date(2026, 9, 13), allDay: true, recurrence: { freq: 'WEEKLY' } }
+    const onEventUpdate = vi.fn()
+    const { result } = setup({ events: [weekly], timezone: 'Asia/Tokyo', date: new Date(2026, 9, 15), onEventUpdate })
+    const occurrences = result.current.expandedEvents.filter((e) => e.originalEventId === 'wk')
+    expect(occurrences.map((e) => e.start)).toContainEqual(new Date(2026, 9, 26)) // after Paris leaves summer time
+    expect(occurrences.every((e) => e.start.getHours() === 0)).toBe(true)
+    // Editing an occurrence in the modal across the DST change shifts the series by whole days
+    const oct19 = occurrences.find((e) => e.start.getTime() === new Date(2026, 9, 19).getTime())!
+    act(() => result.current.handleEventClickInternal(oct19))
+    act(() => result.current.handleModalSave({ ...oct19, start: new Date(2026, 9, 26), end: new Date(2026, 9, 27) }))
+    expect(onEventUpdate.mock.calls[0][0]).toMatchObject({ id: 'wk', start: new Date(2026, 9, 19), end: new Date(2026, 9, 20) })
+  })
+
   test('a timed event dropped in the all-day row only changes day', () => {
     const onEventUpdate = vi.fn()
     const { result } = setup({ onEventUpdate })

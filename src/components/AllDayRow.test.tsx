@@ -62,6 +62,21 @@ describe('AllDayRow', () => {
     expect(onDayEventResize).toHaveBeenCalledWith(expect.objectContaining({ id: 'Salon' }), new Date(2026, 9, 16))
   })
 
+  test('the click that ends a stretch does not open the event; a plain click does', () => {
+    const onEventClick = vi.fn()
+    renderRow([allDay('Salon', 14, 15)], { onDayEventResize: () => {}, onEventClick })
+    const handle = screen.getByTestId('all-day-resize')
+    const bar = handle.closest('[role="button"]') as HTMLElement
+    ;(handle.parentElement as HTMLElement).getBoundingClientRect = () => ({ width: 100, height: 18, left: 0, top: 0, right: 100, bottom: 18, x: 0, y: 0, toJSON: () => ({}) })
+    fireEvent.pointerDown(handle, { clientX: 100 })
+    fireEvent.pointerMove(document, { clientX: 300 })
+    fireEvent.pointerUp(document)
+    fireEvent.click(bar)
+    expect(onEventClick).not.toHaveBeenCalled()
+    fireEvent.click(bar)
+    expect(onEventClick).toHaveBeenCalledTimes(1)
+  })
+
   test('a cancelled stretch (touch interrupted) changes nothing', () => {
     const onDayEventResize = vi.fn()
     renderRow([allDay('Salon', 14, 15)], { onDayEventResize })

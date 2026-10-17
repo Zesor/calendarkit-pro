@@ -93,6 +93,12 @@ describe('computeDayResize', () => {
     expect(computeDayResize(conference, new Date(2026, 9, 16))).toEqual(new Date(2026, 9, 17))
   })
 
+  test('a long timed event shrunk to its first days stays at least 24 h long (never ends before it starts)', () => {
+    const flight = event(new Date(2026, 9, 14, 20), new Date(2026, 9, 16, 2)) // Wed 20:00 → Fri 02:00
+    expect(computeDayResize(flight, new Date(2026, 9, 14))).toEqual(new Date(2026, 9, 15, 20))
+    expect(computeDayResize(flight, new Date(2026, 9, 15))).toEqual(new Date(2026, 9, 15, 20))
+  })
+
   test('cannot shrink below one day', () => {
     expect(computeDayResize(conference, new Date(2026, 9, 1))).toEqual(new Date(2026, 9, 13))
   })

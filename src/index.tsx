@@ -19,8 +19,9 @@ import { resolveTranslations, timeFormats } from './core/format';
 import { toDisplay } from './core/timezone';
 import { resolveWeekStartsOn } from './core/week';
 import { useCalendarLogic } from './hooks/useCalendarLogic';
-import { differenceInMinutes, format, startOfWeek } from 'date-fns';
+import { format, startOfWeek } from 'date-fns';
 import { useViewSwipe } from './hooks/useSwipeGesture';
+import { dayAwareCollision, dragOverlaySize } from './components/dnd/dragOverlay';
 
 // Re-export types for consumers
 export type {
@@ -72,6 +73,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
   locale // Date-fns locale
 }) => {
   const [activeDragEvent, setActiveDragEvent] = useState<CalendarEvent | null>(null);
+  const [activeDayDrag, setActiveDayDrag] = useState(false);
 
   // Context menu state
   const {
@@ -158,6 +160,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
     const draggedEvent = event.active.data.current?.event as CalendarEvent | undefined;
     if (draggedEvent) {
         setActiveDragEvent(draggedEvent);
+        setActiveDayDrag(event.active.data.current?.grabDayOffset !== undefined);
     }
   }, []);
 
@@ -166,33 +169,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
       handleDragEnd(event);
   }, [handleDragEnd]);
   
-  // Calculate height for week/day view drag overlay
-  const getDragHeight = () => {
-      if (!activeDragEvent) return undefined;
-      
-      if (view === 'resource') {
-        return 80; // Approximate height for resource view events
-      }
-
-      if (view !== 'week' && view !== 'day') return undefined;
-      const duration = differenceInMinutes(activeDragEvent.end, activeDragEvent.start);
-      const hourHeight = view === 'day' ? 80 : 60;
-      return (duration / 60) * hourHeight;
-  };
-
-  const getDragWidth = () => {
-      if (view === 'month') return '100%';
-      
-      if (view === 'resource' && activeDragEvent) {
-          const duration = differenceInMinutes(activeDragEvent.end, activeDragEvent.start);
-          const width = (duration / 60) * 100; // 100px per hour in ResourceView
-          return `${Math.max(width, 4)}px`;
-      }
-
-      // For Week/Day views, use a fixed width that looks like a column
-      // Ideally we would measure the column width, but a fixed reasonable width works for the ghost
-      return '150px'; 
-  };
+  const dragSize = activeDragEvent ? dragOverlaySize(view, activeDragEvent, activeDayDrag) : {};
 
   // Filter events by active calendars. Keyed on the active ids (not the `calendars` array), so an
   // inline `calendars` prop does not recreate the list and defeat the grid caches.
@@ -223,6 +200,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
         onDragStart={handleDragStart}
         onDragEnd={onDragEndWrapper} 
         modifiers={modifiers}
+        collisionDetection={dayAwareCollision}
     >
       <div
         className={cn("flex flex-col h-full bg-background text-foreground relative", className)}
@@ -468,8 +446,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
                         backgroundColor: activeDragEvent.color ? `${activeDragEvent.color}e0` : undefined,
                         borderColor: activeDragEvent.color ? `${activeDragEvent.color}80` : undefined,
                         color: activeDragEvent.color ? '#fff' : undefined,
-                        width: getDragWidth(),
-                        height: getDragHeight() ? `${getDragHeight()}px` : undefined,
+                        width: dragSize.width,
+                        height: dragSize.height ? `${dragSize.height}px` : undefined,
                         boxShadow: `0 20px 40px -15px ${activeDragEvent.color || 'var(--primary)'}40, 0 10px 20px -10px rgba(0,0,0,0.2)`,
                         transform: 'rotate(-2deg) scale(1.02)',
                     }}
@@ -484,7 +462,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                         {/* Content */}
                         <div className="pl-2">
                           <div className="font-semibold truncate text-sm">{activeDragEvent.title}</div>
-                          {(view === 'week' || view === 'day') && getDragHeight() && getDragHeight()! > 40 && (
+                          {(view === 'week' || view === 'day') && dragSize.height !== undefined && dragSize.height > 40 && (
                             <div className="text-xs opacity-80 mt-0.5 flex items-center gap-1">
                               <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <circle cx="12" cy="12" r="10"/>

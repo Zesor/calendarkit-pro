@@ -51,6 +51,8 @@ export function computeResizeEnd(event: CalendarEvent, deltaMinutes: number, min
   return new Date(Math.max(event.end.getTime() + deltaMinutes * 60_000, minEnd))
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000
+
 /** Shifts an instant by whole calendar days: local dates for all-day events, display wall time otherwise. */
 const shiftDays = (date: Date, days: number, event: CalendarEvent, tz?: string) =>
   event.allDay ? addDays(date, days) : fromDisplay(addDays(toDisplay(date, tz), days), tz)
@@ -68,12 +70,16 @@ export function computeDayMove(event: CalendarEvent, overDay: Date, grabDayOffse
 
 /**
  * New end after stretching the right edge to `newLastDay` (at least the first day). All-day events
- * get an exclusive end (midnight after the last day); long timed events keep their end time.
+ * get an exclusive end (midnight after the last day); long timed events keep their end time and
+ * last at least 24 h.
  */
 export function computeDayResize(event: CalendarEvent, newLastDay: Date, tz?: string): Date | null {
   const { firstDay, lastDay } = dayEventSpan(event, tz)
   const target = startOfDay(newLastDay) < firstDay ? firstDay : startOfDay(newLastDay)
   const days = differenceInCalendarDays(target, lastDay)
   if (days === 0) return null
-  return event.allDay ? addDays(target, 1) : shiftDays(event.end, days, event, tz)
+  if (event.allDay) return addDays(target, 1)
+  // A long timed event stays in the all-day row: at least 24 h, never ending before it starts.
+  const end = new Date(Math.max(shiftDays(event.end, days, event, tz).getTime(), event.start.getTime() + DAY_MS))
+  return end.getTime() === event.end.getTime() ? null : end
 }
