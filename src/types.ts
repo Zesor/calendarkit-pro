@@ -44,7 +44,13 @@ export interface CalendarEvent {
     count?: number;
     until?: Date;
     byweekday?: number[]; // 0=MO, 6=SU
+    /** Occurrence start dates excluded from the series. */
+    exdates?: Date[];
   };
+  /** Set on expanded occurrences: id of the recurring (master) event. */
+  originalEventId?: string;
+  /** Set on expanded occurrences: start of this occurrence. */
+  occurrenceStart?: Date;
   [key: string]: any;
 }
 
