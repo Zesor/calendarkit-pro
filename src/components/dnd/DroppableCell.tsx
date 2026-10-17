@@ -6,6 +6,8 @@ interface DroppableCellProps {
   id: string; // usually ISO date string
   date: Date;
   resourceId?: string;
+  /** Marks the day cells of the all-day row (drops there keep events on the day level). */
+  allDayRow?: boolean;
   children?: React.ReactNode;
   className?: string;
   style?: React.CSSProperties;
@@ -30,10 +32,10 @@ const QUARTER_ACTIVE = [
 
 const quarterOf = (date: Date) => Math.min(3, Math.floor(date.getMinutes() / 15));
 
-const DroppableCellImpl: React.FC<DroppableCellProps> = ({ id, date, resourceId, children, className, style, onClick, onSlotClick }) => {
+const DroppableCellImpl: React.FC<DroppableCellProps> = ({ id, date, resourceId, allDayRow, children, className, style, onClick, onSlotClick }) => {
   const { isOver, setNodeRef } = useDroppable({
     id: id,
-    data: { date, resourceId },
+    data: { date, resourceId, allDayRow },
   });
 
   const quarter = quarterOf(date);
@@ -69,6 +71,7 @@ export const DroppableCell = React.memo(
     prev.id === next.id &&
     prev.date.getTime() === next.date.getTime() &&
     prev.resourceId === next.resourceId &&
+    prev.allDayRow === next.allDayRow &&
     prev.children === next.children &&
     prev.className === next.className &&
     prev.onClick === next.onClick &&
