@@ -17,7 +17,7 @@ interface TouchInfo {
   startTime: number;
 }
 
-export const useSwipeGesture = <T extends HTMLElement>(
+const useSwipeGesture = <T extends HTMLElement>(
   options: SwipeGestureOptions
 ) => {
   const {
