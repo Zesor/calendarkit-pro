@@ -15,7 +15,6 @@ A professional, feature-rich React calendar component with drag-and-drop, recurr
 - **i18n Ready** - Built-in English/French, fully customizable
 - **Resource Scheduling** - Schedule across rooms, people, or equipment
 - **Dark Mode** - Built-in theme toggle
-- **ICS Import/Export** - RFC 5545 compliant
 - **Mobile Friendly** - Touch gestures and responsive layout
 - **TypeScript** - Full type definitions included
 - **High Performance** - Handles 10,000+ events
