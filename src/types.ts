@@ -31,6 +31,10 @@ export interface CalendarEvent {
   resourceId?: string;
   type?: string; // e.g. "meeting", "task", "holiday"
   icon?: string; // Lucide icon name or ReactNode if we can serialze
+  /** Set to false to disable drag for this event. Default: true. */
+  draggable?: boolean;
+  /** Set to false to disable resize for this event. Defaults to the value of `draggable`. */
+  resizable?: boolean;
   attachments?: EventAttachment[];
   guests?: string[]; // Array of email addresses
   reminders?: EventReminder[]; // Event reminders
