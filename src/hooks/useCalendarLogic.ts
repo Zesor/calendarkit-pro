@@ -5,7 +5,7 @@ import {
 } from 'date-fns';
 import { DragEndEvent } from '@dnd-kit/core';
 import { ViewType, CalendarEvent } from '../types';
-import { computeDrop } from '../core/dnd';
+import { computeDayMove, computeDayResize, computeDrop } from '../core/dnd';
 import { normalizeEvents } from '../core/events';
 import { DateRange, excludeOccurrence, expandRecurrences, shiftSeries, stripOccurrenceFields } from '../core/recurrence';
 import { useStableCallback } from './useStableCallback';
@@ -62,6 +62,7 @@ export const useCalendarLogic = ({
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [modalInitialDate, setModalInitialDate] = useState<Date | undefined>(undefined);
   const [modalInitialResourceId, setModalInitialResourceId] = useState<string | undefined>(undefined);
+  const [modalInitialAllDay, setModalInitialAllDay] = useState(false);
 
   const view = controlledView ?? internalView;
   const currentDate = controlledDate ?? internalDate;
@@ -147,6 +148,17 @@ export const useCalendarLogic = ({
     setSelectedEvent(null);
     setModalInitialDate(date);
     setModalInitialResourceId(resourceId);
+    setModalInitialAllDay(false);
+    setIsModalOpen(true);
+  });
+
+  /** A click on an empty day of the all-day row opens the form preset to an all-day event. */
+  const handleAllDaySlotClick = useStableCallback((day: Date) => {
+    if (readOnly) return;
+    setSelectedEvent(null);
+    setModalInitialDate(day);
+    setModalInitialResourceId(undefined);
+    setModalInitialAllDay(true);
     setIsModalOpen(true);
   });
 
@@ -156,6 +168,7 @@ export const useCalendarLogic = ({
       setSelectedEvent(event);
       setModalInitialDate(undefined);
       setModalInitialResourceId(undefined);
+      setModalInitialAllDay(false);
       setIsModalOpen(true);
     }
   });
@@ -165,6 +178,7 @@ export const useCalendarLogic = ({
     setSelectedEvent(null);
     setModalInitialDate(new Date());
     setModalInitialResourceId(undefined);
+    setModalInitialAllDay(false);
     setIsModalOpen(true);
   });
 
@@ -234,7 +248,8 @@ export const useCalendarLogic = ({
     if (!event.originalEventId) return { original: event, updated: { ...event, start, end } };
     const master = masterOf(event);
     if (!master) return null;
-    return { original: master, updated: shiftSeries(master, event, start, end, timezone) };
+    // All-day series are calendar dates: shift them without a timezone anchor.
+    return { original: master, updated: shiftSeries(master, event, start, end, event.allDay ? undefined : timezone) };
   };
 
   const handleDragEnd = useStableCallback((dragEvent: DragEndEvent) => {
@@ -245,12 +260,24 @@ export const useCalendarLogic = ({
     const overDate = over.data.current?.date as Date | undefined;
     if (!dragged || !overDate) return;
 
+    // All-day bars move by whole days, whatever cell they are dropped on.
+    const grabDayOffset = active.data.current?.grabDayOffset as number | undefined;
+    if (grabDayOffset !== undefined) {
+      const move = computeDayMove(dragged, overDate, grabDayOffset, timezone);
+      const dayChange = move && applyChange(dragged, move.start, move.end);
+      if (!dayChange) return;
+      onEventDrop?.(dayChange.original, dayChange.updated.start, dayChange.updated.end);
+      onEventUpdate?.(dayChange.updated);
+      return;
+    }
+
     const drop = computeDrop({
       event: dragged,
       overDate,
       overResourceId: over.data.current?.resourceId,
       grabOffsetMs: active.data.current?.grabOffsetMs,
-      view,
+      // A timed event dropped in the all-day row only changes day (keeps its time), like in month view.
+      view: over.data.current?.allDayRow ? 'month' : view,
       tz: timezone,
     });
     if (!drop) return;
@@ -261,6 +288,16 @@ export const useCalendarLogic = ({
     // D2: onEventDrop is finally called, alongside onEventUpdate.
     onEventDrop?.(change.original, updated.start, updated.end);
     onEventUpdate?.(updated);
+  });
+
+  /** Stretching an all-day bar: new last day → exclusive end (all-day) or same end time (long timed). */
+  const handleDayEventResize = useStableCallback((event: CalendarEvent, newLastDay: Date) => {
+    if (readOnly) return;
+    const end = computeDayResize(event, newLastDay, timezone);
+    const change = end && applyChange(event, event.start, end);
+    if (!change) return;
+    onEventResize?.(change.original, change.updated.start, change.updated.end);
+    onEventUpdate?.(change.updated);
   });
 
   const handleEventResize = useStableCallback((event: CalendarEvent, newEnd: Date) => {
@@ -281,6 +318,7 @@ export const useCalendarLogic = ({
     setIsModalOpen,
     selectedEvent,
     modalInitialDate,
+    modalInitialAllDay,
     expandedEvents,
     handleViewChange,
     handleDateChange,
@@ -289,6 +327,7 @@ export const useCalendarLogic = ({
     handleToday,
     handleDateClick,
     handleTimeSlotClick,
+    handleAllDaySlotClick,
     handleEventClickInternal,
     handleCreateEvent,
     handleModalSave,
@@ -296,6 +335,7 @@ export const useCalendarLogic = ({
     handleEventDelete,
     handleEventDuplicate,
     handleEventResize,
+    handleDayEventResize,
     handleDragEnd
   };
 };

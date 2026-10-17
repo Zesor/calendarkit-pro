@@ -90,6 +90,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
     setIsModalOpen,
     selectedEvent,
     modalInitialDate,
+    modalInitialAllDay,
     handleViewChange,
     handleDateChange,
     handlePrev,
@@ -97,6 +98,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
     handleToday,
     handleDateClick,
     handleTimeSlotClick,
+    handleAllDaySlotClick,
     handleEventClickInternal,
     handleCreateEvent,
     handleModalSave,
@@ -104,6 +106,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
     handleEventDelete,
     handleEventDuplicate,
     handleEventResize,
+    handleDayEventResize,
     handleDragEnd,
     expandedEvents
   } = useCalendarLogic({
@@ -210,6 +213,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
       : format(currentDate, 'yyyy-MM-dd');
 
   const slotClickHandler = readOnly ? undefined : handleTimeSlotClick;
+  const allDaySlotClickHandler = readOnly ? undefined : handleAllDaySlotClick;
   const contextMenuHandler = readOnly ? undefined : openContextMenu;
 
   return (
@@ -320,6 +324,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                 locale={locale}
                                 translations={t}
                                 onEventContextMenu={contextMenuHandler}
+                                onDayEventResize={handleDayEventResize}
+                                readonly={readOnly}
                                 />
                             )}
                             {view === 'week' && (
@@ -333,6 +339,9 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                 locale={locale}
                                 readonly={readOnly}
                                 onEventContextMenu={contextMenuHandler}
+                                onDayEventResize={handleDayEventResize}
+                                onAllDaySlotClick={allDaySlotClickHandler}
+                                translations={t}
                                 />
                             )}
                             {view === 'day' && (
@@ -347,6 +356,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                     readonly={readOnly}
                                     translations={t}
                                     onEventContextMenu={contextMenuHandler}
+                                    onDayEventResize={handleDayEventResize}
+                                    onAllDaySlotClick={allDaySlotClickHandler}
                                 />
                             )}
                             {view === 'agenda' && (
@@ -401,6 +412,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 onClose: () => setIsModalOpen(false),
                 event: selectedEvent,
                 initialDate: modalInitialDate,
+                initialAllDay: modalInitialAllDay,
                 onSave: handleModalSave,
                 onDelete: handleModalDelete
             })
@@ -416,6 +428,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 eventTypes={eventTypes}
                 translations={t}
                 locale={locale}
+                initialAllDay={modalInitialAllDay}
             />
         )}
 

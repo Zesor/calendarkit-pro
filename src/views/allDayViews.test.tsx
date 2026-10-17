@@ -4,6 +4,8 @@ import { DndContext } from '@dnd-kit/core'
 import { enUS } from 'date-fns/locale'
 import type { CalendarEvent } from '../types'
 import { MonthView } from './MonthView'
+import { WeekView } from './WeekView'
+import { DayView } from './DayView'
 
 afterEach(cleanup)
 
@@ -82,5 +84,24 @@ describe('month view all-day bars', () => {
     expect(bars('Flight')).toHaveLength(1)
     // Wed 22:00 → Fri 04:00 covers Wed, Thu and Fri
     expect(parseFloat(bar.style.width)).toBeCloseTo((3 / 7) * 100, 3)
+  })
+})
+
+describe('week and day views', () => {
+  test('all-day events are in the all-day row, not in the time grid', () => {
+    const { container } = render(
+      <DndContext><WeekView currentDate={new Date(2026, 9, 15)} events={[allDay('Offsite', new Date(2026, 9, 14), new Date(2026, 9, 15)), timed('Standup', 14, 9)]} /></DndContext>,
+    )
+    const row = container.querySelector('[data-all-day-row]') as HTMLElement
+    expect(row.textContent).toContain('Offsite')
+    expect(row.textContent).not.toContain('Standup')
+  })
+
+  test('the day view shows the all-day row for that day', () => {
+    const { container } = render(
+      <DndContext><DayView currentDate={new Date(2026, 9, 14)} events={[allDay('Offsite', new Date(2026, 9, 12), new Date(2026, 9, 20))]} /></DndContext>,
+    )
+    const row = container.querySelector('[data-all-day-row]') as HTMLElement
+    expect(row.textContent).toContain('Offsite')
   })
 })
