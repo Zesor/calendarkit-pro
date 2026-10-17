@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useInsertionEffect, useRef } from 'react';
 
 /**
  * Returns a callback with a stable identity that always runs the latest `fn`. Lets memoized
@@ -6,6 +6,9 @@ import { useCallback, useRef } from 'react';
  */
 export function useStableCallback<Args extends unknown[], Result>(fn: (...args: Args) => Result): (...args: Args) => Result {
   const ref = useRef(fn);
-  ref.current = fn;
+  // Updated in an effect (not during render) to stay safe under concurrent rendering.
+  useInsertionEffect(() => {
+    ref.current = fn;
+  });
   return useCallback((...args: Args) => ref.current(...args), []);
 }

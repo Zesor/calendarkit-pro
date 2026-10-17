@@ -131,6 +131,13 @@ describe('useCalendarLogic', () => {
     expect(result.current.isModalOpen).toBe(false)
   })
 
+  test('readOnly: a drop is ignored', () => {
+    const onEventUpdate = vi.fn()
+    const { result } = setup({ readOnly: true, onEventUpdate })
+    act(() => result.current.handleDragEnd(dragEnd(single, new Date(2026, 9, 16, 9, 0))))
+    expect(onEventUpdate).not.toHaveBeenCalled()
+  })
+
   test('events with ISO string dates are rendered and updated with Date objects', () => {
     const onEventUpdate = vi.fn()
     const fromJson = { id: 'j', title: 'From JSON', start: '2026-10-15T08:00:00Z', end: '2026-10-15T09:00:00Z' } as unknown as CalendarEvent

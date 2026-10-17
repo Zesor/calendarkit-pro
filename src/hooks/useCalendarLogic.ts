@@ -238,6 +238,7 @@ export const useCalendarLogic = ({
   };
 
   const handleDragEnd = useStableCallback((dragEvent: DragEndEvent) => {
+    if (readOnly) return;
     const { active, over } = dragEvent;
     if (!over) return;
     const dragged = active.data.current?.event as CalendarEvent | undefined;
