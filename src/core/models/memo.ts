@@ -1,14 +1,14 @@
-import type { CalendarState } from '../store'
+import type { CalendarEvent } from '../../types'
 
 /**
- * Caches a model per state snapshot and key: selectors stay pure, and a component re-reading the
- * same snapshot gets the same object back.
+ * Caches a model per visible-events array and key. The store keeps `visible` stable while events,
+ * the zone and hidden calendars do not change, so dialog and draft updates reuse the models.
  */
-export function memoByState<T>(cache: WeakMap<CalendarState, Map<string, T>>, state: CalendarState, key: string, compute: () => T): T {
-  let byKey = cache.get(state)
+export function memoByEvents<T>(cache: WeakMap<CalendarEvent[], Map<string, T>>, events: CalendarEvent[], key: string, compute: () => T): T {
+  let byKey = cache.get(events)
   if (!byKey) {
     byKey = new Map()
-    cache.set(state, byKey)
+    cache.set(events, byKey)
   }
   let value = byKey.get(key)
   if (value === undefined) {

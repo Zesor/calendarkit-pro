@@ -59,12 +59,14 @@ function rules(language: SentenceLanguage): Rule[] {
         const wd = days.indexOf(m[1].toLowerCase()); o.recurrence = { freq: 'WEEKLY', byweekday: [wd] }; o.date ??= nextWeekday(now, wd); return true } },
       { kind: 'repeat', re: /\b(?:chaque semaine|toutes les semaines)\b/gi, apply: (_, o) => ((o.recurrence = { freq: 'WEEKLY' }), true) },
       { kind: 'duration', re: /\bpendant (\d+)\s?(h|heures?|min|minutes?)(?:\s?(\d{2}))?\b/gi, apply: (m, o) => ((o.durationMinutes = durationOf(m[1], m[2], m[3])), true) },
-      { kind: 'date', re: /\baprès-demain\b/gi, apply: (_, o, now) => ((o.date = addDays(startOfDay(now), 2)), true) },
+      { kind: 'date', re: /\baprès[- ]demain\b/gi, apply: (_, o, now) => ((o.date = addDays(startOfDay(now), 2)), true) },
       { kind: 'date', re: /\bdemain\b/gi, apply: (_, o, now) => ((o.date = addDays(startOfDay(now), 1)), true) },
-      { kind: 'date', re: /\baujourd'hui\b/gi, apply: (_, o, now) => ((o.date = startOfDay(now)), true) },
+      { kind: 'date', re: /\baujourd['’]hui\b/gi, apply: (_, o, now) => ((o.date = startOfDay(now)), true) },
       { kind: 'date', re: new RegExp(`\\b(${dayAlt})\\b`, 'gi'), apply: (m, o, now) => ((o.date = nextWeekday(now, days.indexOf(m[1].toLowerCase()))), true) },
-      { kind: 'time', re: /(?:(?<=^|\s)à\s+)?\bmidi\b/gi, apply: (_, o) => setTime(o, 12 * 60) },
-      { kind: 'time', re: /(?:(?<=^|\s)à\s+)?\b(\d{1,2})\s?(?:h|:)\s?(\d{2})?\b/gi, apply: (m, o) => setTime(o, minutes(Number(m[1]), m[2] ? Number(m[2]) : 0)) },
+      { kind: 'time', re: /(?:(?<=^|\s)à\s+)?(?<![\p{L}-])midi\b/giu, apply: (_, o) => setTime(o, 12 * 60) },
+      // "13h", "13 h 30", "13h30"; with a colon the minutes are required ("13:30", not "3:1").
+      { kind: 'time', re: /(?:(?<=^|\s)à\s+)?\b(\d{1,2})\s?h\s?(\d{2})?\b/gi, apply: (m, o) => setTime(o, minutes(Number(m[1]), m[2] ? Number(m[2]) : 0)) },
+      { kind: 'time', re: /(?:(?<=^|\s)à\s+)?\b(\d{1,2}):(\d{2})\b/gi, apply: (m, o) => setTime(o, minutes(Number(m[1]), Number(m[2]))) },
     ]
   }
   return [

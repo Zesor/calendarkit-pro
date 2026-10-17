@@ -151,3 +151,17 @@ describe('createCalendar: dialogs and drafts', () => {
     expect(cal.getState().dialog).toEqual({ kind: 'event', eventId: 'lu' })
   })
 })
+
+describe('createCalendar: no-op changes keep the snapshot (review I1)', () => {
+  test('setOptions with only new callbacks, setView to the same view and navigate to the same date do not emit', () => {
+    const cal = createCalendar({ defaultEvents: [lunch], defaultDate: new Date(2026, 9, 14), now })
+    const before = cal.getState()
+    const listener = vi.fn()
+    cal.subscribe(listener)
+    cal.setOptions({ onEventCreate: () => {} })
+    cal.setView('week')
+    cal.navigate(new Date(2026, 9, 14))
+    expect(cal.getState()).toBe(before)
+    expect(listener).not.toHaveBeenCalled()
+  })
+})

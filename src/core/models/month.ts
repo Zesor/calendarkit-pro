@@ -3,9 +3,9 @@ import type { CalendarEvent } from '../../types'
 import { type DayRowLayout, layoutDayRow, partitionDayEvents } from '../allDay'
 import { eventsByStartDay } from '../events'
 import type { CalendarState } from '../store'
-import { toDisplay } from '../timezone'
+import { displayDayKey, toDisplay } from '../timezone'
 import { getMonthGrid, type WeekStartsOn } from '../week'
-import { memoByState } from './memo'
+import { memoByEvents } from './memo'
 
 export interface MonthCell {
   day: Date
@@ -27,14 +27,14 @@ export interface MonthModel {
   weeks: MonthWeek[]
 }
 
-const cache = new WeakMap<CalendarState, Map<string, MonthModel>>()
+const cache = new WeakMap<CalendarEvent[], Map<string, MonthModel>>()
 
 /** The month grid as plain data: week rows with their bars, and each day's timed events. */
 export function selectMonth(state: CalendarState, options: { weekStartsOn?: WeekStartsOn; now?: Date } = {}): MonthModel {
   const weekStartsOn = options.weekStartsOn ?? 1
   const now = options.now ?? new Date()
-  const key = `${weekStartsOn}|${format(now, 'yyyy-MM-dd')}`
-  return memoByState(cache, state, key, () => {
+  const key = `${state.timezone ?? ''}|${format(toDisplay(state.date, state.timezone), 'yyyy-MM')}|${weekStartsOn}|${displayDayKey(now, state.timezone)}`
+  return memoByEvents(cache, state.visible, key, () => {
     const tz = state.timezone
     const focus = toDisplay(state.date, tz)
     const days = getMonthGrid(focus, weekStartsOn)

@@ -132,3 +132,46 @@ describe('controlled mode: 1.x callbacks', () => {
     expect(onEventsChange).not.toHaveBeenCalled()
   })
 })
+
+describe('review fixes: drafts, undo, occurrences', () => {
+  test('I4: editing an event whose title contains a time word keeps its title', () => {
+    const onEventUpdate = vi.fn()
+    const call: CalendarEvent = { id: 'c', title: 'Call 3pm sync', start: new Date(2026, 9, 14, 15), end: new Date(2026, 9, 14, 16) }
+    const cal = createCalendar({ events: [call], onEventUpdate, now })
+    cal.openEditor('c')
+    cal.updateDraft({ calendarId: 'work' })
+    cal.saveDraft()
+    expect(onEventUpdate.mock.calls[0][0]).toMatchObject({ title: 'Call 3pm sync', calendarId: 'work', start: call.start })
+  })
+
+  test('I5: drafts are in the display timezone (Tokyo calendar, Paris browser)', () => {
+    const onEventCreate = vi.fn()
+    const flight: CalendarEvent = { id: 'f', title: 'Flight', start: new Date('2026-10-14T23:30:00Z'), end: new Date('2026-10-15T00:30:00Z') }
+    const cal = createCalendar({ events: [flight], timezone: 'Asia/Tokyo', onEventCreate, createId: ids(), now })
+    cal.openEditor('f')
+    const d = cal.getState().dialog
+    expect(d?.kind === 'editor' && d.draft.start).toEqual(new Date(2026, 9, 15, 8, 30)) // 08:30 Tokyo wall clock
+    cal.openSlot(new Date(2026, 9, 15, 9)) // the 09:00 slot of the Tokyo grid
+    cal.saveDraft()
+    expect(onEventCreate.mock.calls[0][0].start).toEqual(new Date('2026-10-15T00:00:00Z'))
+  })
+
+  test('I6: undo reverts only the last change, keeping events added since', () => {
+    const onEventsChange = vi.fn()
+    const extra: CalendarEvent = { id: 'x', title: 'Pushed by the server', start: new Date(2026, 9, 16, 9), end: new Date(2026, 9, 16, 10) }
+    const cal = createCalendar({ events: [lunch], onEventsChange, createId: ids(), now })
+    cal.create({ title: 'New', start: new Date(2026, 9, 15, 9), end: new Date(2026, 9, 15, 10) })
+    cal.setOptions({ events: [...onEventsChange.mock.calls[0][0], extra] })
+    cal.undo()
+    expect(onEventsChange.mock.calls.at(-1)![0].map((e: CalendarEvent) => e.id)).toEqual(['lu', 'x'])
+  })
+
+  test('I7: a controlled consumer using only onEventsChange can delete one occurrence', () => {
+    const onEventsChange = vi.fn()
+    const cal = createCalendar({ events: [standup], onEventsChange, now })
+    cal.remove(occurrence(cal, 12).id)
+    const next = onEventsChange.mock.calls[0][0] as CalendarEvent[]
+    expect(next).toHaveLength(1)
+    expect(next[0].recurrence?.exdates).toEqual([new Date(2026, 9, 12, 9)])
+  })
+})

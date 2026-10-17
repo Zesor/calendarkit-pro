@@ -100,3 +100,34 @@ describe('selectAgenda, selectFlowDay, selectResources', () => {
     expect(selectResources(s, rooms).map((r) => [r.resource.id, r.events.map((e) => e.id)])).toEqual([['atlas', []], ['b', ['x']]])
   })
 })
+
+describe('review fixes: memo by inputs, DST, flow now', () => {
+  test('I2: models survive snapshots that change only the dialog, even with a hidden calendar', () => {
+    const cal = createCalendar({ defaultEvents: [ev('a', at(14, 9), at(14, 10), { calendarId: 'work' }), ev('b', at(14, 11), at(14, 12), { calendarId: 'perso' })], defaultDate: now, now: () => now })
+    cal.toggleCalendar('perso')
+    const s1 = cal.getState()
+    cal.openSlot(at(15, 14))
+    cal.updateDraft({ title: 'x' })
+    const s2 = cal.getState()
+    expect(s2).not.toBe(s1)
+    expect(s2.visible).toBe(s1.visible)
+    expect(selectTimeGrid(s2, { now })).toBe(selectTimeGrid(s1, { now }))
+    expect(selectMonth(s2, { now })).toBe(selectMonth(s1, { now }))
+  })
+
+  test('I3: minutes are wall-clock on DST days (Paris, 25 October 2026 has 25 hours)', () => {
+    const dst = state([ev('early', new Date(2026, 9, 25, 4), new Date(2026, 9, 25, 5)), ev('late', new Date(2026, 9, 25, 23), new Date(2026, 9, 26, 0))], { defaultDate: new Date(2026, 9, 25, 12), defaultView: 'day' })
+    const col = selectTimeGrid(dst, { now }).columns[0]
+    expect(col.blocks.map((b) => [b.event.id, b.top, b.height])).toEqual([['early', 240, 60], ['late', 1380, 60]])
+    const flow = selectFlowDay(dst, { day: new Date(2026, 9, 25), now })
+    // Free slots open at 08:00 wall clock and stop at 20:00, even before a 23:00 event.
+    expect(flow.items.filter((i) => i.kind === 'free')).toEqual([{ kind: 'free', start: new Date(2026, 9, 25, 8), end: new Date(2026, 9, 25, 20) }])
+  })
+
+  test('I8: the current time sits at its place in the flow, splitting a free slot', () => {
+    const s = state([ev('a', at(14, 10), at(14, 11)), ev('b', at(14, 14), at(14, 15))])
+    const label = (i: { kind: string; event?: CalendarEvent; start?: Date; end?: Date }) => (i.kind === 'event' ? i.event!.id : i.kind === 'free' ? `free ${i.start!.getHours()}-${i.end!.getHours()}` : 'now')
+    expect(selectFlowDay(s, { day: at(14, 0), now: at(14, 10, 30) }).items.map(label)).toEqual(['free 8-10', 'a', 'now', 'free 11-14', 'b', 'free 15-20'])
+    expect(selectFlowDay(s, { day: at(14, 0), now: at(14, 12) }).items.map(label)).toEqual(['free 8-10', 'a', 'free 11-12', 'now', 'free 12-14', 'b', 'free 15-20'])
+  })
+})

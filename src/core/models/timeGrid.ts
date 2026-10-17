@@ -1,4 +1,4 @@
-import { addDays, format, startOfDay } from 'date-fns'
+import { addDays, format, isSameDay, startOfDay } from 'date-fns'
 import type { CalendarEvent } from '../../types'
 import { type DayRowLayout, layoutDayRow, partitionDayEvents } from '../allDay'
 import { segmentsByDisplayDay } from '../events'
@@ -6,7 +6,7 @@ import { layoutColumns } from '../overlap'
 import type { CalendarState } from '../store'
 import { minutesSinceDisplayMidnight, toDisplay } from '../timezone'
 import { getWeekDays, type WeekStartsOn } from '../week'
-import { memoByState } from './memo'
+import { memoByEvents } from './memo'
 
 /** A positioned event in a day column. `top` and `height` are minutes since the day's midnight. */
 export interface TimeBlock {
@@ -53,8 +53,10 @@ export function visibleDays(state: CalendarState, weekStartsOn: WeekStartsOn = 1
   return state.view === 'day' || state.view === 'resource' ? [startOfDay(wall)] : getWeekDays(wall, weekStartsOn)
 }
 
-const cache = new WeakMap<CalendarState, Map<string, TimeGridModel>>()
-const minutesOf = (wall: Date, day: Date) => (wall.getTime() - day.getTime()) / 60000
+const cache = new WeakMap<CalendarEvent[], Map<string, TimeGridModel>>()
+// Wall-clock minutes (a DST day still has 24 rows); a segment ending at the next midnight ends at 1440.
+const minutesOf = (wall: Date, day: Date) =>
+  wall < day ? 0 : isSameDay(wall, day) ? wall.getHours() * 60 + wall.getMinutes() + wall.getSeconds() / 60 : 24 * 60
 
 /**
  * The week / day grid as plain data: per day column, positioned blocks (overlaps laid out by
@@ -64,8 +66,8 @@ export function selectTimeGrid(state: CalendarState, options: { days?: Date[]; m
   const days = options.days ?? visibleDays(state, options.weekStartsOn)
   const maxColumns = options.maxColumns ?? Infinity
   const now = options.now ?? new Date()
-  const key = `${days[0].getTime()}|${days.length}|${maxColumns}|${Math.floor(now.getTime() / 60000)}`
-  return memoByState(cache, state, key, () => {
+  const key = `${state.timezone ?? ''}|${days.map((d) => d.getTime()).join(',')}|${maxColumns}|${Math.floor(now.getTime() / 60000)}`
+  return memoByEvents(cache, state.visible, key, () => {
     const tz = state.timezone
     const { dayEvents, timedEvents } = partitionDayEvents(state.visible, tz)
     const range = { start: days[0], end: addDays(days[days.length - 1], 1) }

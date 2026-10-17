@@ -3,7 +3,7 @@ import type { CalendarEvent, Resource } from '../../types'
 import { isDayEvent } from '../allDay'
 import type { CalendarState } from '../store'
 import { toDisplay } from '../timezone'
-import { memoByState } from './memo'
+import { memoByEvents } from './memo'
 
 export interface AgendaGroup {
   day: Date
@@ -29,16 +29,16 @@ export interface ResourceRow {
   events: CalendarEvent[]
 }
 
-const agendaCache = new WeakMap<CalendarState, Map<string, AgendaGroup[]>>()
-const flowCache = new WeakMap<CalendarState, Map<string, FlowDayModel>>()
-const resourceCache = new WeakMap<CalendarState, Map<string, ResourceRow[]>>()
+const agendaCache = new WeakMap<CalendarEvent[], Map<string, AgendaGroup[]>>()
+const flowCache = new WeakMap<CalendarEvent[], Map<string, FlowDayModel>>()
+const resourceCache = new WeakMap<CalendarEvent[], Map<string, WeakMap<Resource[], ResourceRow[]>>>()
 const byStart = (a: CalendarEvent, b: CalendarEvent) => a.start.getTime() - b.start.getTime()
 
 /** Events starting in the next `days` days from the state's date, grouped by display day. */
 export function selectAgenda(state: CalendarState, options: { days?: number } = {}): AgendaGroup[] {
   const length = options.days ?? 30
   const from = startOfDay(toDisplay(state.date, state.timezone))
-  return memoByState(agendaCache, state, `${from.getTime()}|${length}`, () => {
+  return memoByEvents(agendaCache, state.visible, `${state.timezone ?? ''}|${from.getTime()}|${length}`, () => {
     const to = addDays(from, length)
     const groups = new Map<string, AgendaGroup>()
     for (const event of [...state.visible].sort(byStart)) {
@@ -62,7 +62,7 @@ export function selectFlowDay(state: CalendarState, options: { day: Date; fromHo
   const { day, fromHour = 8, toHour = 20, minFreeMinutes = 60 } = options
   const now = options.now ?? new Date()
   const dayStart = startOfDay(day)
-  return memoByState(flowCache, state, `${dayStart.getTime()}|${fromHour}|${toHour}|${minFreeMinutes}|${Math.floor(now.getTime() / 60000)}`, () => {
+  return memoByEvents(flowCache, state.visible, `${state.timezone ?? ''}|${dayStart.getTime()}|${fromHour}|${toHour}|${minFreeMinutes}|${Math.floor(now.getTime() / 60000)}`, () => {
     const tz = state.timezone
     const dayEnd = addDays(dayStart, 1)
     const wall = (e: CalendarEvent) => ({ start: toDisplay(e.start, tz), end: toDisplay(e.end, tz) })
@@ -70,21 +70,37 @@ export function selectFlowDay(state: CalendarState, options: { day: Date; fromHo
     const allDay = covering.filter((e) => isDayEvent(e)).sort(byStart)
     const timed = covering.filter((e) => !isDayEvent(e)).map((e) => ({ event: e, ...wall(e) })).sort((a, b) => a.start.getTime() - b.start.getTime())
     const items: FlowItem[] = []
-    let cursor = new Date(dayStart.getTime() + fromHour * 3600000)
-    const close = new Date(dayStart.getTime() + toHour * 3600000)
-    const wallNow = toDisplay(now, tz)
-    let nowShown = !(wallNow >= dayStart && wallNow < dayEnd)
+    // Wall-clock hours, so a DST day still opens at `fromHour`.
+    let cursor = new Date(dayStart.getFullYear(), dayStart.getMonth(), dayStart.getDate(), fromHour)
+    const close = new Date(dayStart.getFullYear(), dayStart.getMonth(), dayStart.getDate(), toHour)
+    const minFree = minFreeMinutes * 60000
     const free = (until: Date) => {
-      if (until.getTime() - cursor.getTime() >= minFreeMinutes * 60000) items.push({ kind: 'free', start: cursor, end: until })
+      const end = until > close ? close : until
+      if (end.getTime() - cursor.getTime() >= minFree) items.push({ kind: 'free', start: cursor, end })
     }
     for (const t of timed) {
       free(t.start)
-      if (!nowShown && wallNow < t.start) { items.push({ kind: 'now', at: wallNow }); nowShown = true }
       items.push({ kind: 'event', event: t.event, start: t.start, end: t.end })
       if (t.end > cursor) cursor = t.end
     }
-    if (!nowShown && wallNow >= cursor) { items.push({ kind: 'now', at: wallNow }); nowShown = true }
     free(close)
+    // The current time goes before the first item starting after it (after a running event),
+    // splitting the free slot it falls in.
+    const wallNow = toDisplay(now, tz)
+    if (wallNow >= dayStart && wallNow < dayEnd) {
+      const index = items.findIndex((i) => (i.kind === 'free' ? i.end > wallNow : i.kind === 'event' && i.start > wallNow))
+      const at = index < 0 ? items.length : index
+      const slot = items[at]
+      if (slot && slot.kind === 'free' && slot.start < wallNow) {
+        const parts: FlowItem[] = []
+        if (wallNow.getTime() - slot.start.getTime() >= minFree) parts.push({ kind: 'free', start: slot.start, end: wallNow })
+        parts.push({ kind: 'now', at: wallNow })
+        if (slot.end.getTime() - wallNow.getTime() >= minFree) parts.push({ kind: 'free', start: wallNow, end: slot.end })
+        items.splice(at, 1, ...parts)
+      } else {
+        items.splice(at, 0, { kind: 'now', at: wallNow })
+      }
+    }
     return { day: dayStart, allDay, items }
   })
 }
@@ -92,13 +108,16 @@ export function selectFlowDay(state: CalendarState, options: { day: Date; fromHo
 /** Rows of the resource view: each resource with its events overlapping the state's day. */
 export function selectResources(state: CalendarState, resources: Resource[]): ResourceRow[] {
   const dayStart = startOfDay(toDisplay(state.date, state.timezone))
-  return memoByState(resourceCache, state, `${dayStart.getTime()}|${resources.map((r) => r.id).join(',')}`, () => {
-    const dayEnd = addDays(dayStart, 1)
-    return resources.map((resource) => ({
+  const byResources = memoByEvents(resourceCache, state.visible, `${state.timezone ?? ''}|${dayStart.getTime()}`, () => new WeakMap<Resource[], ResourceRow[]>())
+  const cached = byResources.get(resources)
+  if (cached) return cached
+  const dayEnd = addDays(dayStart, 1)
+  const rows = resources.map((resource) => ({
       resource,
       events: state.visible
         .filter((e) => e.resourceId === resource.id && toDisplay(e.start, state.timezone) < dayEnd && toDisplay(e.end, state.timezone) > dayStart)
         .sort(byStart),
     }))
-  })
+  byResources.set(resources, rows)
+  return rows
 }
