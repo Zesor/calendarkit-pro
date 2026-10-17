@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from './ui/Modal';
-import { CalendarEvent, EventType, EventAttachment, EventReminder } from '../types';
-import { format, differenceInMinutes } from 'date-fns';
+import { CalendarEvent, CalendarTranslations, EventType, EventAttachment, EventReminder } from '../types';
+import { format, differenceInMinutes, Locale } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Clock, MapPin, AlignLeft, Trash2, X, Edit2,
@@ -10,6 +10,7 @@ import {
     ExternalLink
   } from 'lucide-react';
 import { cn } from '../utils';
+import { interpolate, timeFormats } from '../core/format';
 
 interface EventModalProps {
   isOpen: boolean;
@@ -20,22 +21,12 @@ interface EventModalProps {
   onDelete?: (eventId: string) => void;
   calendars?: { id: string; label: string; color?: string }[];
   eventTypes?: EventType[];
-  translations: any;
+  translations: CalendarTranslations;
+  locale?: Locale;
 }
 
-// Predefined reminder options
-const REMINDER_OPTIONS = [
-  { value: 0, label: 'At time of event' },
-  { value: 5, label: '5 minutes before' },
-  { value: 10, label: '10 minutes before' },
-  { value: 15, label: '15 minutes before' },
-  { value: 30, label: '30 minutes before' },
-  { value: 60, label: '1 hour before' },
-  { value: 120, label: '2 hours before' },
-  { value: 1440, label: '1 day before' },
-  { value: 2880, label: '2 days before' },
-  { value: 10080, label: '1 week before' },
-];
+// Predefined reminder offsets, in minutes before the event
+const REMINDER_OPTIONS = [0, 5, 10, 15, 30, 60, 120, 1440, 2880, 10080];
 
 // Color palette for events
 const COLOR_PALETTE = [
@@ -51,6 +42,24 @@ const COLOR_PALETTE = [
   '#6366f1', // Indigo
 ];
 
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Localized reminder label: "30 minutes before", "1 day before"… */
+export const reminderLabel = (minutes: number, t: CalendarTranslations): string => {
+  if (minutes === 0) return t.reminderAtTime;
+  if (minutes === 10080) return t.reminderWeek;
+  if (minutes === 1440) return t.reminderDay;
+  if (minutes % 1440 === 0) return interpolate(t.reminderDays, { n: minutes / 1440 });
+  if (minutes === 60) return t.reminderHour;
+  if (minutes % 60 === 0) return interpolate(t.reminderHours, { n: minutes / 60 });
+  return interpolate(t.reminderMinutes, { n: minutes });
+};
+
+/** Stable avatar hue derived from the email (no fake guest list needed). */
+const avatarHue = (email: string) => [...email].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % 360, 7);
+
+const mapsUrl = (location: string) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
+
 export const EventModal: React.FC<EventModalProps> = ({
   isOpen,
   onClose,
@@ -58,7 +67,9 @@ export const EventModal: React.FC<EventModalProps> = ({
   initialDate,
   onSave,
   onDelete,
-  calendars
+  calendars,
+  translations: t,
+  locale
 }) => {
   const [mode, setMode] = useState<'view' | 'edit' | 'create'>('create');
 
@@ -74,26 +85,20 @@ export const EventModal: React.FC<EventModalProps> = ({
     type: undefined,
     recurrence: undefined,
     attachments: [],
-    reminders: [{ id: '1', type: 'notification', time: 30, label: '30 minutes before' }],
+    reminders: [],
   });
 
   const [isCalendarDropdownOpen, setIsCalendarDropdownOpen] = useState(false);
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [isReminderDropdownOpen, setIsReminderDropdownOpen] = useState(false);
-  const [isGuestsDropdownOpen, setIsGuestsDropdownOpen] = useState(false);
-
-  const fakeGuests = [
-    'alice@example.com',
-    'bob@example.com',
-    'charlie@example.com',
-    'diana@example.com',
-    'evan@example.com'
-  ];
-
-  const [selectedGuests, setSelectedGuests] = useState<string[]>([]);
+  const [guestInput, setGuestInput] = useState('');
+  const [guestError, setGuestError] = useState(false);
 
   useEffect(() => {
+    const defaultReminders = (): EventReminder[] => [{ id: '1', type: 'notification', time: 30, label: reminderLabel(30, t) }];
     if (isOpen) {
+      setGuestInput('');
+      setGuestError(false);
       if (event) {
         setMode('view');
         setFormData({
@@ -101,9 +106,9 @@ export const EventModal: React.FC<EventModalProps> = ({
           start: new Date(event.start),
           end: new Date(event.end),
           attachments: event.attachments || [],
-          reminders: event.reminders || [{ id: '1', type: 'notification', time: 30, label: '30 minutes before' }],
+          reminders: event.reminders || defaultReminders(),
+          guests: event.guests || [],
         });
-        setSelectedGuests(event.guests || []);
       } else {
         setMode('create');
         const start = initialDate || new Date();
@@ -120,25 +125,40 @@ export const EventModal: React.FC<EventModalProps> = ({
           color: '#3b82f6',
           calendarId: calendars?.[0]?.id,
           attachments: [],
-          reminders: [{ id: '1', type: 'notification', time: 30, label: '30 minutes before' }],
+          reminders: defaultReminders(),
+          guests: [],
         });
-        setSelectedGuests([]);
       }
     }
-  }, [isOpen, event, initialDate, calendars]);
+  }, [isOpen, event, initialDate, calendars, t]);
 
-  const toggleGuest = (email: string) => {
-    setSelectedGuests(prev => {
-        const newGuests = prev.includes(email)
-            ? prev.filter(e => e !== email)
-            : [...prev, email];
-        setFormData(curr => ({ ...curr, guests: newGuests }));
-        return newGuests;
-    });
+  const guests = formData.guests || [];
+
+  /** U2: guests are typed (or pasted as a list) freely; returns false if some entries are not valid emails. */
+  const addGuests = (raw: string): boolean => {
+    const entries = raw.split(/[\s,;]+/).filter(Boolean);
+    const valid = entries.filter(entry => EMAIL.test(entry));
+    const invalid = entries.filter(entry => !EMAIL.test(entry));
+    if (valid.length > 0) {
+      setFormData(prev => ({ ...prev, guests: [...new Set([...(prev.guests || []), ...valid])] }));
+    }
+    setGuestInput(invalid.join(', '));
+    setGuestError(invalid.length > 0);
+    return invalid.length === 0;
+  };
+
+  const removeGuest = (email: string) => {
+    setFormData(prev => ({ ...prev, guests: (prev.guests || []).filter(g => g !== email) }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Guests still typed in the input are added on save, unless some are not valid emails.
+    const pending = guestInput.split(/[\s,;]+/).filter(Boolean);
+    if (pending.some(entry => !EMAIL.test(entry))) {
+      addGuests(guestInput);
+      return;
+    }
 
     let eventColor = formData.color;
     if (formData.calendarId && calendars) {
@@ -148,8 +168,11 @@ export const EventModal: React.FC<EventModalProps> = ({
         }
     }
 
+    const finalGuests = [...new Set([...guests, ...pending])];
+
     onSave({
       ...formData,
+      guests: finalGuests,
       color: eventColor,
       id: event?.id,
     });
@@ -188,12 +211,12 @@ export const EventModal: React.FC<EventModalProps> = ({
     }
   };
 
-  const addReminder = (minutes: number, label: string) => {
+  const addReminder = (minutes: number) => {
     const newReminder: EventReminder = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: Math.random().toString(36).slice(2, 11),
       type: 'notification',
       time: minutes,
-      label
+      label: reminderLabel(minutes, t)
     };
     setFormData(prev => ({
       ...prev,
@@ -209,24 +232,40 @@ export const EventModal: React.FC<EventModalProps> = ({
     }));
   };
 
-  const handleDownload = (attachment: EventAttachment) => {
-    const element = document.createElement("a");
-    const file = new Blob(['Dummy content for ' + attachment.name], {type: 'text/plain'});
-    element.href = URL.createObjectURL(file);
-    element.download = attachment.name;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-  };
-
   const getDurationText = () => {
     if (!formData.start || !formData.end) return '';
     const mins = differenceInMinutes(formData.end, formData.start);
-    if (mins < 60) return `${mins} min`;
+    if (mins < 60) return interpolate(t.durationMinutes, { n: mins });
     const hours = Math.floor(mins / 60);
     const remainingMins = mins % 60;
-    if (remainingMins === 0) return `${hours} hr`;
-    return `${hours} hr ${remainingMins} min`;
+    if (remainingMins === 0) return interpolate(t.durationHours, { n: hours });
+    return interpolate(t.durationHoursMinutes, { h: hours, m: remainingMins });
+  };
+
+  const { time: timeFormat } = timeFormats(locale);
+
+  const renderAttachment = (att: EventAttachment) => {
+    const content = (
+      <>
+        <div className="p-2 bg-primary/10 rounded-lg">
+          <File className="w-4 h-4 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-foreground truncate">{att.name}</p>
+          <p className="text-xs text-muted-foreground">{att.size}</p>
+        </div>
+        {att.url && <Download className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />}
+      </>
+    );
+    const className = "flex items-center gap-3 p-3 rounded-xl border border-border/30 bg-muted/20 transition-all group";
+    // U6: only real attachment URLs are downloadable (no generated placeholder file).
+    return att.url ? (
+      <a key={att.id} href={att.url} target="_blank" rel="noopener noreferrer" download={att.name} className={cn(className, "hover:bg-muted/40 cursor-pointer")}>
+        {content}
+      </a>
+    ) : (
+      <div key={att.id} className={className}>{content}</div>
+    );
   };
 
   // ========== VIEW MODE ==========
@@ -247,28 +286,31 @@ export const EventModal: React.FC<EventModalProps> = ({
               style={{ backgroundColor: event?.color || '#3b82f6' }}
             />
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              {calendars?.find(c => c.id === event?.calendarId)?.label || 'Event'}
+              {calendars?.find(c => c.id === event?.calendarId)?.label || t.event}
             </span>
           </div>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setMode('edit')}
               className="p-2 hover:bg-background/80 rounded-lg transition-all text-muted-foreground hover:text-foreground"
-              title="Edit"
+              title={t.edit}
+              aria-label={t.edit}
             >
               <Edit2 className="w-4 h-4" />
             </button>
             <button
               onClick={handleDelete}
               className="p-2 hover:bg-destructive/10 rounded-lg transition-all text-muted-foreground hover:text-destructive"
-              title="Delete"
+              title={t.delete}
+              aria-label={t.delete}
             >
               <Trash2 className="w-4 h-4" />
             </button>
             <button
               onClick={onClose}
               className="p-2 hover:bg-background/80 rounded-lg transition-all text-muted-foreground hover:text-foreground"
-              title="Close"
+              title={t.close}
+              aria-label={t.close}
             >
               <X className="w-4 h-4" />
             </button>
@@ -277,7 +319,7 @@ export const EventModal: React.FC<EventModalProps> = ({
 
         {/* Title */}
         <h1 className="text-2xl font-bold text-foreground mb-3 leading-tight">
-          {event?.title || '(No title)'}
+          {event?.title || t.noTitle}
         </h1>
 
         {/* Date & Time */}
@@ -285,13 +327,13 @@ export const EventModal: React.FC<EventModalProps> = ({
           <div className="flex items-center gap-2 px-3 py-1.5 bg-background/60 backdrop-blur-sm rounded-lg border border-border/30">
             <Calendar className="w-4 h-4 text-muted-foreground" />
             <span className="font-medium">
-              {event?.start && format(new Date(event.start), 'EEE, MMM d')}
+              {event?.start && format(new Date(event.start), 'EEE, MMM d', { locale })}
             </span>
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 bg-background/60 backdrop-blur-sm rounded-lg border border-border/30">
             <Clock className="w-4 h-4 text-muted-foreground" />
             <span className="font-medium">
-              {event?.start && format(new Date(event.start), 'h:mm a')} – {event?.end && format(new Date(event.end), 'h:mm a')}
+              {event?.start && format(new Date(event.start), timeFormat, { locale })}{' – '}{event?.end && format(new Date(event.end), timeFormat, { locale })}
             </span>
           </div>
         </div>
@@ -299,9 +341,12 @@ export const EventModal: React.FC<EventModalProps> = ({
 
       {/* Content */}
       <div className="px-6 pb-6 space-y-4 overflow-y-auto flex-1">
-        {/* Location */}
+        {/* Location: U4, a real link to a maps search */}
         {event?.location && (
-          <motion.div
+          <motion.a
+            href={mapsUrl(event.location)}
+            target="_blank"
+            rel="noopener noreferrer"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className="flex items-start gap-3 p-4 rounded-2xl bg-muted/30 border border-border/30 group hover:bg-muted/50 transition-all cursor-pointer"
@@ -311,10 +356,10 @@ export const EventModal: React.FC<EventModalProps> = ({
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium text-foreground">{event.location}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Click to open in maps</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{t.openInMaps}</p>
             </div>
             <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-          </motion.div>
+          </motion.a>
         )}
 
         {/* Guests */}
@@ -329,19 +374,19 @@ export const EventModal: React.FC<EventModalProps> = ({
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm font-medium text-foreground">
-                  {event.guests.length} {event.guests.length > 1 ? 'Guests' : 'Guest'}
+                  {event.guests.length} {event.guests.length > 1 ? t.guests : t.guestSingular}
                 </span>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              {event.guests.map((email, index) => (
+              {event.guests.map((email) => (
                 <div
-                  key={index}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/30 border border-border/30 hover:bg-muted/50 transition-all cursor-pointer group"
+                  key={email}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/30 border border-border/30"
                 >
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold text-white"
-                    style={{ backgroundColor: `hsl(${index * 60}, 70%, 50%)` }}
+                    style={{ backgroundColor: `hsl(${avatarHue(email)}, 70%, 50%)` }}
                   >
                     {email[0].toUpperCase()}
                   </div>
@@ -372,7 +417,7 @@ export const EventModal: React.FC<EventModalProps> = ({
                   key={reminder.id}
                   className="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400"
                 >
-                  {reminder.label || `${reminder.time} min before`}
+                  {reminder.label || reminderLabel(reminder.time, t)}
                 </span>
               ))}
             </div>
@@ -389,7 +434,7 @@ export const EventModal: React.FC<EventModalProps> = ({
           >
             <div className="flex items-center gap-2">
               <AlignLeft className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">Notes</span>
+              <span className="text-sm font-medium text-foreground">{t.notesLabel}</span>
             </div>
             <div className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed pl-6 p-3 rounded-xl bg-muted/20 border border-border/30">
               {event.description}
@@ -407,25 +452,10 @@ export const EventModal: React.FC<EventModalProps> = ({
           >
             <div className="flex items-center gap-2">
               <Paperclip className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">Attachments</span>
+              <span className="text-sm font-medium text-foreground">{t.attachments}</span>
             </div>
             <div className="grid gap-2">
-              {event.attachments.map(att => (
-                <div
-                  key={att.id}
-                  onClick={() => handleDownload(att)}
-                  className="flex items-center gap-3 p-3 rounded-xl border border-border/30 bg-muted/20 hover:bg-muted/40 transition-all cursor-pointer group"
-                >
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <File className="w-4 h-4 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{att.name}</p>
-                    <p className="text-xs text-muted-foreground">{att.size}</p>
-                  </div>
-                  <Download className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-              ))}
+              {event.attachments.map(renderAttachment)}
             </div>
           </motion.div>
         )}
@@ -443,6 +473,7 @@ export const EventModal: React.FC<EventModalProps> = ({
             type="button"
             onClick={() => setIsColorPickerOpen(!isColorPickerOpen)}
             className="relative p-1"
+            aria-label={t.eventColor}
           >
             <div
               className="w-5 h-5 rounded-full cursor-pointer hover:scale-110 transition-transform"
@@ -457,6 +488,7 @@ export const EventModal: React.FC<EventModalProps> = ({
                   <button
                     key={color}
                     type="button"
+                    aria-label={color}
                     onClick={() => {
                       setFormData(prev => ({ ...prev, color }));
                       setIsColorPickerOpen(false);
@@ -472,13 +504,14 @@ export const EventModal: React.FC<EventModalProps> = ({
             )}
           </button>
           <h2 className="text-lg font-semibold text-foreground">
-            {mode === 'edit' ? 'Edit Event' : 'New Event'}
+            {mode === 'edit' ? t.editEvent : t.newEvent}
           </h2>
         </div>
         <button
           type="button"
           onClick={onClose}
           className="p-2 hover:bg-accent rounded-xl transition-all text-muted-foreground hover:text-foreground"
+          aria-label={t.close}
         >
           <X className="w-4 h-4" />
         </button>
@@ -496,7 +529,8 @@ export const EventModal: React.FC<EventModalProps> = ({
               className="w-full text-xl font-semibold border-0 border-b-2 border-transparent focus:border-primary bg-transparent px-0 py-2 placeholder-muted-foreground/50 transition-all text-foreground focus:outline-none"
               value={formData.title}
               onChange={e => setFormData({ ...formData, title: e.target.value })}
-              placeholder="Add title"
+              placeholder={t.title}
+              aria-label={t.title}
             />
           </div>
 
@@ -507,8 +541,9 @@ export const EventModal: React.FC<EventModalProps> = ({
             </div>
             <div className="flex-1 grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Start</label>
+                <label htmlFor="calendarkit-event-start" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">{t.start}</label>
                 <input
+                  id="calendarkit-event-start"
                   type="datetime-local"
                   className="w-full bg-background border border-border/50 rounded-xl px-3 py-2 text-sm font-medium text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   value={formatDateForInput(formData.start)}
@@ -516,8 +551,9 @@ export const EventModal: React.FC<EventModalProps> = ({
                 />
               </div>
               <div>
-                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">End</label>
+                <label htmlFor="calendarkit-event-end" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">{t.end}</label>
                 <input
+                  id="calendarkit-event-end"
                   type="datetime-local"
                   className="w-full bg-background border border-border/50 rounded-xl px-3 py-2 text-sm font-medium text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   value={formatDateForInput(formData.end)}
@@ -541,7 +577,7 @@ export const EventModal: React.FC<EventModalProps> = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Bell className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-foreground">Reminders</span>
+                <span className="text-sm font-medium text-foreground">{t.reminders}</span>
               </div>
               <div className="relative">
                 <button
@@ -550,20 +586,20 @@ export const EventModal: React.FC<EventModalProps> = ({
                   className="flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  Add
+                  {t.add}
                 </button>
                 {isReminderDropdownOpen && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setIsReminderDropdownOpen(false)} />
                     <div className="absolute right-0 top-full mt-1 w-48 bg-background border border-border rounded-xl shadow-xl z-50 py-1 max-h-60 overflow-y-auto">
-                      {REMINDER_OPTIONS.map(option => (
+                      {REMINDER_OPTIONS.map(minutes => (
                         <button
-                          key={option.value}
+                          key={minutes}
                           type="button"
-                          onClick={() => addReminder(option.value, option.label)}
+                          onClick={() => addReminder(minutes)}
                           className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
                         >
-                          {option.label}
+                          {reminderLabel(minutes, t)}
                         </button>
                       ))}
                     </div>
@@ -580,12 +616,13 @@ export const EventModal: React.FC<EventModalProps> = ({
                   >
                     <BellRing className="w-3.5 h-3.5 text-amber-500" />
                     <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
-                      {reminder.label}
+                      {reminder.label || reminderLabel(reminder.time, t)}
                     </span>
                     <button
                       type="button"
                       onClick={() => removeReminder(reminder.id)}
                       className="p-0.5 hover:bg-amber-500/20 rounded-full transition-colors"
+                      aria-label={t.removeReminder}
                     >
                       <X className="w-3 h-3 text-amber-500" />
                     </button>
@@ -595,76 +632,55 @@ export const EventModal: React.FC<EventModalProps> = ({
             )}
           </div>
 
-          {/* Guests */}
+          {/* Guests: U2, free email input instead of a fake suggestion list */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">Guests</span>
+              <label htmlFor="calendarkit-event-guest" className="text-sm font-medium text-foreground">{t.guests}</label>
             </div>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setIsGuestsDropdownOpen(!isGuestsDropdownOpen)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-muted/20 border border-border/30 rounded-xl text-sm text-left hover:bg-muted/30 transition-all"
-              >
-                <span className={selectedGuests.length > 0 ? "text-foreground font-medium" : "text-muted-foreground"}>
-                  {selectedGuests.length > 0
-                    ? `${selectedGuests.length} guest${selectedGuests.length > 1 ? 's' : ''} added`
-                    : "Add guests"}
-                </span>
-                <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform", isGuestsDropdownOpen && "rotate-180")} />
-              </button>
-
-              {isGuestsDropdownOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setIsGuestsDropdownOpen(false)} />
-                  <div className="absolute z-50 w-full mt-2 bg-background border border-border rounded-xl shadow-xl max-h-48 overflow-y-auto">
-                    {fakeGuests.map(email => (
-                      <div
-                        key={email}
-                        className="px-4 py-3 hover:bg-accent cursor-pointer flex items-center gap-3 transition-colors"
-                        onClick={() => toggleGuest(email)}
-                      >
-                        <div className={cn(
-                          "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all",
-                          selectedGuests.includes(email) ? 'bg-primary border-primary' : 'border-border'
-                        )}>
-                          {selectedGuests.includes(email) && <Check className="w-3 h-3 text-primary-foreground" />}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold text-white"
-                            style={{ backgroundColor: `hsl(${fakeGuests.indexOf(email) * 60}, 70%, 50%)` }}
-                          >
-                            {email[0].toUpperCase()}
-                          </div>
-                          <span className="text-sm">{email}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </>
+            <input
+              id="calendarkit-event-guest"
+              type="email"
+              value={guestInput}
+              onChange={e => {
+                setGuestInput(e.target.value);
+                setGuestError(false);
+              }}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ',') {
+                  e.preventDefault();
+                  addGuests(guestInput);
+                }
+              }}
+              onBlur={() => guestInput.trim() && addGuests(guestInput)}
+              placeholder={t.addGuestPlaceholder}
+              aria-invalid={guestError}
+              className={cn(
+                "w-full px-4 py-3 bg-muted/20 border rounded-xl text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-all",
+                guestError ? "border-destructive" : "border-border/30"
               )}
-            </div>
+            />
+            {guestError && <p role="alert" className="text-xs text-destructive">{t.invalidEmail}</p>}
 
-            {selectedGuests.length > 0 && (
+            {guests.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-2">
-                {selectedGuests.map(email => (
+                {guests.map(email => (
                   <div
                     key={email}
                     className="flex items-center gap-2 pl-1 pr-2 py-1 bg-muted/30 border border-border/30 rounded-full"
                   >
                     <div
                       className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold text-white"
-                      style={{ backgroundColor: `hsl(${fakeGuests.indexOf(email) * 60}, 70%, 50%)` }}
+                      style={{ backgroundColor: `hsl(${avatarHue(email)}, 70%, 50%)` }}
                     >
                       {email[0].toUpperCase()}
                     </div>
-                    <span className="text-xs font-medium text-foreground">{email.split('@')[0]}</span>
+                    <span className="text-xs font-medium text-foreground">{email}</span>
                     <button
                       type="button"
-                      onClick={() => toggleGuest(email)}
+                      onClick={() => removeGuest(email)}
                       className="p-0.5 hover:bg-destructive/10 rounded-full transition-colors"
+                      aria-label={interpolate(t.removeGuest, { email })}
                     >
                       <X className="w-3 h-3 text-muted-foreground" />
                     </button>
@@ -680,7 +696,8 @@ export const EventModal: React.FC<EventModalProps> = ({
             <input
               type="text"
               className="flex-1 bg-transparent text-sm text-foreground placeholder-muted-foreground focus:outline-none"
-              placeholder="Add location"
+              placeholder={t.addLocation}
+              aria-label={t.addLocation}
               value={formData.location || ''}
               onChange={e => setFormData({ ...formData, location: e.target.value })}
             />
@@ -690,11 +707,12 @@ export const EventModal: React.FC<EventModalProps> = ({
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <AlignLeft className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">Notes</span>
+              <span className="text-sm font-medium text-foreground">{t.notesLabel}</span>
             </div>
             <textarea
               className="w-full bg-muted/20 border border-border/30 rounded-xl px-4 py-3 text-sm min-h-[100px] resize-none text-foreground placeholder-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-              placeholder="Add description or notes..."
+              placeholder={t.addNotes}
+              aria-label={t.notesLabel}
               value={formData.description || ''}
               onChange={e => setFormData({ ...formData, description: e.target.value })}
             />
@@ -705,6 +723,7 @@ export const EventModal: React.FC<EventModalProps> = ({
             <Repeat className="w-5 h-5 text-muted-foreground shrink-0" />
             <select
               className="flex-1 bg-transparent text-sm text-foreground focus:outline-none cursor-pointer"
+              aria-label={t.repeat}
               value={formData.recurrence?.freq || ''}
               onChange={e => {
                 if (e.target.value === '') {
@@ -720,19 +739,20 @@ export const EventModal: React.FC<EventModalProps> = ({
                 }
               }}
             >
-              <option value="">Does not repeat</option>
-              <option value="DAILY">Daily</option>
-              <option value="WEEKLY">Weekly</option>
-              <option value="MONTHLY">Monthly</option>
-              <option value="YEARLY">Yearly</option>
+              <option value="">{t.doesNotRepeat}</option>
+              <option value="DAILY">{t.daily}</option>
+              <option value="WEEKLY">{t.weekly}</option>
+              <option value="MONTHLY">{t.monthly}</option>
+              <option value="YEARLY">{t.yearly}</option>
             </select>
           </div>
 
-          {/* Calendar Selector */}
+          {/* Calendar Selector (only when calendars are provided) */}
+          {calendars && calendars.length > 0 && (
           <div className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-border/30">
             <div className="flex items-center gap-2">
               <Tag className="w-5 h-5 text-muted-foreground" />
-              <span className="text-sm text-foreground">Calendar</span>
+              <span className="text-sm text-foreground">{t.calendar}</span>
             </div>
             <div className="relative">
               <button
@@ -742,9 +762,9 @@ export const EventModal: React.FC<EventModalProps> = ({
               >
                 <div
                   className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: calendars?.find(c => c.id === formData.calendarId)?.color || '#3b82f6' }}
+                  style={{ backgroundColor: calendars.find(c => c.id === formData.calendarId)?.color || '#3b82f6' }}
                 />
-                <span className="font-medium">{calendars?.find(c => c.id === formData.calendarId)?.label || 'Select'}</span>
+                <span className="font-medium">{calendars.find(c => c.id === formData.calendarId)?.label || t.select}</span>
                 <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
 
@@ -752,7 +772,7 @@ export const EventModal: React.FC<EventModalProps> = ({
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setIsCalendarDropdownOpen(false)} />
                   <div className="absolute right-0 bottom-full mb-2 w-48 bg-background border border-border rounded-xl shadow-xl z-50 py-1">
-                    {calendars?.map(cal => (
+                    {calendars.map(cal => (
                       <button
                         key={cal.id}
                         type="button"
@@ -776,6 +796,7 @@ export const EventModal: React.FC<EventModalProps> = ({
               )}
             </div>
           </div>
+          )}
         </div>
       </div>
 
@@ -788,7 +809,7 @@ export const EventModal: React.FC<EventModalProps> = ({
             className="flex items-center gap-2 px-4 py-2 text-destructive hover:bg-destructive/10 rounded-xl transition-all text-sm font-medium"
           >
             <Trash2 className="w-4 h-4" />
-            Delete
+            {t.delete}
           </button>
         )}
         {mode === 'create' && <div />}
@@ -798,13 +819,13 @@ export const EventModal: React.FC<EventModalProps> = ({
             onClick={onClose}
             className="px-4 py-2.5 text-muted-foreground hover:text-foreground font-medium text-sm rounded-xl transition-all hover:bg-accent"
           >
-            Cancel
+            {t.cancel}
           </button>
           <button
             type="submit"
             className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm rounded-xl shadow-md transition-all hover:shadow-lg hover:shadow-primary/20 active:scale-95"
           >
-            {mode === 'edit' ? 'Save Changes' : 'Create Event'}
+            {mode === 'edit' ? t.saveChanges : t.createEvent}
           </button>
         </div>
       </div>

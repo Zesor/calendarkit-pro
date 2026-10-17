@@ -391,7 +391,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 onDelete={handleModalDelete}
                 calendars={calendars}
                 eventTypes={eventTypes}
-                translations={t} // Pass translations
+                translations={t}
+                locale={locale}
             />
         )}
 
