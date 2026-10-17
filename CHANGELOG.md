@@ -1,5 +1,16 @@
 # Pro-Scheduler Changelog
 
+## 2.0.0-alpha.0
+
+Pre-release on the `next` dist-tag (`latest` stays on 1.4.x). The `<Scheduler>` is unchanged.
+
+### Added
+- `calendarkit-pro/core`, the framework-agnostic engine of 2.0: `createCalendar` (controlled or uncontrolled events with `onEventsChange`, view and date, dialogs and drafts, move / resize / delete / duplicate with the 1.x callbacks, one-step undo), view models (`selectTimeGrid`, `selectMonth`, `selectAgenda`, `selectFlowDay`, `selectResources`), `layoutColumns` (overlaps that expand into free columns, extra events grouped into "+N") and `parseEventSentence` (English and French).
+
+### Fixed
+- Duplicating an all-day event on a daylight-saving day moves it by one calendar day.
+- An occurrence lasting over a year no longer makes recurrence expansion scan decades back (look-back capped at one year, with a development warning).
+
 ## 1.4.0
 
 ### Added
