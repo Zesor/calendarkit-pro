@@ -1,13 +1,11 @@
 import { useMemo, useState } from 'react';
-import {
-  addDays, addMonths, addWeeks, endOfMonth, format, startOfMonth, startOfWeek,
-  subDays, subMonths, subWeeks,
-} from 'date-fns';
+import { addDays, addMonths, addWeeks, format, subDays, subMonths, subWeeks } from 'date-fns';
 import { DragEndEvent } from '@dnd-kit/core';
 import { ViewType, CalendarEvent } from '../types';
 import { computeDayMove, computeDayResize, computeDrop } from '../core/dnd';
 import { normalizeEvents } from '../core/events';
-import { DateRange, excludeOccurrence, expandRecurrences, shiftSeries, stripOccurrenceFields } from '../core/recurrence';
+import { applyChange as applyCoreChange, deletionFor, duplicateEvent, expansionRange, masterOf as findMaster } from '../core/changes';
+import { expandRecurrences, shiftSeries, stripOccurrenceFields } from '../core/recurrence';
 import { useStableCallback } from './useStableCallback';
 
 interface UseCalendarLogicProps {
@@ -27,15 +25,7 @@ interface UseCalendarLogicProps {
   timezone?: string;
 }
 
-/** Occurrences are expanded for the focused month ± one month, plus the agenda's 30 days (R4). */
-export function expansionRange(monthStart: Date): DateRange {
-  return {
-    start: startOfWeek(startOfMonth(subMonths(monthStart, 1))),
-    end: addDays(endOfMonth(addMonths(monthStart, 1)), 37),
-  };
-}
-
-const DAY_MS = 24 * 60 * 60 * 1000;
+export { expansionRange };
 
 export const useCalendarLogic = ({
   events,
@@ -79,8 +69,7 @@ export const useCalendarLogic = ({
     [normalizedEvents, range, timezone],
   );
 
-  const masterOf = (occurrence: CalendarEvent) =>
-    normalizedEvents.find((e) => e.id === occurrence.originalEventId);
+  const masterOf = (occurrence: CalendarEvent) => findMaster(occurrence, normalizedEvents);
 
   const handleViewChange = useStableCallback((newView: ViewType) => {
     if (controlledOnViewChange) {
@@ -211,16 +200,9 @@ export const useCalendarLogic = ({
 
   /** R6: deleting an occurrence removes only that date when `onOccurrenceDelete` is provided. */
   const handleEventDelete = useStableCallback((event: CalendarEvent) => {
-    if (!event.originalEventId) {
-      onEventDelete?.(event.id);
-      return;
-    }
-    const master = masterOf(event);
-    if (onOccurrenceDelete && master) {
-      onOccurrenceDelete(event, excludeOccurrence(master, event.occurrenceStart ?? event.start));
-    } else {
-      onEventDelete?.(event.originalEventId);
-    }
+    const deletion = deletionFor(event, normalizedEvents, !!onOccurrenceDelete);
+    if (deletion.kind === 'occurrence') onOccurrenceDelete?.(deletion.occurrence, deletion.series);
+    else onEventDelete?.(deletion.id);
   });
 
   const handleModalDelete = useStableCallback((eventId: string) => {
@@ -233,24 +215,11 @@ export const useCalendarLogic = ({
 
   /** R7: a duplicate is always a single event, one day later. */
   const handleEventDuplicate = useStableCallback((event: CalendarEvent) => {
-    const { recurrence: _recurrence, ...copy } = stripOccurrenceFields(event);
-    onEventCreate?.({
-      ...copy,
-      id: `${event.originalEventId ?? event.id}-copy-${Date.now()}`,
-      title: `${event.title} (Copy)`,
-      start: new Date(event.start.getTime() + DAY_MS),
-      end: new Date(event.end.getTime() + DAY_MS),
-    });
+    onEventCreate?.(duplicateEvent(event, `${event.originalEventId ?? event.id}-copy-${Date.now()}`));
   });
 
   /** Applies new dates to an event, or to its whole series when it is an occurrence (R5, D1). */
-  const applyChange = (event: CalendarEvent, start: Date, end: Date): { original: CalendarEvent; updated: CalendarEvent } | null => {
-    if (!event.originalEventId) return { original: event, updated: { ...event, start, end } };
-    const master = masterOf(event);
-    if (!master) return null;
-    // All-day series are calendar dates: shift them without a timezone anchor.
-    return { original: master, updated: shiftSeries(master, event, start, end, event.allDay ? undefined : timezone) };
-  };
+  const applyChange = (event: CalendarEvent, start: Date, end: Date) => applyCoreChange(event, start, end, normalizedEvents, timezone);
 
   const handleDragEnd = useStableCallback((dragEvent: DragEndEvent) => {
     if (readOnly) return;
