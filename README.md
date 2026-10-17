@@ -245,6 +245,10 @@ const frenchTranslations = {
 />
 ```
 
+All interface texts (views, event form, sidebar, accessible labels) come from the language pack selected by `language`; `translations` overrides individual keys. Calendars are only listed in the sidebar when you pass `calendars`.
+
+Right-click an event to edit, duplicate or delete it (disabled in `readOnly`).
+
 ## Theming
 
 ```tsx

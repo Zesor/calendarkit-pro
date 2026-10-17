@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { format, startOfDay, differenceInMinutes, Locale } from 'date-fns';
-import { CalendarEvent, Resource } from '../types';
-import { timeFormats } from '../core/format';
+import { CalendarEvent, CalendarTranslations, Resource } from '../types';
+import { interpolate, timeFormats } from '../core/format';
 import { isSameDisplayDay, toDisplay } from '../core/timezone';
 import { DraggableEvent } from '../components/dnd/DraggableEvent';
 import { DroppableCell } from '../components/dnd/DroppableCell';
@@ -14,6 +14,8 @@ interface ResourceViewProps {
   onTimeSlotClick?: (date: Date, resourceId?: string) => void;
   locale?: Locale;
   timezone?: string;
+  translations?: Partial<CalendarTranslations>;
+  onEventContextMenu?: (event: CalendarEvent, e: React.MouseEvent) => void;
 }
 
 export const ResourceView: React.FC<ResourceViewProps> = ({
@@ -23,7 +25,9 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
   onEventClick,
   onTimeSlotClick,
   locale,
-  timezone
+  timezone,
+  translations,
+  onEventContextMenu
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -58,7 +62,7 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
       {/* Header: Hours */}
       <div className="flex border-b border-border bg-muted/20">
         <div className="w-48 shrink-0 border-r border-border p-4 font-semibold text-sm bg-background sticky left-0 z-20">
-          Resources
+          {translations?.resource || 'Resources'}
         </div>
         <div className="flex overflow-hidden">
              <div className="flex relative" style={{ width: hours.length * hourWidth }}>
@@ -97,7 +101,7 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
                             )}
                             <div className="flex flex-col">
                                 <span className="text-sm font-medium">{resource.label}</span>
-                                <span className="text-xs text-muted-foreground">ID: {resource.id}</span>
+                                <span className="text-xs text-muted-foreground">{interpolate(translations?.idLabel || 'ID: {id}', { id: resource.id })}</span>
                             </div>
                         </div>
 
@@ -138,6 +142,7 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
                                         e.stopPropagation();
                                         onEventClick?.(event);
                                     }}
+                                    onContextMenu={onEventContextMenu ? (e) => onEventContextMenu(event, e) : undefined}
                                     className="absolute top-2 bottom-2 rounded-md px-2 py-1 text-xs font-medium border shadow-sm cursor-pointer overflow-hidden hover:brightness-95 transition-all z-10"
                                     style={{
                                         ...getEventStyle(event),

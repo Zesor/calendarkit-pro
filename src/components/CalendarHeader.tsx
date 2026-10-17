@@ -56,6 +56,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
               size="icon"
               className="text-muted-foreground hover:text-foreground hover:bg-accent/80 rounded-xl h-10 w-10 hidden md:inline-flex transition-all duration-200"
               onClick={onMenuClick}
+              aria-label={translations.toggleSidebar}
             >
                 <Menu className="h-5 w-5" />
             </Button>
@@ -76,6 +77,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
                   size="icon"
                   onClick={onPrev}
                   className="rounded-lg h-8 w-8 hover:bg-background/80 transition-all duration-200"
+                  aria-label={translations.previous}
                 >
                     <ChevronLeft className="h-4 w-4 text-muted-foreground" />
                 </Button>
@@ -84,6 +86,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
                   size="icon"
                   onClick={onNext}
                   className="rounded-lg h-8 w-8 hover:bg-background/80 transition-all duration-200"
+                  aria-label={translations.next}
                 >
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </Button>
@@ -106,6 +109,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
             variant="ghost"
             size="sm"
             onClick={() => onLanguageChange(language === 'en' ? 'fr' : 'en')}
+            aria-label={translations.switchLanguage}
             className="h-9 px-3 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-accent/80 transition-all duration-200 uppercase tracking-wider"
           >
             {language}
@@ -119,6 +123,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
             size="icon"
             className="rounded-xl h-9 w-9 hover:bg-accent/80 transition-all duration-200"
             onClick={onThemeToggle}
+            aria-label={translations.toggleTheme}
           >
             {isDarkMode ? (
               <Sun className="h-4 w-4 text-amber-500" />
@@ -137,6 +142,8 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={() => onViewChange(key)}
+                aria-pressed={view === key}
+                aria-label={translations[key]}
                 className={cn(
                   "h-8 px-3 text-xs rounded-lg transition-all duration-200 gap-1.5",
                   view === key

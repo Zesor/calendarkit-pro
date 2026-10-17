@@ -1,6 +1,7 @@
 import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
 import reactHooks from 'eslint-plugin-react-hooks'
+import react from 'eslint-plugin-react'
 import globals from 'globals'
 
 export default tseslint.config(
@@ -17,6 +18,15 @@ export default tseslint.config(
       // The 1.x codebase relies on `any` in a few internal props; tightened in v2.
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+    },
+  },
+  {
+    // I4: every user-visible string in the library UI goes through the translation packs.
+    files: ['src/components/**/*.tsx', 'src/views/**/*.tsx', 'src/index.tsx'],
+    ignores: ['**/*.test.tsx'],
+    plugins: { react },
+    rules: {
+      'react/jsx-no-literals': ['error', { noStrings: false, allowedStrings: ['-', '–', '+', '(', ')', '/', ':', '·', '…'] }],
     },
   },
 )

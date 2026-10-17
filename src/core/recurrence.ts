@@ -97,13 +97,15 @@ function cachedMonth(event: CalendarEvent, monthStart: Date, tz?: string): Calen
  */
 export function expandRecurrences(events: CalendarEvent[], range: DateRange, anchorTz?: string): CalendarEvent[] {
   const result: CalendarEvent[] = []
-  const firstMonth = startOfMonth(toDisplay(range.start, anchorTz))
   const lastMonth = startOfMonth(toDisplay(range.end, anchorTz))
   for (const event of events) {
     if (!event.recurrence) {
       result.push(event)
       continue
     }
+    // Start from the month of (range start − duration): an occurrence may begin before the range.
+    const duration = event.end.getTime() - event.start.getTime()
+    const firstMonth = startOfMonth(toDisplay(new Date(range.start.getTime() - duration), anchorTz))
     try {
       for (let month = firstMonth; month <= lastMonth; month = addMonths(month, 1)) {
         for (const occurrence of cachedMonth(event, fromDisplay(month, anchorTz), anchorTz)) {
@@ -155,6 +157,7 @@ export function shiftSeries(
       master.recurrence.byweekday && dayDelta % 7 !== 0
         ? master.recurrence.byweekday.map((d) => (((d + dayDelta) % 7) + 7) % 7)
         : master.recurrence.byweekday,
+    until: master.recurrence.until && shiftFloating(master.recurrence.until, deltaMs, anchorTz),
     exdates: master.recurrence.exdates?.map((d) => shiftFloating(d, deltaMs, anchorTz)),
   }
   return stripOccurrenceFields({ ...master, start, end, recurrence })

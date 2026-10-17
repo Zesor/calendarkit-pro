@@ -1,6 +1,6 @@
 import React from 'react';
 import { addDays, format, differenceInMinutes, isSameDay, Locale, startOfDay } from 'date-fns';
-import { CalendarEvent } from '../types';
+import { CalendarEvent, CalendarTranslations } from '../types';
 import { cn, isEventDragDisabled } from '../utils';
 import { DaySegment, segmentsByDisplayDay } from '../core/events';
 import { timeFormats } from '../core/format';
@@ -19,6 +19,8 @@ interface DayViewProps {
   timezone?: string;
   locale?: Locale;
   readonly?: boolean;
+  onEventContextMenu?: (event: CalendarEvent, e: React.MouseEvent) => void;
+  translations?: Partial<CalendarTranslations>;
 }
 
 const HOUR_HEIGHT = 80; // Larger height for Day View
@@ -40,7 +42,9 @@ const DayViewImpl: React.FC<DayViewProps> = ({
   onEventResize,
   timezone,
   locale,
-  readonly
+  readonly,
+  onEventContextMenu,
+  translations
 }) => {
   // Only the day on screen gets segments, so endless events stay cheap.
   const visibleRange = React.useMemo(() => {
@@ -81,7 +85,7 @@ const DayViewImpl: React.FC<DayViewProps> = ({
                 </h2>
                 {isToday && (
                     <span className="text-xs font-semibold bg-primary text-primary-foreground px-3 py-1 rounded-full shadow-md shadow-primary/20">
-                        Today
+                        {translations?.today || 'Today'}
                     </span>
                 )}
             </div>
@@ -205,6 +209,7 @@ const DayViewImpl: React.FC<DayViewProps> = ({
                                         e.stopPropagation();
                                         onEventClick?.(event);
                                     }}
+                                    onContextMenu={onEventContextMenu ? (e) => onEventContextMenu(event, e) : undefined}
                                     title={columns > 1 ? `${event.title} (${column + 1}/${columns})` : undefined}
                                 >
                                     <div className="flex flex-col h-full overflow-hidden w-full">

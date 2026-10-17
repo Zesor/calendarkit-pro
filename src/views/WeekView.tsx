@@ -20,6 +20,7 @@ interface WeekViewProps {
   timezone?: string;
   locale?: Locale;
   readonly?: boolean;
+  onEventContextMenu?: (event: CalendarEvent, e: React.MouseEvent) => void;
 }
 
 const HOUR_HEIGHT = 60; // px
@@ -42,6 +43,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
   timezone,
   locale,
   readonly,
+  onEventContextMenu,
 }) => {
   // Week start follows the locale (historical Monday fallback without a locale).
   const weekDays = React.useMemo(
@@ -245,6 +247,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
                                             e.stopPropagation();
                                             onEventClick?.(event);
                                         }}
+                                        onContextMenu={onEventContextMenu ? (e) => onEventContextMenu(event, e) : undefined}
                                         title={columns > 1 ? `${event.title} (${column + 1}/${columns})` : undefined}
                                     >
                                         <div className="flex flex-col h-full overflow-hidden w-full">

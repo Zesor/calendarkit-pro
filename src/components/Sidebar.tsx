@@ -6,6 +6,7 @@ import { cn } from '../utils';
 import { toZonedTime } from 'date-fns-tz';
 import { format, Locale } from 'date-fns';
 import { timeZoneAbbreviation } from '../core/format';
+import { safeColor } from '../core/color';
 
 import { ViewType, CalendarEvent } from '../types';
 
@@ -58,14 +59,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return () => clearInterval(timer);
   }, []);
   
-  // Default demo data if no calendars provided
-  const defaultCalendars = [
-    { id: '1', label: 'My Calendar', color: '#3b82f6', active: true },
-    { id: '2', label: 'Birthdays', color: '#10b981', active: true },
-    { id: '3', label: 'Tasks', color: '#6366f1', active: true },
-  ];
-
-  const displayCalendars = calendars || defaultCalendars;
 
   // Cached Intl formatters (C4): building one per zone per render was expensive.
   const getAcronym = (tz: string) => (!tz || !now ? 'LOC' : timeZoneAbbreviation(now, tz));
@@ -141,10 +134,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       )}
 
-      <MiniCalendar currentDate={currentDate} onDateChange={onDateChange} onViewChange={onViewChange} locale={locale} />
+      <MiniCalendar
+        currentDate={currentDate}
+        onDateChange={onDateChange}
+        onViewChange={onViewChange}
+        locale={locale}
+        labels={{ previousMonth: translations?.previousMonth, nextMonth: translations?.nextMonth }}
+      />
 
       <div className="flex-1 px-4 space-y-5 mt-5">
-        {/* Calendars List */}
+        {/* Calendars List: U1, only when the consumer provides calendars (no demo placeholders) */}
+        {calendars && calendars.length > 0 && (
         <div className="bg-muted/20 rounded-2xl p-3 border-[0px] border-border/30">
           <div
             className="flex items-center justify-between cursor-pointer hover:bg-accent/50 p-2 -m-1 rounded-xl mb-2 transition-all duration-200"
@@ -156,13 +156,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {calendarsOpen && (
             <div className="space-y-1">
-              {displayCalendars.map(cal => (
+              {calendars.map(cal => (
                 <div
                     key={cal.id}
                     className="flex items-center gap-3 py-2 px-2 hover:bg-accent/60 rounded-xl cursor-pointer group transition-all duration-200"
                     onClick={() => onCalendarToggle?.(cal.id, !(cal.active ?? true))}
                 >
-                  <div className="relative flex items-center justify-center">
+                  <div
+                    className="relative flex items-center justify-center"
+                    // U5: the colour is validated and passed as a CSS variable (no injected <style> tag).
+                    style={{ '--cal-color': safeColor(cal.color, 'hsl(var(--primary))') } as React.CSSProperties}
+                  >
                     <input
                         type="checkbox"
                         checked={cal.active ?? true}
@@ -170,37 +174,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
                              e.stopPropagation();
                              onCalendarToggle?.(cal.id, e.target.checked);
                         }}
-                        className="peer h-5 w-5 rounded-md border-2 border-border/60 cursor-pointer appearance-none checked:border-transparent transition-all duration-200"
-                        style={{ '--primary-color': cal.color } as React.CSSProperties}
-                        data-cal-id={cal.id}
+                        aria-label={cal.label}
+                        className="peer h-5 w-5 rounded-md border-2 border-border/60 cursor-pointer appearance-none checked:border-transparent checked:bg-[var(--cal-color)] focus:ring-2 focus:ring-[var(--cal-color)] transition-all duration-200"
                     />
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 peer-checked:opacity-100 transition-opacity">
                         <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                         </svg>
                     </div>
-                    <style>{`
-                      input[type="checkbox"][data-cal-id="${cal.id}"]:checked {
-                        background-color: ${cal.color} !important;
-                        border-color: ${cal.color} !important;
-                      }
-                      input[type="checkbox"][data-cal-id="${cal.id}"]:focus {
-                        --tw-ring-color: ${cal.color}40 !important;
-                      }
-                    `}</style>
                   </div>
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <span className="text-sm text-foreground/90 truncate font-medium">{cal.label}</span>
                   </div>
                   <div
                     className="w-2 h-2 rounded-full opacity-60 group-hover:opacity-100 transition-opacity"
-                    style={{ backgroundColor: cal.color }}
+                    style={{ backgroundColor: safeColor(cal.color, 'hsl(var(--primary))') }}
                   />
                 </div>
               ))}
             </div>
           )}
         </div>
+        )}
       </div>
 
       {/* Timezone Selector - Custom UI */}

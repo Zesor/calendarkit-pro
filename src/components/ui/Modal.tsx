@@ -10,6 +10,8 @@ interface ModalProps {
   children: React.ReactNode;
   className?: string;
   hideHeader?: boolean;
+  /** Screen-reader label of the header close button. */
+  closeLabel?: string;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -19,6 +21,7 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   className,
   hideHeader = false,
+  closeLabel = 'Close',
 }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -66,7 +69,7 @@ export const Modal: React.FC<ModalProps> = ({
               className="h-9 w-9 p-0 rounded-xl hover:bg-accent/80 transition-all duration-200"
             >
               <X className="h-4 w-4" />
-              <span className="sr-only">Close</span>
+              <span className="sr-only">{closeLabel}</span>
             </Button>
           </div>
         )}

@@ -13,6 +13,7 @@ interface MiniCalendarProps {
   onViewChange?: (view: ViewType) => void;
   className?: string;
   locale?: Locale;
+  labels?: { previousMonth?: string; nextMonth?: string };
 }
 
 export const MiniCalendar: React.FC<MiniCalendarProps> = ({
@@ -20,7 +21,8 @@ export const MiniCalendar: React.FC<MiniCalendarProps> = ({
   onDateChange,
   onViewChange,
   className,
-  locale
+  locale,
+  labels
 }) => {
   const [viewDate, setViewDate] = React.useState(currentDate);
 
@@ -77,7 +79,7 @@ export const MiniCalendar: React.FC<MiniCalendarProps> = ({
               size="icon"
               className="h-7 w-7 rounded-md hover:bg-background/80 transition-all"
               onClick={handlePrev}
-              aria-label="Previous month"
+              aria-label={labels?.previousMonth || 'Previous month'}
             >
                 <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -86,7 +88,7 @@ export const MiniCalendar: React.FC<MiniCalendarProps> = ({
               size="icon"
               className="h-7 w-7 rounded-md hover:bg-background/80 transition-all"
               onClick={handleNext}
-              aria-label="Next month"
+              aria-label={labels?.nextMonth || 'Next month'}
             >
                 <ChevronRight className="h-4 w-4" />
             </Button>

@@ -17,6 +17,7 @@ interface AgendaViewProps {
   locale?: Locale;
   translations?: Partial<CalendarTranslations>;
   timezone?: string;
+  onEventContextMenu?: (event: CalendarEvent, e: React.MouseEvent) => void;
 }
 
 const formatDuration = (start: Date, end: Date): string => {
@@ -47,6 +48,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
   locale,
   translations,
   timezone,
+  onEventContextMenu,
 }) => {
   // Times follow the locale's clock convention (e.g. 24h for pt-BR/fr); the
   // historical 12h format stays the default without a locale.
@@ -142,6 +144,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                             <motion.div
                                 key={event.id}
                                 onClick={() => onEventClick?.(event)}
+                                onContextMenu={onEventContextMenu ? (e) => onEventContextMenu(event, e) : undefined}
                                 className={cn(
                                   "group relative flex gap-4 p-4 rounded-2xl border border-border/40",
                                   "hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5",

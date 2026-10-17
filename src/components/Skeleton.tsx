@@ -23,8 +23,9 @@ export const MonthViewSkeleton: React.FC = () => (
         <div key={i} className="min-h-[120px] border-r border-b border-border/30 p-2">
           <Skeleton className="h-4 w-6 mb-2" />
           <div className="space-y-1">
-            {Math.random() > 0.5 && <Skeleton className="h-5 w-full rounded-md" />}
-            {Math.random() > 0.7 && <Skeleton className="h-5 w-3/4 rounded-md" />}
+            {/* Deterministic pattern: Math.random() broke SSR hydration. */}
+            {(i * 7) % 10 > 4 && <Skeleton className="h-5 w-full rounded-md" />}
+            {(i * 3) % 10 > 6 && <Skeleton className="h-5 w-3/4 rounded-md" />}
           </div>
         </div>
       ))}

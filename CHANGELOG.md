@@ -1,5 +1,23 @@
 # Pro-Scheduler Changelog
 
+## 1.3.1
+
+### Fixed
+- The whole interface is translated (event form, views, sidebar, accessible labels); times in the event form follow the locale.
+- Right-clicking an event opens the context menu (edit, duplicate, delete) — it was never wired. Disabled in `readOnly`.
+- `readOnly` also hides the mobile create button, makes time slots non-clickable and ignores drops.
+- "+N more" in the month view opens that day; the view animation no longer replays on every date click within the same period.
+- Moving a recurring series also moves `recurrence.until`; occurrences starting in the previous month are no longer missed.
+- The month skeleton is deterministic (no SSR hydration mismatch).
+- Calendar colours are validated and no longer injected into a `<style>` tag.
+
+### Changed
+- No placeholder data inside the component: the sidebar lists calendars only when `calendars` is passed, guests are typed (or pasted) as emails instead of picked from fake suggestions, and attachments are only downloadable when they have a `url`.
+- The event form's calendar selector is hidden when no `calendars` are passed (it offered an empty list).
+- The location in the event view is a link to a maps search.
+- Attachment links only open http(s), mailto, blob or relative URLs.
+- Icon-only buttons have accessible names; the active view is announced as pressed.
+
 ## 1.3.0
 
 ### Added

@@ -87,6 +87,12 @@ describe('expandRecurrences', () => {
     expect(hours(result)).toEqual(['10@9:00', '11@9:00', '12@9:00'])
   })
 
+  test('an occurrence starting in the previous month but overlapping the range is returned', () => {
+    const late = series({ start: new Date(2026, 8, 30, 22, 0), end: new Date(2026, 9, 1, 2, 0), recurrence: { freq: 'MONTHLY' } }) // 30 Sep 22:00 → 1 Oct 02:00
+    const result = expandRecurrences([late], range(new Date(2026, 9, 1), new Date(2026, 9, 2)))
+    expect(result.map((e) => e.start)).toEqual([new Date(2026, 8, 30, 22, 0)])
+  })
+
   test('count and until limit the series', () => {
     expect(expandRecurrences([series({ recurrence: { freq: 'DAILY', count: 3 } })], range(new Date(2026, 9, 1), new Date(2026, 10, 30)))).toHaveLength(3)
     expect(expandRecurrences([series({ recurrence: { freq: 'DAILY', until: new Date(2026, 9, 7, 23) } })], range(new Date(2026, 9, 1), new Date(2026, 10, 30)))).toHaveLength(3)
@@ -163,6 +169,14 @@ describe('series edits', () => {
     const updated = shiftSeries(master, occurrence, new Date(2026, 9, 29, 9, 0), new Date(2026, 9, 29, 9, 30))
     expect(updated.start).toEqual(new Date(2026, 9, 8, 9, 0))
     expect(updated.recurrence?.exdates).toEqual([new Date(2026, 9, 22, 9, 0)])
+  })
+
+  test('moving a series later also moves recurrence.until, keeping the last occurrence', () => {
+    const master = series({ recurrence: { freq: 'DAILY', until: new Date(2026, 9, 7, 9, 0) } }) // 5, 6, 7 Oct
+    const [first] = expandRecurrences([master], range(new Date(2026, 9, 5), new Date(2026, 9, 6)))
+    const updated = shiftSeries(master, first, new Date(2026, 9, 5, 10, 0), new Date(2026, 9, 5, 10, 30))
+    expect(updated.recurrence?.until).toEqual(new Date(2026, 9, 7, 10, 0))
+    expect(expandRecurrences([updated], range(new Date(2026, 9, 1), new Date(2026, 9, 31)))).toHaveLength(3)
   })
 
   test('R6: excludeOccurrence appends the occurrence start to exdates', () => {

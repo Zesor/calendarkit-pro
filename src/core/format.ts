@@ -70,5 +70,11 @@ export function resolveTranslations(
   language?: 'en' | 'fr',
   overrides?: Partial<CalendarTranslations>,
 ): CalendarTranslations {
-  return { ...(language === 'fr' ? fr : en), ...overrides }
+  const defined = Object.fromEntries(Object.entries(overrides ?? {}).filter(([, value]) => value !== undefined))
+  return { ...(language === 'fr' ? fr : en), ...defined }
+}
+
+/** Replaces `{name}` placeholders: interpolate('{n} minutes before', { n: 5 }) → '5 minutes before'. */
+export function interpolate(template: string, values: Record<string, string | number>): string {
+  return template.replace(/\{(\w+)\}/g, (match, key: string) => (key in values ? String(values[key]) : match))
 }
