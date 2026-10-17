@@ -103,6 +103,12 @@ export interface CalendarProps {
   onEventCreate?: (event: Partial<CalendarEvent>) => void;
   onEventUpdate?: (event: CalendarEvent) => void;
   onEventDelete?: (eventId: string) => void;
+  /**
+   * Called when a single occurrence of a recurring event is deleted. `updatedSeries` is the master
+   * event with that occurrence added to `recurrence.exdates`: persist it to delete only this
+   * occurrence. Without this prop, deleting an occurrence deletes the whole series (`onEventDelete`).
+   */
+  onOccurrenceDelete?: (occurrence: CalendarEvent, updatedSeries: CalendarEvent) => void;
   theme?: CalendarTheme;
   locale?: Locale; // from date-fns
   timezone?: string; // e.g. "America/New_York"

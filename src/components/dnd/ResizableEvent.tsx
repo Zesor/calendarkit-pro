@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { CalendarEvent } from '../../types';
 import { cn, isEventResizeDisabled } from '../../utils';
+import { computeResizeEnd } from '../../core/dnd';
 
 interface ResizableEventProps {
   event: CalendarEvent;
@@ -66,18 +67,8 @@ export const ResizableEvent: React.FC<ResizableEventProps> = ({
       const finalHeight = resizeHeightRef.current;
 
       if (finalHeight !== null && containerRef.current && onResize) {
-        // Calculate new end time based on resize
-        const originalHeight = startHeightRef.current;
-        const heightDiff = finalHeight - originalHeight;
-        const minutesDiff = (heightDiff / hourHeight) * 60;
-
-        const newEnd = new Date(event.end);
-        newEnd.setMinutes(newEnd.getMinutes() + minutesDiff);
-
-        // Ensure new end is after start
-        if (newEnd > event.start) {
-          onResize(event, newEnd);
-        }
+        const minutesDiff = ((finalHeight - startHeightRef.current) / hourHeight) * 60;
+        onResize(event, computeResizeEnd(event, minutesDiff, minDuration));
       }
 
       resizeHeightRef.current = null;

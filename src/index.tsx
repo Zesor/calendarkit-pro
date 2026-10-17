@@ -1,5 +1,5 @@
-import React, { useId, useState, useMemo } from 'react';
-import { DndContext, useSensor, useSensors, PointerSensor, Modifier, DragOverlay } from '@dnd-kit/core';
+import React, { useCallback, useId, useState, useMemo } from 'react';
+import { DndContext, useSensor, useSensors, PointerSensor, Modifier, DragOverlay, DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { createSnapModifier, restrictToWindowEdges } from '@dnd-kit/modifiers';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CalendarHeader } from './components/CalendarHeader';
@@ -13,10 +13,9 @@ import { EventModal } from './components/EventModal';
 import { MonthViewSkeleton, WeekViewSkeleton, DayViewSkeleton, AgendaViewSkeleton } from './components/Skeleton';
 import { EventContextMenu, useEventContextMenu } from './components/ContextMenu';
 import { CalendarProps, CalendarEvent } from './types';
-import { en, fr } from './locales';
 import { cn } from './utils';
 import { getThemeStyles } from './lib/theme';
-import { uses24HourClock } from './lib/date';
+import { resolveTranslations, timeFormats } from './core/format';
 import { useCalendarLogic } from './hooks/useCalendarLogic';
 import { differenceInMinutes, format } from 'date-fns';
 import { useViewSwipe } from './hooks/useSwipeGesture';
@@ -48,7 +47,9 @@ export const Scheduler: React.FC<CalendarProps> = ({
   onEventCreate,
   onEventUpdate,
   onEventDelete,
+  onEventDrop,
   onEventResize,
+  onOccurrenceDelete,
   timezone,
   onTimezoneChange,
   className,
@@ -97,8 +98,11 @@ export const Scheduler: React.FC<CalendarProps> = ({
     handleCreateEvent,
     handleModalSave,
     handleModalDelete,
+    handleEventDelete,
+    handleEventDuplicate,
+    handleEventResize,
     handleDragEnd,
-    expandedEvents // New export
+    expandedEvents
   } = useCalendarLogic({
     events,
     view: controlledView,
@@ -109,6 +113,9 @@ export const Scheduler: React.FC<CalendarProps> = ({
     onEventUpdate,
     onEventCreate,
     onEventDelete,
+    onEventDrop,
+    onEventResize,
+    onOccurrenceDelete,
     readOnly,
     timezone
   });
@@ -129,54 +136,29 @@ export const Scheduler: React.FC<CalendarProps> = ({
   // Disable DnD if readOnly
   const dndSensors = readOnly ? [] : sensors;
 
-  // Handle event resize
-  const handleEventResize = (event: CalendarEvent, newEnd: Date) => {
-    if (readOnly) return;
-
-    // Call the external callback if provided
-    if (onEventResize) {
-      onEventResize(event, event.start, newEnd);
-    }
-
-    // Also update via onEventUpdate for internal state management
-    if (onEventUpdate) {
-      onEventUpdate({
-        ...event,
-        end: newEnd
-      });
-    }
-  };
-  
   const id = useId();
 
   // Mobile swipe gesture support
   const swipeRef = useViewSwipe<HTMLDivElement>(handlePrev, handleNext, true);
 
-  // Base translations come from the built-in language packs (making the
-  // `language` prop actually apply everywhere); the consumer's `translations`
-  // prop overrides individual keys.
-  const languagePack = language === 'fr' ? fr : en;
-
-  const t = {
-    ...languagePack,
-    ...translations
-  };
+  // Built-in language pack + the consumer's overrides, memoized so children keep stable props (C6).
+  const t = useMemo(() => resolveTranslations(language, translations), [language, translations]);
 
   // Drag ghost times follow the locale's clock convention.
-  const overlayTimeFormat = uses24HourClock(locale) ? 'H:mm' : 'h:mm a';
+  const overlayTimeFormat = timeFormats(locale).time;
 
-  const handleDragStart = (event: any) => {
-    const { active } = event;
-    const draggedEvent = expandedEvents.find(e => e.id === active.id);
+  // Blocks of multi-day events share one event under several drag ids: read the event from the data.
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    const draggedEvent = event.active.data.current?.event as CalendarEvent | undefined;
     if (draggedEvent) {
         setActiveDragEvent(draggedEvent);
     }
-  };
+  }, []);
 
-  const onDragEndWrapper = (event: any) => {
+  const onDragEndWrapper = useCallback((event: DragEndEvent) => {
       setActiveDragEvent(null);
       handleDragEnd(event);
-  };
+  }, [handleDragEnd]);
   
   // Calculate height for week/day view drag overlay
   const getDragHeight = () => {
@@ -366,14 +348,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                     events={filteredEvents}
                                     resources={resources}
                                     onEventClick={handleEventClickInternal}
-                                    onTimeSlotClick={(date) => {
-                                        // Handle resource time slot click
-                                        // Ideally useCalendarLogic should support resourceId in handleTimeSlotClick
-                                        // For now, we can manually trigger the modal
-                                        if (readOnly) return;
-                                        // Hack: we might need to update useCalendarLogic to accept resourceId
-                                        handleTimeSlotClick(date); 
-                                    }}
+                                    onTimeSlotClick={handleTimeSlotClick}
                                     locale={locale}
                                 />
                             )}
@@ -427,20 +402,12 @@ export const Scheduler: React.FC<CalendarProps> = ({
             handleEventClickInternal(event);
             closeContextMenu();
           }}
-          onDelete={(eventId) => {
-            onEventDelete?.(eventId);
+          onDelete={() => {
+            if (contextMenuEvent) handleEventDelete(contextMenuEvent);
             closeContextMenu();
           }}
           onDuplicate={(event) => {
-            // Create a duplicate with a new ID and slightly shifted time
-            const duplicatedEvent: Partial<CalendarEvent> = {
-              ...event,
-              id: `${event.id}-copy-${Date.now()}`,
-              title: `${event.title} (Copy)`,
-              start: new Date(event.start.getTime() + 24 * 60 * 60 * 1000), // +1 day
-              end: new Date(event.end.getTime() + 24 * 60 * 60 * 1000),
-            };
-            onEventCreate?.(duplicatedEvent);
+            handleEventDuplicate(event);
             closeContextMenu();
           }}
           translations={{
