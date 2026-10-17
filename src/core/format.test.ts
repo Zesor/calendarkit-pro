@@ -44,6 +44,10 @@ describe('format', () => {
     expect(resolveTranslations(undefined, { today: 'Now' }).today).toBe('Now')
   })
 
+  test('undefined overrides fall back to the language pack instead of crashing', () => {
+    expect(resolveTranslations('en', { reminderMinutes: undefined }).reminderMinutes).toBe('{n} minutes before')
+  })
+
   test('I2: interpolate replaces known placeholders and keeps unknown ones', () => {
     expect(interpolate('{n} minutes before', { n: 5 })).toBe('5 minutes before')
     expect(interpolate('{h} h {m} min', { h: 1, m: 30 })).toBe('1 h 30 min')

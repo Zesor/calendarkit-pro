@@ -71,6 +71,12 @@ describe('Scheduler wiring', () => {
     expect(mobileCreateButton(container)).toBeNull()
   })
 
+  test('numeric calendar ids (from JSON) are matched like before', () => {
+    const numeric = { ...at(9, 'num'), calendarId: 1 as unknown as string }
+    render(<Scheduler events={[numeric]} view="agenda" date={day} calendars={[{ id: 1 as unknown as string, label: 'Work', active: true }]} />)
+    expect(screen.getByText('Event 9')).toBeTruthy()
+  })
+
   test('readOnly: time slots are not clickable', () => {
     const { container } = render(<Scheduler events={[]} view="week" date={day} readOnly />)
     expect(container.querySelector('.cursor-pointer[class*="absolute"]')).toBeNull()

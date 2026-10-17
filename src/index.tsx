@@ -198,7 +198,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
       if (activeCalendarKey === null) return expandedEvents;
       const activeCalendarIds = new Set(activeCalendarKey.split('\u0000'));
       // Events without a calendar are always shown.
-      return expandedEvents.filter(e => !e.calendarId || activeCalendarIds.has(e.calendarId));
+      // String() keeps numeric ids (e.g. from JSON) matching, as `includes` did before.
+      return expandedEvents.filter(e => !e.calendarId || activeCalendarIds.has(String(e.calendarId)));
   }, [expandedEvents, activeCalendarKey]);
 
   // U8: animate when the view or the displayed period changes, not on every date click inside it.

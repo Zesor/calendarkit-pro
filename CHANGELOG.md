@@ -13,7 +13,9 @@
 
 ### Changed
 - No placeholder data inside the component: the sidebar lists calendars only when `calendars` is passed, guests are typed (or pasted) as emails instead of picked from fake suggestions, and attachments are only downloadable when they have a `url`.
+- The event form's calendar selector is hidden when no `calendars` are passed (it offered an empty list).
 - The location in the event view is a link to a maps search.
+- Attachment links only open http(s), mailto, blob or relative URLs.
 - Icon-only buttons have accessible names; the active view is announced as pressed.
 
 ## 1.3.0

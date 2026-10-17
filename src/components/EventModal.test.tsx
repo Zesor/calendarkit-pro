@@ -70,6 +70,22 @@ describe('EventModal', () => {
     expect(onSave.mock.calls[0][0].guests).toEqual(['grace@hopper.dev'])
   })
 
+  test('re-rendering with a new (inline) translations object keeps what the user typed', () => {
+    const { rerender } = openCreate()
+    fireEvent.change(screen.getByLabelText('Add title'), { target: { value: 'Draft' } })
+    rerender(<EventModal isOpen onClose={() => {}} onSave={() => {}} initialDate={start} translations={{ ...en }} />)
+    expect((screen.getByLabelText('Add title') as HTMLInputElement).value).toBe('Draft')
+  })
+
+  test('the guest field does not use browser email validation, and duplicates ignore case', () => {
+    openCreate()
+    const input = screen.getByLabelText('Guests') as HTMLInputElement
+    expect(input.type).toBe('text')
+    fireEvent.change(input, { target: { value: 'Ada@Lovelace.dev, ada@lovelace.dev' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(screen.getAllByText(/ada@lovelace\.dev/i)).toHaveLength(1)
+  })
+
   test('the calendar selector is hidden when no calendars are provided', () => {
     openCreate()
     expect(screen.queryByText('Calendar')).toBeNull()
@@ -97,6 +113,12 @@ describe('EventModal', () => {
       render(<EventModal isOpen event={event} onClose={() => {}} onSave={() => {}} translations={en} />)
       expect((await screen.findByText('agenda.pdf')).closest('a')?.getAttribute('href')).toBe('https://files.example/agenda.pdf')
       expect(screen.getByText('notes.txt').closest('a')).toBeNull()
+    })
+
+    test('an attachment with an unsafe URL scheme is not a link', async () => {
+      const unsafe = { ...event, attachments: [{ id: 'x', name: 'evil.txt', url: 'javascript:alert(1)', type: 'file' as const }] }
+      render(<EventModal isOpen event={unsafe} onClose={() => {}} onSave={() => {}} translations={en} />)
+      expect((await screen.findByText('evil.txt')).closest('a')).toBeNull()
     })
 
     test('A1: icon-only buttons have accessible names', async () => {

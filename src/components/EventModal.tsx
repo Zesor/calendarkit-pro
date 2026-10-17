@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useInsertionEffect, useRef } from 'react';
 import { Modal } from './ui/Modal';
 import { CalendarEvent, CalendarTranslations, EventType, EventAttachment, EventReminder } from '../types';
 import { format, differenceInMinutes, Locale } from 'date-fns';
@@ -44,6 +44,19 @@ const COLOR_PALETTE = [
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/** Appends emails not already present, comparing case-insensitively and keeping the first spelling. */
+const mergeGuests = (current: string[], added: string[]): string[] => {
+  const seen = new Set(current.map(email => email.toLowerCase()));
+  const merged = [...current];
+  for (const email of added) {
+    if (!seen.has(email.toLowerCase())) {
+      seen.add(email.toLowerCase());
+      merged.push(email);
+    }
+  }
+  return merged;
+};
+
 /** Localized reminder label: "30 minutes before", "1 day before"… */
 export const reminderLabel = (minutes: number, t: CalendarTranslations): string => {
   if (minutes === 0) return t.reminderAtTime;
@@ -60,6 +73,9 @@ const avatarHue = (email: string) => [...email].reduce((hash, char) => (hash * 3
 
 const mapsUrl = (location: string) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
 
+/** Only http(s), mailto, blob and relative URLs become links (no `javascript:` and the like). */
+const isSafeUrl = (url: string) => /^(https?:|mailto:|blob:|\/|\.\/|\.\.\/|[^:]*$)/i.test(url.trim());
+
 export const EventModal: React.FC<EventModalProps> = ({
   isOpen,
   onClose,
@@ -72,6 +88,11 @@ export const EventModal: React.FC<EventModalProps> = ({
   locale
 }) => {
   const [mode, setMode] = useState<'view' | 'edit' | 'create'>('create');
+  // Read through a ref so a new translations object (e.g. an inline prop) does not reset the form.
+  const translationsRef = useRef(t);
+  useInsertionEffect(() => {
+    translationsRef.current = t;
+  });
 
   const [formData, setFormData] = useState<Partial<CalendarEvent>>({
     title: '',
@@ -95,7 +116,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   const [guestError, setGuestError] = useState(false);
 
   useEffect(() => {
-    const defaultReminders = (): EventReminder[] => [{ id: '1', type: 'notification', time: 30, label: reminderLabel(30, t) }];
+    const defaultReminders = (): EventReminder[] => [{ id: '1', type: 'notification', time: 30, label: reminderLabel(30, translationsRef.current) }];
     if (isOpen) {
       setGuestInput('');
       setGuestError(false);
@@ -130,7 +151,7 @@ export const EventModal: React.FC<EventModalProps> = ({
         });
       }
     }
-  }, [isOpen, event, initialDate, calendars, t]);
+  }, [isOpen, event, initialDate, calendars]);
 
   const guests = formData.guests || [];
 
@@ -140,7 +161,7 @@ export const EventModal: React.FC<EventModalProps> = ({
     const valid = entries.filter(entry => EMAIL.test(entry));
     const invalid = entries.filter(entry => !EMAIL.test(entry));
     if (valid.length > 0) {
-      setFormData(prev => ({ ...prev, guests: [...new Set([...(prev.guests || []), ...valid])] }));
+      setFormData(prev => ({ ...prev, guests: mergeGuests(prev.guests || [], valid) }));
     }
     setGuestInput(invalid.join(', '));
     setGuestError(invalid.length > 0);
@@ -168,7 +189,7 @@ export const EventModal: React.FC<EventModalProps> = ({
         }
     }
 
-    const finalGuests = [...new Set([...guests, ...pending])];
+    const finalGuests = mergeGuests(guests, pending);
 
     onSave({
       ...formData,
@@ -259,7 +280,7 @@ export const EventModal: React.FC<EventModalProps> = ({
     );
     const className = "flex items-center gap-3 p-3 rounded-xl border border-border/30 bg-muted/20 transition-all group";
     // U6: only real attachment URLs are downloadable (no generated placeholder file).
-    return att.url ? (
+    return att.url && isSafeUrl(att.url) ? (
       <a key={att.id} href={att.url} target="_blank" rel="noopener noreferrer" download={att.name} className={cn(className, "hover:bg-muted/40 cursor-pointer")}>
         {content}
       </a>
@@ -640,7 +661,10 @@ export const EventModal: React.FC<EventModalProps> = ({
             </div>
             <input
               id="calendarkit-event-guest"
-              type="email"
+              // Plain text: browser email validation would block saving a pasted list before our own check.
+              type="text"
+              inputMode="email"
+              autoComplete="email"
               value={guestInput}
               onChange={e => {
                 setGuestInput(e.target.value);
