@@ -103,7 +103,12 @@ export const en = {
     toggleSidebar: 'Toggle sidebar',
     toggleTheme: 'Toggle dark mode',
     switchLanguage: 'Switch language',
-    eventColor: 'Event color'
+    eventColor: 'Event color',
+    showLess: 'Show less',
+    continuesBefore: 'Started earlier',
+    continuesAfter: 'Continues later',
+    durationDay: '1 day',
+    durationDays: '{n} days'
 };
 
 // Typed against the English pack so the dictionaries can't drift apart.
@@ -212,5 +217,10 @@ export const fr: typeof en = {
     toggleSidebar: 'Afficher ou masquer la barre latérale',
     toggleTheme: 'Basculer le thème sombre',
     switchLanguage: 'Changer de langue',
-    eventColor: "Couleur de l'événement"
+    eventColor: "Couleur de l'événement",
+    showLess: 'Réduire',
+    continuesBefore: 'A commencé avant',
+    continuesAfter: 'Continue après',
+    durationDay: '1 jour',
+    durationDays: '{n} jours'
 };
