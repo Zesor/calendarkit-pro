@@ -31,4 +31,10 @@ jobs:
         run: npm i --no-save react@18 react-dom@18 @types/react@18 @types/react-dom@18 && npx vitest run
       - run: npm ci
       - name: Publish (Trusted Publishing, provenance)
-        run: npm publish
+        # Pre-releases (2.0.0-alpha.0, 2.0.0-beta.1…) go to the "next" dist-tag, never to "latest".
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          TAG=latest
+          case "$VERSION" in *-*) TAG=next ;; esac
+          echo "Publishing $VERSION with dist-tag $TAG"
+          npm publish --tag "$TAG"
