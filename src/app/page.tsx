@@ -58,6 +58,20 @@ const generateDemoEvents = (): CalendarEvent[] => {
   events.push(createEvent("10", "Demo Day", 5, 14, 2, "work", "#3b82f6", "room-c"));
   events.push(createEvent("11", "Happy Hour", 5, 17, 2, "personal", "#10b981"));
 
+  // All-day and multi-day events (1.4.0). All-day ends are exclusive: midnight after the last day.
+  const allDay = (id: string, title: string, firstDayOffset: number, days: number, calendarId: string, color: string, recurrence?: CalendarEvent["recurrence"]): CalendarEvent => ({
+    id, title, calendarId, color, recurrence, allDay: true,
+    start: addDays(weekStart, firstDayOffset),
+    end: addDays(weekStart, firstDayOffset + days),
+  });
+  events.push(allDay("12", "Tech Conference", 1, 3, "work", "#8b5cf6"));
+  events.push(allDay("13", "Vacation", 4, 10, "personal", "#f97316"));
+  events.push(allDay("14", "Company Offsite", 3, 1, "work", "#ec4899"));
+  events.push(allDay("15", "Release Freeze", 3, 1, "work", "#64748b"));
+  events.push(allDay("16", "Team Birthday", 2, 1, "personal", "#10b981", { freq: "YEARLY" }));
+  // A 30 h trip (timed, ≥ 24 h → shown in the all-day row)
+  events.push(createEvent("17", "Flight to Tokyo", 3, 20, 30, "personal", "#0ea5e9"));
+
   return events;
 };
 
