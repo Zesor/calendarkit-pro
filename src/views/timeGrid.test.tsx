@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { DndContext } from '@dnd-kit/core'
 import type { CalendarEvent } from '../types'
@@ -6,6 +6,7 @@ import * as eventsModule from '../core/events'
 import { WeekView } from './WeekView'
 import { DayView } from './DayView'
 import { ResourceView } from './ResourceView'
+import { Scheduler } from '../index'
 
 afterEach(() => {
   cleanup()
@@ -72,6 +73,47 @@ describe('time grids', () => {
     render(<DndContext><DayView currentDate={new Date(2026, 9, 15)} events={events} timezone="Asia/Tokyo" /></DndContext>)
     const block = screen.getByText('Call').closest('[aria-roledescription="draggable"]') as HTMLElement
     expect(block.style.top).toBe(`${23 * 80}px`)
+  })
+
+  // Five events at the same hour: the day view shows 4 columns (3 blocks and "+2"), the week view 3
+  // until it is measured (2 blocks and "+3").
+  const crowd: CalendarEvent[] = ['A', 'B', 'C', 'D', 'E'].map((title, i) => ({ id: title, title, start: new Date(2026, 9, 15, 9), end: new Date(2026, 9, 15, 10, 30 - i) }))
+  const blocks = () => screen.queryAllByText(/^[A-E]$/).map((el) => el.textContent)
+
+  test('§8.4: past its column cap, a cluster shows "+N" for the rest, which reports the hidden events', () => {
+    const onMoreClick = vi.fn()
+    const { unmount } = render(<DndContext><DayView currentDate={new Date(2026, 9, 15)} events={crowd} onMoreClick={onMoreClick} /></DndContext>)
+    expect(blocks()).toEqual(['A', 'B', 'C'])
+    fireEvent.click(screen.getByRole('button', { name: '+2 more' }))
+    expect(onMoreClick.mock.calls[0][0].map((e: CalendarEvent) => e.id)).toEqual(['D', 'E'])
+    unmount()
+    render(<DndContext><WeekView currentDate={new Date(2026, 9, 15)} events={crowd} /></DndContext>)
+    expect(blocks()).toEqual(['A', 'B'])
+    expect(screen.getByRole('button', { name: '+3 more' }).textContent).toBe('+3')
+  })
+
+  test('§8.4: a block stretches right while the next columns are free during its time', () => {
+    const events: CalendarEvent[] = [
+      { id: 'a', title: 'Long', start: new Date(2026, 9, 15, 9), end: new Date(2026, 9, 15, 12) },
+      { id: 'b', title: 'Hour', start: new Date(2026, 9, 15, 9), end: new Date(2026, 9, 15, 10) },
+      { id: 'c', title: 'Half', start: new Date(2026, 9, 15, 9), end: new Date(2026, 9, 15, 9, 30) },
+      { id: 'd', title: 'Later', start: new Date(2026, 9, 15, 10, 30), end: new Date(2026, 9, 15, 11) },
+    ]
+    render(<DndContext><WeekView currentDate={new Date(2026, 9, 15)} events={events} /></DndContext>)
+    const block = (title: string) => screen.getByText(title).closest('[aria-roledescription="draggable"]') as HTMLElement
+    expect(block('Half').style.width).toMatch(/^calc\(33\.33+\d*% - 2px\)$/)
+    expect(block('Later').style.left).toMatch(/^33\.33+\d*%$/)
+    expect(block('Later').style.width).toMatch(/^calc\(66\.66+\d*% - 2px\)$/)
+  })
+
+  test('"+N" in the Scheduler opens the list of hidden events; each one opens its event', () => {
+    const onEventClick = vi.fn()
+    render(<Scheduler view="day" date={new Date(2026, 9, 15)} events={crowd} onEventClick={onEventClick} />)
+    act(() => screen.getByRole('button', { name: '+2 more' }).click())
+    expect(screen.getByText('2 events')).toBeTruthy()
+    act(() => screen.getByRole('button', { name: /^9:00 AM – 10:27 AM\s*D$/ }).click())
+    expect(onEventClick).toHaveBeenCalledWith(expect.objectContaining({ id: 'D' }))
+    expect(screen.queryByText('2 events')).toBeNull()
   })
 
   test('clicking a resource slot reports its date and resource', () => {

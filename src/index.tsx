@@ -8,6 +8,7 @@ import { DayView } from './views/DayView';
 import { AgendaView } from './views/AgendaView';
 import { ResourceView } from './views/ResourceView';
 import { EventModal } from './components/EventModal';
+import { MoreEventsDialog } from './components/MoreEventsDialog';
 import { MonthViewSkeleton, WeekViewSkeleton, DayViewSkeleton, AgendaViewSkeleton } from './components/Skeleton';
 import { EventContextMenu, useEventContextMenu } from './components/ContextMenu';
 import { CalendarProps, CalendarEvent } from './types';
@@ -132,6 +133,10 @@ export const Scheduler: React.FC<CalendarProps> = ({
   const selectedEvent = lastOpened.current.event;
   const draft = dialog?.kind === 'quick' || dialog?.kind === 'editor' ? dialog.draft : undefined;
   const isModalOpen = dialog !== null && dialog.kind !== 'more';
+  const moreEvents = useMemo(
+    () => (dialog?.kind === 'more' ? expandedEvents.filter((event) => dialog.eventIds.includes(event.id)) : []),
+    [dialog, expandedEvents],
+  );
   const modalInitialDate = editingId === undefined ? draft?.start : undefined;
   const modalInitialAllDay = editingId === undefined && !!draft?.allDay;
 
@@ -156,11 +161,12 @@ export const Scheduler: React.FC<CalendarProps> = ({
     handleEventDuplicate: (event: CalendarEvent) => calendar.duplicate(event.id),
     handleEventResize: (event: CalendarEvent, newEnd: Date) => calendar.resize(event.id, newEnd),
     handleDayEventResize: (event: CalendarEvent, newLastDay: Date) => calendar.resizeDays(event.id, newLastDay),
+    handleMoreClick: (events: CalendarEvent[]) => calendar.openMore(events.map((event) => event.id)),
   }), [calendar]);
   const {
     handleViewChange, handleDateChange, handlePrev, handleNext, handleToday, handleDateClick, handleTimeSlotClick,
     handleAllDaySlotClick, handleCreateEvent, handleModalSave, handleModalDelete, handleModalClose, handleEventDelete,
-    handleEventDuplicate, handleEventResize, handleDayEventResize,
+    handleEventDuplicate, handleEventResize, handleDayEventResize, handleMoreClick,
   } = handlers;
   // 1.x: a click calls onEventClick, then opens the event unless readOnly.
   const handleEventClickInternal = useStableCallback((event: CalendarEvent) => {
@@ -315,6 +321,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                 onEventContextMenu={contextMenuHandler}
                                 onDayEventResize={handleDayEventResize}
                                 onAllDaySlotClick={allDaySlotClickHandler}
+                                onMoreClick={handleMoreClick}
                                 translations={t}
                                 />
                             )}
@@ -332,6 +339,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                     onEventContextMenu={contextMenuHandler}
                                     onDayEventResize={handleDayEventResize}
                                     onAllDaySlotClick={allDaySlotClickHandler}
+                                    onMoreClick={handleMoreClick}
                                 />
                             )}
                             {view === 'agenda' && (
@@ -404,6 +412,15 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 initialAllDay={modalInitialAllDay}
             />
         )}
+
+        <MoreEventsDialog
+            events={moreEvents}
+            onClose={handleModalClose}
+            onEventClick={handleEventClickInternal}
+            timezone={timezone}
+            locale={locale}
+            translations={t}
+        />
 
         {/* Context Menu */}
         <EventContextMenu

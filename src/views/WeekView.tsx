@@ -10,7 +10,7 @@ import { displayToday, minutesSinceDisplayMidnight, resolveTimeZone, toDisplay }
 import { getWeekDays, resolveWeekStartsOn } from '../core/week';
 import { DroppableCell } from '../components/dnd/DroppableCell';
 import { useElementWidth } from '../hooks/useElementWidth';
-import { TimeGridEvents } from './TimeGridEvents';
+import { TimeGridEvents, weekMaxColumns } from './TimeGridEvents';
 
 interface WeekViewProps {
   currentDate: Date;
@@ -24,6 +24,8 @@ interface WeekViewProps {
   onEventContextMenu?: (event: CalendarEvent, e: React.MouseEvent) => void;
   onDayEventResize?: (event: CalendarEvent, newLastDay: Date) => void;
   onAllDaySlotClick?: (day: Date) => void;
+  /** "+N" in the grid: the events of a cluster that did not fit. */
+  onMoreClick?: (events: CalendarEvent[]) => void;
   translations?: Partial<CalendarTranslations>;
 }
 
@@ -50,6 +52,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
   onEventContextMenu,
   onDayEventResize,
   onAllDaySlotClick,
+  onMoreClick,
   translations,
 }) => {
   // Week start follows the locale (historical Monday fallback without a locale).
@@ -66,6 +69,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
 
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const [gridRef, gridWidth] = useElementWidth<HTMLDivElement>();
+  const columnWidth = gridWidth === undefined ? undefined : gridWidth / 7;
   const [now, setNow] = React.useState(() => new Date());
 
   React.useEffect(() => {
@@ -212,13 +216,16 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
                         dayKey={dayKey}
                         segments={segmentsByDay.get(dayKey) ?? NO_SEGMENTS}
                         hourHeight={HOUR_HEIGHT}
-                        columnWidth={gridWidth === undefined ? undefined : gridWidth / weekDays.length}
+                        maxColumns={weekMaxColumns(columnWidth)}
+                        columnWidth={columnWidth}
                         timezone={timezone}
                         locale={locale}
                         readonly={readonly}
                         onEventClick={onEventClick}
                         onEventContextMenu={onEventContextMenu}
                         onEventResize={onEventResize}
+                        onMoreClick={onMoreClick}
+                        translations={translations}
                     />
 
                     {/* Current Time Indicator */}

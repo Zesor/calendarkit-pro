@@ -29,6 +29,11 @@ export const SCHEDULER_STATES: Array<[string, () => void]> = [
     render(<Scheduler {...props} view="week" />)
     act(() => screen.getAllByRole('button', { name: 'Create Event' })[0].click())
   }],
+  ['more events list', () => {
+    const crowd: CalendarEvent[] = ['A', 'B', 'C', 'D', 'E'].map((title) => ({ id: title, title, start: new Date(2026, 9, 14, 9), end: new Date(2026, 9, 14, 10) }))
+    render(<Scheduler {...props} events={crowd} view="day" />)
+    act(() => screen.getByRole('button', { name: '+2 more' }).click())
+  }],
   ['context menu', () => {
     render(<Scheduler {...props} view="week" />)
     fireEvent.contextMenu(screen.getByText('Design review'))

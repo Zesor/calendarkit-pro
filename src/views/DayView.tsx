@@ -8,7 +8,7 @@ import { timeFormats } from '../core/format';
 import { displayToday, minutesSinceDisplayMidnight, toDisplay } from '../core/timezone';
 import { DroppableCell } from '../components/dnd/DroppableCell';
 import { useElementWidth } from '../hooks/useElementWidth';
-import { TimeGridEvents } from './TimeGridEvents';
+import { DAY_MAX_COLUMNS, TimeGridEvents } from './TimeGridEvents';
 
 interface DayViewProps {
   currentDate: Date;
@@ -23,6 +23,8 @@ interface DayViewProps {
   translations?: Partial<CalendarTranslations>;
   onDayEventResize?: (event: CalendarEvent, newLastDay: Date) => void;
   onAllDaySlotClick?: (day: Date) => void;
+  /** "+N" in the grid: the events of a cluster that did not fit. */
+  onMoreClick?: (events: CalendarEvent[]) => void;
 }
 
 const HOUR_HEIGHT = 80; // Larger height for Day View
@@ -48,7 +50,8 @@ const DayViewImpl: React.FC<DayViewProps> = ({
   onEventContextMenu,
   translations,
   onDayEventResize,
-  onAllDaySlotClick
+  onAllDaySlotClick,
+  onMoreClick,
 }) => {
   // Only the day on screen gets segments, so endless events stay cheap.
   const visibleRange = React.useMemo(() => {
@@ -177,6 +180,7 @@ const DayViewImpl: React.FC<DayViewProps> = ({
                         dayKey={dayKey}
                         segments={segments}
                         hourHeight={HOUR_HEIGHT}
+                        maxColumns={DAY_MAX_COLUMNS}
                         columnWidth={gridWidth}
                         inset={4}
                         timezone={timezone}
@@ -185,6 +189,8 @@ const DayViewImpl: React.FC<DayViewProps> = ({
                         onEventClick={onEventClick}
                         onEventContextMenu={onEventContextMenu}
                         onEventResize={onEventResize}
+                        onMoreClick={onMoreClick}
+                        translations={translations}
                      />
 
                      {/* Current Time Indicator */}
