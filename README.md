@@ -301,6 +301,8 @@ import 'calendarkit-pro/styles.css'
 
 Every class is prefixed with `ck:` and the reset only applies inside `.ck-root`: the calendar never restyles your page, and works the same with Tailwind 3, Tailwind 4 or no Tailwind at all.
 
+Size or space the calendar with `className` (`className="h-[600px] rounded-xl"`): the stylesheet comes first in `<head>`, so your classes win ties. Its classes are not in a cascade layer, so on a Tailwind 4 page (utilities in `@layer utilities`) use the important modifier (`h-[600px]!`) or size a wrapper element instead.
+
 ## Resource Scheduling
 
 ```tsx

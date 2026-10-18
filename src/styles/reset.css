@@ -9,7 +9,10 @@
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
 }
-.ck-root,
+/* The root's own box (margin, padding, border, size) stays the host's, through `className`. */
+.ck-root {
+  box-sizing: border-box;
+}
 .ck-root :where(*, ::before, ::after) {
   box-sizing: border-box;
   margin: 0;

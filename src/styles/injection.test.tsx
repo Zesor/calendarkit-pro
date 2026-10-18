@@ -40,7 +40,10 @@ describe('style injection', () => {
 
   test('the React 18 path (insertStyles) adds one copy per document, and none next to the React 19 one', () => {
     const page = document.implementation.createHTMLDocument()
+    page.head.append(page.createElement('link'))
     insertStyles(page)
+    // First in <head>, like React 19's hoisted sheet: the host's own styles come later and win ties.
+    expect(page.head.firstElementChild!.getAttribute('data-href')).toBe('calendarkit-pro')
     insertStyles(page)
     expect(page.head.querySelectorAll('style')).toHaveLength(1)
     expect(page.head.querySelector('style')!.textContent).toBe(css)

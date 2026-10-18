@@ -40,6 +40,15 @@ describe('compiled stylesheet', () => {
     expect(css).toContain('--ck-styles:1')
   })
 
+  test("the reset leaves the root's box to the host: no margin, padding or border on .ck-root itself", () => {
+    const boxed: string[] = []
+    postcss.parse(css).walkRules((rule) => {
+      if (!rule.selectors.includes('.ck-root')) return
+      rule.walkDecls(/^(margin|padding|border)/, (decl) => void boxed.push(`${rule.selector} { ${decl.prop} }`))
+    })
+    expect(boxed).toEqual([])
+  })
+
   test('ck:dark: follows the mode of the calendar root, not any .dark ancestor', () => {
     // Every rule of one dark-mode class, with the media query it sits in (if any).
     const rules: Array<{ selector: string; media: string }> = []

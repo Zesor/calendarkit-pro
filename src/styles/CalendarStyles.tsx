@@ -7,13 +7,16 @@ const HREF = 'calendarkit-pro'
 // React 19 hoists a <style href precedence> into <head> once per page, during server rendering too.
 const hoistsStyles = Number.parseInt(React.version, 10) >= 19
 
-/** Inserts the stylesheet into document.head once (React 18 path). */
+/**
+ * Inserts the stylesheet into document.head once (React 18 path), first like React 19's hoisted
+ * sheet: the host's own styles come later and win ties against the calendar's classes.
+ */
 export function insertStyles(doc: Document): void {
   if (doc.querySelector(`style[data-href="${HREF}"]`)) return
   const style = doc.createElement('style')
   style.setAttribute('data-href', HREF)
   style.textContent = css
-  doc.head.appendChild(style)
+  doc.head.insertBefore(style, doc.head.firstChild)
 }
 
 function InsertedStyles() {
