@@ -6,7 +6,7 @@ const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : us
 // Every option, unset: props that disappear between renders are cleared in the store too.
 const UNSET: { [K in keyof Required<CalendarOptions>]: undefined } = {
   events: undefined, defaultEvents: undefined, view: undefined, defaultView: undefined, date: undefined, defaultDate: undefined,
-  timezone: undefined, readOnly: undefined, language: undefined, now: undefined, createId: undefined,
+  timezone: undefined, readOnly: undefined, language: undefined, now: undefined, createId: undefined, stripGeneratedIds: undefined,
   onEventCreate: undefined, onEventUpdate: undefined, onEventDelete: undefined, onEventDrop: undefined, onEventResize: undefined,
   onOccurrenceDelete: undefined, onViewChange: undefined, onDateChange: undefined, onEventsChange: undefined,
 }

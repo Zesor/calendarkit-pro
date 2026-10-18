@@ -83,3 +83,49 @@ describe('Scheduler 1.x contract', () => {
     expect(html).toContain('Design review')
   })
 })
+
+describe('review fixes (A2)', () => {
+  test('C1: an uncontrolled Scheduler without events survives re-renders', () => {
+    const onDateChange = vi.fn()
+    render(<Scheduler onDateChange={onDateChange} />)
+    act(() => screen.getByRole('button', { name: 'Next' }).click())
+    act(() => screen.getByRole('button', { name: 'Next' }).click())
+    expect(onDateChange).toHaveBeenCalledTimes(2)
+  })
+
+  test('I2: an open event keeps its snapshot when the parent passes new event objects', () => {
+    const form: { current?: FormProps } = {}
+    const renderEventForm = (p: FormProps) => { form.current = p; return null }
+    function Parent() {
+      const [n, setN] = React.useState(0)
+      const events = [{ ...review }] // fresh objects on every render, like a refetch
+      return <><Scheduler events={events} view="week" date={new Date(2026, 9, 14)} renderEventForm={renderEventForm} /><button onClick={() => setN(n + 1)}>refetch {n}</button></>
+    }
+    render(<Parent />)
+    act(() => screen.getByText('Design review').click())
+    const opened = form.current!.event
+    act(() => screen.getByRole('button', { name: /refetch/ }).click())
+    expect(form.current!.isOpen).toBe(true)
+    expect(form.current!.event).toBe(opened)
+  })
+
+  test('I3: saving after the form closed still updates the event (no duplicate)', () => {
+    const onEventUpdate = vi.fn()
+    const onEventCreate = vi.fn()
+    const form = setup({ onEventUpdate, onEventCreate })
+    act(() => screen.getByText('Design review').click())
+    act(() => form.current!.onClose())
+    expect(form.current!.event).toMatchObject({ id: 'rv' }) // the last event stays available while closing
+    act(() => form.current!.onSave({ title: 'Design review v3' }))
+    expect(onEventUpdate).toHaveBeenCalledWith(expect.objectContaining({ id: 'rv', title: 'Design review v3' }))
+    expect(onEventCreate).not.toHaveBeenCalled()
+  })
+
+  test('I4: onEventCreate receives the form fields without an id the engine generated (1.x payload)', () => {
+    const onEventCreate = vi.fn()
+    const form = setup({ onEventCreate })
+    act(() => screen.getAllByRole('button', { name: 'Create Event' })[0].click())
+    act(() => form.current!.onSave({ title: 'Call', start: new Date(2026, 9, 15, 9), end: new Date(2026, 9, 15, 10) }))
+    expect(onEventCreate).toHaveBeenCalledWith({ title: 'Call', start: new Date(2026, 9, 15, 9), end: new Date(2026, 9, 15, 10) })
+  })
+})

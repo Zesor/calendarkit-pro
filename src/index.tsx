@@ -1,4 +1,4 @@
-import React, { useCallback, useId, useState, useMemo } from 'react';
+import React, { useCallback, useId, useState, useMemo, useRef } from 'react';
 import { Modifier, DragOverlay, DragStartEvent } from '@dnd-kit/core';
 import { createSnapModifier, restrictToWindowEdges } from '@dnd-kit/modifiers';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -42,8 +42,11 @@ export type {
 // Re-export utilities
 export { cn } from './utils';
 
+// A stable default: a new `[]` on every render would look like new events to the engine.
+const NO_EVENTS: CalendarEvent[] = [];
+
 export const Scheduler: React.FC<CalendarProps> = ({
-  events = [],
+  events = NO_EVENTS,
   view: controlledView,
   onViewChange: controlledOnViewChange,
   date: controlledDate,
@@ -101,6 +104,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
     onOccurrenceDelete,
     readOnly,
     timezone,
+    stripGeneratedIds: true,
   });
   const view = useCalendarSelector(calendar, (s) => s.view);
   const currentDate = useCalendarSelector(calendar, (s) => s.date);
@@ -110,7 +114,15 @@ export const Scheduler: React.FC<CalendarProps> = ({
 
   // The 1.x modal reads the dialog: an event being shown or edited, or a new event at a slot.
   const editingId = dialog?.kind === 'event' || dialog?.kind === 'editor' ? dialog.eventId : undefined;
-  const selectedEvent = editingId !== undefined ? expandedEvents.find((e) => e.id === editingId) ?? null : null;
+  // Like 1.x, the form gets a snapshot of the event taken when it opened: new event objects from the
+  // parent (a refetch) do not reset what the user is typing, and the last event stays available
+  // after the form closes (exit animations, a save that comes after onClose).
+  const lastOpened = useRef<{ id?: string; event: CalendarEvent | null }>({ event: null });
+  if (dialog && dialog.kind !== 'more') {
+    if (editingId === undefined) lastOpened.current = { event: null };
+    else if (lastOpened.current.id !== editingId) lastOpened.current = { id: editingId, event: expandedEvents.find((e) => e.id === editingId) ?? null };
+  }
+  const selectedEvent = lastOpened.current.event;
   const draft = dialog?.kind === 'quick' || dialog?.kind === 'editor' ? dialog.draft : undefined;
   const isModalOpen = dialog !== null && dialog.kind !== 'more';
   const modalInitialDate = editingId === undefined ? draft?.start : undefined;
@@ -130,7 +142,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
     handleTimeSlotClick: (date: Date, resourceId?: string) => calendar.openSlot(date, { resourceId, editor: true }),
     handleAllDaySlotClick: (day: Date) => calendar.openSlot(day, { allDay: true, editor: true }),
     handleCreateEvent: () => calendar.openSlot(new Date(), { editor: true }),
-    handleModalSave: (data: Partial<CalendarEvent>) => calendar.saveEvent(data),
+    handleModalSave: (data: Partial<CalendarEvent>) => calendar.saveEvent(data, { eventId: lastOpened.current.id ?? null }),
     handleModalDelete: (eventId: string) => calendar.remove(eventId),
     handleModalClose: () => calendar.closeDialog(),
     handleEventDelete: (event: CalendarEvent) => calendar.remove(event.id),

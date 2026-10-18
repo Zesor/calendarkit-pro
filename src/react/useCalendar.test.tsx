@@ -109,3 +109,20 @@ describe('CalendarProvider', () => {
     expect(() => render(<Title />)).toThrow('useCalendarContext must be used inside a <CalendarProvider>.')
   })
 })
+
+describe('review fix I1: value-equal events', () => {
+  test('a component rebuilding equal events inline while selecting occurrences does not loop', () => {
+    const onRender = vi.fn()
+    function Owner() {
+      const [n, setN] = React.useState(0)
+      const calendar = useCalendar({ events: [{ ...lunch, start: new Date(lunch.start), end: new Date(lunch.end), recurrence: { freq: 'WEEKLY' as const } }], now })
+      const occurrences = useCalendarSelector(calendar, (s) => s.occurrences)
+      onRender()
+      return <button onClick={() => setN(n + 1)}>{occurrences.length > 0 ? 'ok' : 'empty'} {n}</button>
+    }
+    render(<Owner />)
+    for (let i = 0; i < 3; i++) act(() => screen.getByRole('button').click())
+    expect(screen.getByRole('button').textContent).toBe('ok 3')
+    expect(onRender.mock.calls.length).toBeLessThanOrEqual(1 + 3 * 2)
+  })
+})
