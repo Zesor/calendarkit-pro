@@ -1,9 +1,9 @@
 import React from 'react';
-import { cn } from '../utils';
+import { cx } from '../utils';
 
-// Base skeleton component
+// Base skeleton block: callers set its size and rounding.
 const Skeleton: React.FC<{ className?: string; style?: React.CSSProperties }> = ({ className, style }) => (
-  <div className={cn("animate-pulse bg-muted/40 rounded", className)} style={style} />
+  <div className={cx("animate-pulse bg-muted/40", className)} style={style} />
 );
 
 // Month View Skeleton
@@ -13,7 +13,7 @@ export const MonthViewSkeleton: React.FC = () => (
     <div className="grid grid-cols-7 border-b border-border/50 bg-muted/10">
       {Array.from({ length: 7 }).map((_, i) => (
         <div key={i} className="py-3 px-2 text-center border-r border-border/30 last:border-r-0">
-          <Skeleton className="h-4 w-8 mx-auto" />
+          <Skeleton className="h-4 w-8 mx-auto rounded" />
         </div>
       ))}
     </div>
@@ -21,7 +21,7 @@ export const MonthViewSkeleton: React.FC = () => (
     <div className="grid grid-cols-7 flex-1">
       {Array.from({ length: 35 }).map((_, i) => (
         <div key={i} className="min-h-[120px] border-r border-b border-border/30 p-2">
-          <Skeleton className="h-4 w-6 mb-2" />
+          <Skeleton className="h-4 w-6 mb-2 rounded" />
           <div className="space-y-1">
             {/* Deterministic pattern: Math.random() broke SSR hydration. */}
             {(i * 7) % 10 > 4 && <Skeleton className="h-5 w-full rounded-md" />}
@@ -39,12 +39,12 @@ export const WeekViewSkeleton: React.FC = () => (
     {/* Header */}
     <div className="flex border-b border-border/50 bg-muted/10">
       <div className="w-16 p-3 border-r border-border/30">
-        <Skeleton className="h-8 w-10 mx-auto" />
+        <Skeleton className="h-8 w-10 mx-auto rounded" />
       </div>
       <div className="flex-1 grid grid-cols-7">
         {Array.from({ length: 7 }).map((_, i) => (
           <div key={i} className="py-3 px-2 text-center border-r border-border/30 last:border-r-0">
-            <Skeleton className="h-3 w-8 mx-auto mb-1" />
+            <Skeleton className="h-3 w-8 mx-auto mb-1 rounded" />
             <Skeleton className="h-8 w-8 mx-auto rounded-xl" />
           </div>
         ))}
@@ -55,7 +55,7 @@ export const WeekViewSkeleton: React.FC = () => (
       <div className="w-16 border-r border-border/30">
         {Array.from({ length: 10 }).map((_, i) => (
           <div key={i} className="h-[60px] relative">
-            <Skeleton className="h-4 w-10 absolute right-2 -translate-y-1/2" />
+            <Skeleton className="h-4 w-10 absolute right-2 -translate-y-1/2 rounded" />
           </div>
         ))}
       </div>
@@ -89,14 +89,14 @@ export const DayViewSkeleton: React.FC = () => (
   <div className="h-full bg-background border border-border/50 rounded-2xl overflow-hidden">
     {/* Header */}
     <div className="px-6 py-4 border-b border-border/50 bg-muted/10 text-center">
-      <Skeleton className="h-7 w-64 mx-auto" />
+      <Skeleton className="h-7 w-64 mx-auto rounded" />
     </div>
     {/* Grid */}
     <div className="flex flex-1" style={{ height: '600px' }}>
       <div className="w-20 border-r border-border/30 bg-muted/5">
         {Array.from({ length: 10 }).map((_, i) => (
           <div key={i} className="h-[80px] relative">
-            <Skeleton className="h-4 w-12 absolute left-1/2 -translate-x-1/2 -translate-y-1/2" />
+            <Skeleton className="h-4 w-12 absolute left-1/2 -translate-x-1/2 -translate-y-1/2 rounded" />
           </div>
         ))}
       </div>
@@ -124,14 +124,14 @@ export const AgendaViewSkeleton: React.FC = () => (
     <div className="space-y-6">
       {Array.from({ length: 4 }).map((_, dayIdx) => (
         <div key={dayIdx}>
-          <Skeleton className="h-5 w-40 mb-4" />
+          <Skeleton className="h-5 w-40 mb-4 rounded" />
           <div className="space-y-3">
             {Array.from({ length: 2 + Math.floor(Math.random() * 3) }).map((_, eventIdx) => (
               <div key={eventIdx} className="flex items-center gap-4 p-3 rounded-xl bg-muted/10">
                 <Skeleton className="h-10 w-10 rounded-lg" />
                 <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-3 w-1/2" />
+                  <Skeleton className="h-4 w-3/4 rounded" />
+                  <Skeleton className="h-3 w-1/2 rounded" />
                 </div>
               </div>
             ))}

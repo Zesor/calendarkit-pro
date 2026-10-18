@@ -1,13 +1,13 @@
 import React, { useMemo } from 'react';
 import { format, isSameDay, addDays, startOfDay, differenceInMinutes, Locale } from 'date-fns';
 import { CalendarEvent, CalendarTranslations } from '../types';
-import { cn } from '../utils';
+import { cx } from '../utils';
 import { eventsByStartDay } from '../core/events';
 import { timeFormats, uses24HourClock } from '../core/format';
 import { displayToday, toDisplay } from '../core/timezone';
 import { AgendaEmptyState } from '../components/EmptyState';
 import { motion } from 'framer-motion';
-import { Clock, Users, Paperclip, Bell } from 'lucide-react';
+import { Clock, Users, Paperclip, Bell } from '../components/icons';
 
 interface AgendaViewProps {
   currentDate: Date;
@@ -106,7 +106,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                     <div className="sticky top-0 bg-background/95 backdrop-blur-md py-4 z-10 border-b border-border/50">
                       <div className="flex items-center gap-4">
                         {/* Date box */}
-                        <div className={cn(
+                        <div className={cx(
                           "flex flex-col items-center justify-center w-16 h-16 rounded-2xl transition-all",
                           isSameDay(group.date, today)
                             ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
@@ -122,7 +122,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
 
                         {/* Day info */}
                         <div className="flex flex-col">
-                          <span className={cn(
+                          <span className={cx(
                             "text-lg font-semibold",
                             isSameDay(group.date, today) && "text-primary"
                           )}>
@@ -145,7 +145,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                                 key={event.id}
                                 onClick={() => onEventClick?.(event)}
                                 onContextMenu={onEventContextMenu ? (e) => onEventContextMenu(event, e) : undefined}
-                                className={cn(
+                                className={cx(
                                   "group relative flex gap-4 p-4 rounded-2xl border border-border/40",
                                   "hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5",
                                   "transition-all duration-200 cursor-pointer",

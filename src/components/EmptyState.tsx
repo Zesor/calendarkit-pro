@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus } from 'lucide-react';
+import { Plus } from './icons';
 
 // Empty state specifically for Agenda View with date context
 export const AgendaEmptyState: React.FC<{

@@ -3,7 +3,7 @@ import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { addDays, differenceInCalendarDays, format, Locale } from 'date-fns';
 import { CalendarEvent, CalendarTranslations } from '../types';
-import { cn, isEventDragDisabled, isEventResizeDisabled } from '../utils';
+import { cx, isEventDragDisabled, isEventResizeDisabled } from '../utils';
 import { dayEventSpan, DaySpanSegment } from '../core/allDay';
 
 interface AllDayBarProps {
@@ -100,7 +100,7 @@ const AllDayBarImpl: React.FC<AllDayBarProps> = ({
       onPointerDownCapture={handlePointerDownCapture}
       role="button"
       aria-label={label}
-      className={cn(
+      className={cx(
         "group absolute px-[2px] select-none",
         dragDisabled ? "cursor-pointer" : "cursor-grab active:cursor-grabbing touch-none"
       )}
@@ -124,7 +124,7 @@ const AllDayBarImpl: React.FC<AllDayBarProps> = ({
       onContextMenu={onEventContextMenu ? (e) => onEventContextMenu(event, e) : undefined}
     >
       <div
-        className={cn(
+        className={cx(
           "relative h-[calc(100%-4px)] mt-[2px] flex items-center gap-1 px-1.5 text-[11px] font-semibold text-white overflow-hidden shadow-sm",
           continuesBefore ? "rounded-l-none" : "rounded-l-md",
           continuesAfter ? "rounded-r-none" : "rounded-r-md"

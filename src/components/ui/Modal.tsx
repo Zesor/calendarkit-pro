@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
-import { cn } from '../../utils';
+import { X } from '../icons';
+import { cx } from '../../utils';
 import { Button } from './button';
 
 interface ModalProps {
@@ -52,8 +52,8 @@ export const Modal: React.FC<ModalProps> = ({
         onClick={onClose}
       />
       <div
-        className={cn(
-          "relative bg-background rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[70vh] sm:max-h-[80vh] animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 border border-border/50",
+        className={cx(
+          "relative bg-background rounded-2xl shadow-2xl w-full flex flex-col max-h-[70vh] sm:max-h-[80vh] animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 border border-border/50",
           className
         )}
       >
@@ -63,17 +63,15 @@ export const Modal: React.FC<ModalProps> = ({
               {title}
             </h3>
             <Button
-              variant="ghost"
-              size="sm"
               onClick={onClose}
-              className="h-9 w-9 p-0 rounded-xl hover:bg-accent/80 transition-all duration-200"
+              className="inline-flex text-sm font-medium hover:text-accent-foreground h-9 w-9 p-0 rounded-xl hover:bg-accent/80 transition-all duration-200"
             >
               <X className="h-4 w-4" />
               <span className="sr-only">{closeLabel}</span>
             </Button>
           </div>
         )}
-        <div className={cn("overflow-y-auto flex-1", !hideHeader && "p-6")}>
+        <div className={cx("overflow-y-auto flex-1", !hideHeader && "p-6")}>
           {children}
         </div>
       </div>

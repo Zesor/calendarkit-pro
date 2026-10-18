@@ -1,7 +1,7 @@
 import React from 'react';
 import { addDays, format, differenceInMinutes, isSameDay, Locale, startOfDay } from 'date-fns';
 import { CalendarEvent, CalendarTranslations } from '../types';
-import { cn, isEventDragDisabled } from '../utils';
+import { cx, isEventDragDisabled } from '../utils';
 import { DaySegment, segmentsByDisplayDay } from '../core/events';
 import { partitionDayEvents } from '../core/allDay';
 import { AllDayRow } from '../components/AllDayRow';
@@ -214,7 +214,7 @@ const DayViewImpl: React.FC<DayViewProps> = ({
                                 style={{ height: '100%' }}
                             >
                                 <div
-                                    className={cn(
+                                    className={cx(
                                         "h-full rounded-lg border-[0.5px] shadow-sm overflow-hidden transition-all hover:shadow-lg hover:z-20 group",
                                         "glass backdrop-blur-sm",
                                         readonly || isEventDragDisabled(event) ? "cursor-default" : "cursor-grab active:cursor-grabbing",
@@ -236,8 +236,8 @@ const DayViewImpl: React.FC<DayViewProps> = ({
                                     title={columns > 1 ? `${event.title} (${column + 1}/${columns})` : undefined}
                                 >
                                     <div className="flex flex-col h-full overflow-hidden w-full">
-                                        <div className={cn(
-                                            "font-semibold truncate leading-tight",
+                                        <div className={cx(
+                                            "font-semibold truncate",
                                             isShortEvent ? "text-xs" : "text-sm",
                                             event.color ? "text-foreground" : "text-foreground/90"
                                         )}>

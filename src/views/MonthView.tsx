@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { format, isSameDay, isSameMonth, Locale } from 'date-fns';
 import { CalendarEvent, CalendarTranslations } from '../types';
 import { interpolate } from '../core/format';
-import { cn } from '../utils';
+import { cx } from '../utils';
 import { eventsByStartDay } from '../core/events';
 import { layoutDayRow, partitionDayEvents } from '../core/allDay';
 import { AllDayBar } from '../components/AllDayBar';
@@ -34,7 +34,7 @@ interface EventItemProps {
 const EventItem = React.memo(({ event, onEventClick, onEventContextMenu }: EventItemProps) => (
     <DraggableEvent event={event}>
         <div
-            className={cn(
+            className={cx(
               "text-xs px-2.5 py-1.5 rounded-lg truncate cursor-pointer shadow-sm transition-all duration-200",
               "hover:shadow-md hover:scale-[1.02] hover:z-10",
               !event.color && "bg-primary/10 text-primary hover:bg-primary/15 border-[0.5px] border-primary/20"
@@ -139,15 +139,15 @@ export const MonthView: React.FC<MonthViewProps> = ({
                   key={cellId}
                   id={cellId}
                   date={day}
-                  className={cn(
-                    "h-full p-2 border-b-[0.5px] border-r-[0.5px] border-border/30 last:border-r-0 relative transition-all duration-200 hover:bg-accent/5 flex flex-col gap-1.5 overflow-hidden group",
+                  className={cx(
+                    "h-full p-2 border-b-[0.5px] border-r-[0.5px] border-border/30 last:border-r-0 relative transition-all duration-200 flex flex-col gap-1.5 overflow-hidden group",
                     !isCurrentMonth && "bg-muted/5 text-muted-foreground/60",
                     isSameDay(day, today) && "bg-primary/5 ring-1 ring-inset ring-primary/20"
                   )}
                   onClick={() => onDateClick?.(day)}
                 >
                   <div className="flex justify-between items-start">
-                    <div className={cn(
+                    <div className={cx(
                       "text-sm font-semibold w-7 h-7 flex items-center justify-center rounded-full transition-all duration-200",
                       isSameDay(day, today)
                         ? "bg-primary text-primary-foreground shadow-md shadow-primary/30"

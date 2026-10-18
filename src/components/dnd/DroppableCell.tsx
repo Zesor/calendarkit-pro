@@ -1,6 +1,6 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { cn } from '../../utils';
+import { cx } from '../../utils';
 
 interface DroppableCellProps {
   id: string; // usually ISO date string
@@ -43,7 +43,7 @@ const DroppableCellImpl: React.FC<DroppableCellProps> = ({ id, date, resourceId,
   return (
     <div
       ref={setNodeRef}
-      className={cn(
+      className={cx(
         className,
         QUARTER_HOVER[quarter],
         isOver && QUARTER_ACTIVE[quarter],

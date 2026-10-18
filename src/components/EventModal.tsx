@@ -8,8 +8,8 @@ import {
     Users, Paperclip, File, Calendar, ChevronDown, Check, Download,
     Bell, BellRing, Plus, Repeat, Tag,
     ExternalLink
-  } from 'lucide-react';
-import { cn } from '../utils';
+  } from './icons';
+import { cx } from '../utils';
 import { interpolate, timeFormats } from '../core/format';
 import { dayEventSpan, isDayEvent } from '../core/allDay';
 
@@ -329,7 +329,7 @@ export const EventModal: React.FC<EventModalProps> = ({
     const className = "flex items-center gap-3 p-3 rounded-xl border border-border/30 bg-muted/20 transition-all group";
     // U6: only real attachment URLs are downloadable (no generated placeholder file).
     return att.url && isSafeUrl(att.url) ? (
-      <a key={att.id} href={att.url} target="_blank" rel="noopener noreferrer" download={att.name} className={cn(className, "hover:bg-muted/40 cursor-pointer")}>
+      <a key={att.id} href={att.url} target="_blank" rel="noopener noreferrer" download={att.name} className={cx(className, "hover:bg-muted/40 cursor-pointer")}>
         {content}
       </a>
     ) : (
@@ -570,7 +570,7 @@ export const EventModal: React.FC<EventModalProps> = ({
                       setFormData(prev => ({ ...prev, color }));
                       setIsColorPickerOpen(false);
                     }}
-                    className={cn(
+                    className={cx(
                       "w-7 h-7 rounded-full transition-all hover:scale-110",
                       formData.color === color && "ring-2 ring-offset-2 ring-offset-background ring-current"
                     )}
@@ -620,13 +620,13 @@ export const EventModal: React.FC<EventModalProps> = ({
               aria-checked={!!formData.allDay}
               aria-labelledby="calendarkit-all-day-label"
               onClick={handleAllDayToggle}
-              className={cn(
+              className={cx(
                 "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors cursor-pointer",
                 formData.allDay ? "bg-primary" : "bg-muted"
               )}
             >
               <span
-                className={cn(
+                className={cx(
                   "pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow transition-transform",
                   formData.allDay ? "translate-x-5" : "translate-x-0"
                 )}
@@ -758,7 +758,7 @@ export const EventModal: React.FC<EventModalProps> = ({
               onBlur={() => guestInput.trim() && addGuests(guestInput)}
               placeholder={t.addGuestPlaceholder}
               aria-invalid={guestError}
-              className={cn(
+              className={cx(
                 "w-full px-4 py-3 bg-muted/20 border rounded-xl text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-all",
                 guestError ? "border-destructive" : "border-border/30"
               )}
@@ -936,7 +936,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   );
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} hideHeader className="p-0 overflow-hidden max-w-lg rounded-2xl shadow-2xl">
+    <Modal isOpen={isOpen} onClose={onClose} hideHeader className="p-0 overflow-hidden max-w-lg">
       <AnimatePresence mode="wait">
         {mode === 'view' && event ? (
           <motion.div

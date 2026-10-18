@@ -125,7 +125,7 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
                                                 id={slotId}
                                                 date={slotDate}
                                                 resourceId={resource.id}
-                                                className="h-full flex-1 border-r border-border/10 last:border-border/30 hover:bg-accent/10 transition-colors"
+                                                className="h-full flex-1 border-r border-border/10 last:border-border/30 transition-colors"
                                                 onSlotClick={onTimeSlotClick}
                                             />
                                         );

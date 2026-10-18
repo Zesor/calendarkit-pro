@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { CalendarEvent } from '../../types';
-import { cn, isEventResizeDisabled } from '../../utils';
+import { cx, isEventResizeDisabled } from '../../utils';
 import { computeResizeEnd } from '../../core/dnd';
 
 interface ResizableEventProps {
@@ -96,7 +96,7 @@ export const ResizableEvent: React.FC<ResizableEventProps> = ({
   return (
     <div
       ref={containerRef}
-      className={cn("relative group", className)}
+      className={cx("relative group", className)}
       style={{
         ...style,
         height: resizeHeight !== null ? `${resizeHeight}px` : style?.height,
@@ -106,17 +106,17 @@ export const ResizableEvent: React.FC<ResizableEventProps> = ({
 
       {/* Resize Handle */}
       <div
-        className={cn(
+        className={cx(
           resizeLocked ? "cursor-default" : "cursor-ns-resize group-hover:opacity-100",
           "absolute bottom-0 left-0 right-0 h-3 z-20 flex items-center justify-center",
-          "opacity-0 transition-opacity",
-          isResizing && "opacity-100"
+          "transition-opacity",
+          isResizing ? "opacity-100" : "opacity-0"
         )}
         onPointerDown={resizeLocked ? undefined : handlePointerDown}
         onMouseDown={resizeLocked ? undefined : handleResizeStart}
         onTouchStart={resizeLocked ? undefined : handleResizeStart}
       >
-        <div className={cn(
+        <div className={cx(
           "w-8 h-1 rounded-full transition-all",
           isResizing ? "bg-primary" : "bg-muted-foreground/30 group-hover:bg-primary/50"
         )} />

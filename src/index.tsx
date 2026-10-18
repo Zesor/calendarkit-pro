@@ -13,7 +13,7 @@ import { EventModal } from './components/EventModal';
 import { MonthViewSkeleton, WeekViewSkeleton, DayViewSkeleton, AgendaViewSkeleton } from './components/Skeleton';
 import { EventContextMenu, useEventContextMenu } from './components/ContextMenu';
 import { CalendarProps, CalendarEvent } from './types';
-import { cn } from './utils';
+import { cx } from './utils';
 import { getThemeStyles } from './lib/theme';
 import { resolveTranslations, timeFormats } from './core/format';
 import { toDisplay } from './core/timezone';
@@ -38,9 +38,6 @@ export type {
   EventAttachment,
   ThemeColors,
 } from './types';
-
-// Re-export utilities
-export { cn } from './utils';
 
 // A stable default: a new `[]` on every render would look like new events to the engine.
 const NO_EVENTS: CalendarEvent[] = [];
@@ -221,7 +218,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
         modifiers={modifiers}
     >
       <div
-        className={cn("flex flex-col h-full bg-background text-foreground relative", className)}
+        className={cx("flex flex-col h-full bg-background text-foreground relative", className)}
         style={getThemeStyles(theme)}
       >
         <CalendarHeader
@@ -243,7 +240,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
         
         <div className="flex flex-1 overflow-hidden">
             <motion.div
-                className={cn(
+                className={cx(
                   "hidden md:block overflow-hidden",
                 )}
                 initial={false}
@@ -263,7 +260,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                     onEventCreate={handleCreateEvent}
                     timezone={timezone}
                     onTimezoneChange={onTimezoneChange}
-                    className="w-full h-full"
+                    className="w-full"
                     readOnly={readOnly}
                     calendars={calendars}
                     onCalendarToggle={onCalendarToggle}
@@ -455,7 +452,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
         <DragOverlay dropAnimation={null}>
             {activeDragEvent ? (
                 <div
-                    className={cn(
+                    className={cx(
                       "rounded-lg shadow-2xl border-2 overflow-hidden cursor-grabbing transition-transform",
                       "backdrop-blur-sm",
                       !activeDragEvent.color && "bg-primary/90 border-primary/60 text-primary-foreground",

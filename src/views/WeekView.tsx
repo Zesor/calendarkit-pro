@@ -1,7 +1,7 @@
 import React from 'react';
 import { addDays, format, differenceInMinutes, isSameDay, Locale } from 'date-fns';
 import { CalendarEvent, CalendarTranslations } from '../types';
-import { cn, isEventDragDisabled } from '../utils';
+import { cx, isEventDragDisabled } from '../utils';
 import { DaySegment, segmentsByDisplayDay } from '../core/events';
 import { partitionDayEvents } from '../core/allDay';
 import { AllDayRow } from '../components/AllDayRow';
@@ -113,9 +113,9 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
           </div>
           <div className="flex-1 grid grid-cols-7">
               {weekDays.map((day, index) => (
-              <div key={day.toISOString()} className={cn("py-3 px-2 text-center", index > 0 && "border-l-[0.5px] border-border/30")}>
+              <div key={day.toISOString()} className={cx("py-3 px-2 text-center", index > 0 && "border-l-[0.5px] border-border/30")}>
                   <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">{format(day, 'EEE', { locale })}</div>
-                  <div className={cn(
+                  <div className={cx(
                     "w-9 h-9 flex items-center justify-center rounded-xl mx-auto text-sm font-semibold transition-all duration-200",
                     isSameDay(day, today)
                       ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-110"
@@ -181,7 +181,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
                 const positioned = layoutDayEvents(segmentsByDay.get(dayKey) ?? NO_SEGMENTS);
 
                 return (
-                <div key={dayKey} className={cn("relative h-full", dayIndex > 0 && "border-l-[0.5px] border-border/30")}>
+                <div key={dayKey} className={cx("relative h-full", dayIndex > 0 && "border-l-[0.5px] border-border/30")}>
                     {/* Grid Rows (Droppable Cells) */}
                     {HOURS.map((hour) => (
                         <div
@@ -252,7 +252,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
                                     style={{ height: '100%' }}
                                 >
                                     <div
-                                        className={cn(
+                                        className={cx(
                                             "rounded-md border shadow-sm transition-all hover:shadow-md group overflow-hidden relative",
                                             "glass",
                                             readonly || isEventDragDisabled(event) ? "cursor-default" : "cursor-grab active:cursor-grabbing",
@@ -276,7 +276,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
                                         title={columns > 1 ? `${event.title} (${column + 1}/${columns})` : undefined}
                                     >
                                         <div className="flex flex-col h-full overflow-hidden w-full">
-                                            <div className={cn("font-semibold truncate text-foreground/90 leading-tight",
+                                            <div className={cx("font-semibold truncate text-foreground/90",
                                                 isShortEvent ? "text-xs text-center" : "text-xs"
                                             )}>
                                                 {event.title}

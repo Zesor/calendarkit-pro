@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { format, Locale } from 'date-fns';
 import { CalendarEvent, CalendarTranslations } from '../types';
-import { cn } from '../utils';
+import { cx } from '../utils';
 import { interpolate } from '../core/format';
 import { layoutDayRow } from '../core/allDay';
 import { DroppableCell } from './dnd/DroppableCell';
@@ -56,7 +56,7 @@ const AllDayRowImpl: React.FC<AllDayRowProps> = ({
 
   return (
     <div className="flex border-b-[0.5px] border-border/50 bg-background" data-all-day-row>
-      <div className={cn("flex-none flex flex-col items-end justify-start gap-0.5 pr-2 pt-1 text-[10px] text-muted-foreground border-r-[0.5px] border-border/30", gutterClassName)}>
+      <div className={cx("flex-none flex flex-col items-end justify-start gap-0.5 pr-2 pt-1 text-[10px] text-muted-foreground border-r-[0.5px] border-border/30", gutterClassName)}>
         <span>{translations?.allDay || 'All Day'}</span>
         {laneCount > maxLanes && (
           <button
@@ -76,7 +76,7 @@ const AllDayRowImpl: React.FC<AllDayRowProps> = ({
               id={`all-day-${day.toISOString()}`}
               date={day}
               allDayRow
-              className={cn("h-full", index > 0 && "border-l-[0.5px] border-border/30")}
+              className={cx("h-full", index > 0 && "border-l-[0.5px] border-border/30")}
               onSlotClick={readonly || !onSlotClick ? undefined : handleSlotClick}
             />
           ))}

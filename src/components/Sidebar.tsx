@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
-import { Plus, ChevronDown, Globe } from 'lucide-react';
+import { Plus, ChevronDown, Globe } from './icons';
 import { MiniCalendar } from './MiniCalendar';
-import { cn } from '../utils';
+import { cx } from '../utils';
 import { toZonedTime } from 'date-fns-tz';
 import { format, Locale } from 'date-fns';
 import { timeZoneAbbreviation } from '../core/format';
@@ -121,11 +121,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const selectedTimezoneLabel = selectedTzObj ? formatTzLabel(selectedTzObj) : (translations?.localTime || 'Local Time');
 
   return (
-    <div className={cn("flex flex-col w-[260px] overflow-x-hidden h-full bg-gradient-to-b scrollbar-hide from-background via-background to-muted/10 pt-4 pb-4 overflow-y-auto hidden lg:flex", className)}>
+    <div className={cx("flex-col overflow-x-hidden h-full bg-gradient-to-b scrollbar-hide from-background via-background to-muted/10 pt-4 pb-4 overflow-y-auto hidden lg:flex", className)}>
       {!readOnly && (
         <div className="px-4 mb-6">
             <Button
-              className="w-full rounded-2xl shadow-lg bg-primary text-primary-foreground hover:bg-primary/90 h-12 gap-3 justify-center transition-all duration-300 hover:shadow-xl hover:shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] font-semibold"
+              className="inline-flex text-sm w-full rounded-2xl shadow-lg bg-primary text-primary-foreground hover:bg-primary/90 h-12 gap-3 transition-all duration-300 hover:shadow-xl hover:shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] font-semibold"
               onClick={onEventCreate}
             >
               <Plus className="w-5 h-5" />
@@ -151,7 +151,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => setCalendarsOpen(!calendarsOpen)}
           >
             <span className="text-sm font-semibold text-foreground">{translations?.calendars || 'Calendars'}</span>
-            <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform duration-200", calendarsOpen && "rotate-180")} />
+            <ChevronDown className={cx("w-4 h-4 text-muted-foreground transition-transform duration-200", calendarsOpen && "rotate-180")} />
           </div>
 
           {calendarsOpen && (
@@ -214,7 +214,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     className="w-full flex items-center justify-between bg-blue-200/40  hover:bg-blue-200/80 rounded-xl py-2.5 pl-4 pr-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all duration-200 text-left"
                 >
                     <div className="flex-1 truncate mr-2 font-medium">{selectedTimezoneLabel}</div>
-                    <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform duration-200", timezoneOpen && "rotate-180")} />
+                    <ChevronDown className={cx("w-4 h-4 text-muted-foreground transition-transform duration-200", timezoneOpen && "rotate-180")} />
                 </button>
 
                 {timezoneOpen && (
@@ -224,7 +224,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             {timezones.map(tz => (
                                 <div
                                     key={tz.value}
-                                    className={cn(
+                                    className={cx(
                                         "px-3 py-2.5 text-sm rounded-lg cursor-pointer transition-all duration-200",
                                         (timezone || '') === tz.value
                                             ? "bg-primary text-primary-foreground font-semibold"

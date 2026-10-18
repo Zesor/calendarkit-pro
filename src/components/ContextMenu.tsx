@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { CalendarEvent } from '../types';
-import { cn } from '../utils';
-import { Edit3, Trash2, Copy } from 'lucide-react';
+import { cx } from '../utils';
+import { Edit3, Trash2, Copy } from './icons';
 import { AnimatePresence, motion } from 'framer-motion';
 
 interface ContextMenuAction {
@@ -148,7 +148,7 @@ export const EventContextMenu: React.FC<EventContextMenuProps> = ({
               <button
                 onClick={action.onClick}
                 disabled={action.disabled}
-                className={cn(
+                className={cx(
                   "w-full flex items-center gap-3 px-3 py-2 text-sm transition-colors",
                   action.disabled && "opacity-50 cursor-not-allowed",
                   action.variant === 'danger'

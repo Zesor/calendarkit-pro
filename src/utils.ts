@@ -1,10 +1,7 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
 import type { CalendarEvent } from "./types"
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
-}
+/** Joins the truthy class names. Never merges them: no element gets two classes for the same property. */
+export const cx = (...classes: Array<string | false | null | undefined>) => classes.filter(Boolean).join(" ")
 
 export const isEventDragDisabled = (event?: CalendarEvent) => event?.draggable === false
 

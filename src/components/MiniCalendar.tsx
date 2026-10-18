@@ -2,8 +2,8 @@ import React from 'react';
 import { format, isSameMonth, isSameDay, isToday, addMonths, subMonths, Locale } from 'date-fns';
 import { getMonthGrid, resolveWeekStartsOn } from '../core/week';
 import { Button } from './ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { cn } from '../utils';
+import { ChevronLeft, ChevronRight } from './icons';
+import { cx } from '../utils';
 
 import { ViewType } from '../types';
 
@@ -67,7 +67,7 @@ export const MiniCalendar: React.FC<MiniCalendarProps> = ({
   };
 
   return (
-    <div className={cn("px-4 w-[260px]", className)}>
+    <div className={cx("px-4 w-[260px]", className)}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <span className="text-sm font-semibold text-foreground capitalize">
@@ -75,18 +75,14 @@ export const MiniCalendar: React.FC<MiniCalendarProps> = ({
         </span>
         <div className="flex items-center bg-muted/40 rounded-lg p-0.5">
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 rounded-md hover:bg-background/80 transition-all"
+              className="inline-flex text-sm font-medium hover:text-accent-foreground h-7 w-7 rounded-md hover:bg-background/80 transition-all"
               onClick={handlePrev}
               aria-label={labels?.previousMonth || 'Previous month'}
             >
                 <ChevronLeft className="h-4 w-4" />
             </Button>
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 rounded-md hover:bg-background/80 transition-all"
+              className="inline-flex text-sm font-medium hover:text-accent-foreground h-7 w-7 rounded-md hover:bg-background/80 transition-all"
               onClick={handleNext}
               aria-label={labels?.nextMonth || 'Next month'}
             >
@@ -115,7 +111,7 @@ export const MiniCalendar: React.FC<MiniCalendarProps> = ({
             <button
               key={day.toISOString()}
               onClick={() => handleDateClick(day)}
-              className={cn(
+              className={cx(
                 "h-8 w-8 mx-auto flex items-center justify-center text-xs rounded-xl transition-all duration-200 font-medium",
                 !isCurrentMonth && "text-muted-foreground/30",
                 isCurrentMonth && !isSelected && !isTodayDate && "text-foreground hover:bg-accent/80",
