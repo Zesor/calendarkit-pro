@@ -70,19 +70,35 @@ export interface Resource {
 
 export interface ThemeColors {
   primary?: string;
+  /** Text and icons on `primary`. */
+  primaryForeground?: string;
   secondary?: string;
   background?: string;
   foreground?: string;
   border?: string;
   muted?: string;
+  /** Secondary text. */
+  mutedForeground?: string;
   accent?: string;
+  destructive?: string;
+  /** Focus ring. */
+  ring?: string;
 }
 
+/** Built-in looks, each in light and dark: `calm` (default, neutral), `vivid` (saturated), `editorial` (warm, serif titles). */
+export type ThemePreset = 'calm' | 'vivid' | 'editorial';
+
+/** `system` follows the operating system setting. */
+export type ColorMode = 'light' | 'dark' | 'system';
+
 export interface CalendarTheme {
+  /** The built-in theme the overrides below apply to (default `calm`). */
+  preset?: ThemePreset;
+  /** Replaces colours of the preset (any CSS colour), in light and dark mode. */
   colors?: ThemeColors;
   fontFamily?: string;
+  /** Base corner radius: the smaller and larger radii scale from it. */
   borderRadius?: string;
-  // Future: lightColors, darkColors
 }
 
 // Derived from the English language pack so the type always matches every
@@ -109,7 +125,10 @@ export interface CalendarProps {
    * occurrence. Without this prop, deleting an occurrence deletes the whole series (`onEventDelete`).
    */
   onOccurrenceDelete?: (occurrence: CalendarEvent, updatedSeries: CalendarEvent) => void;
-  theme?: CalendarTheme;
+  /** A preset name (`"calm"`, `"vivid"`, `"editorial"`) or a theme object. */
+  theme?: CalendarTheme | ThemePreset;
+  /** Light, dark or the system setting. Without `mode` nor `isDarkMode`, a `.dark` ancestor turns the calendar dark. */
+  mode?: ColorMode;
   locale?: Locale; // from date-fns
   timezone?: string; // e.g. "America/New_York"
   onTimezoneChange?: (timezone: string) => void;

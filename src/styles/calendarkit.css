@@ -22,7 +22,7 @@
   --color-popover-foreground: var(--ck-foreground);
   --color-primary: var(--ck-primary);
   --color-primary-foreground: var(--ck-primary-foreground);
-  --color-secondary: var(--ck-muted);
+  --color-secondary: var(--ck-secondary, var(--ck-muted));
   --color-secondary-foreground: var(--ck-foreground);
   --color-muted: var(--ck-muted);
   --color-muted-foreground: var(--ck-muted-foreground);

@@ -43,6 +43,12 @@ body {
   color: #b4b4bd;
 }
 
+.demo-theme {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 0.875rem;
+}
+
 .demo-frame {
   height: 800px;
   border: 1px solid #e2e2e6;

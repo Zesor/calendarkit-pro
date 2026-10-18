@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Scheduler, CalendarEvent, ViewType, Resource, EventType } from "@/index";
+import { Scheduler, CalendarEvent, ViewType, Resource, EventType, ThemePreset } from "@/index";
 
 interface Calendar {
   id: string;
@@ -150,6 +150,7 @@ export default function Home() {
   const [view, setView] = useState<ViewType>("week");
   const [date, setDate] = useState(new Date());
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [theme, setTheme] = useState<ThemePreset>("calm");
   const [language, setLanguage] = useState<"en" | "fr">("en");
   const [timezone, setTimezone] = useState("America/New_York");
 
@@ -193,6 +194,14 @@ export default function Home() {
           <p>
             Professional React calendar with drag-drop, timezone support, i18n, resources, and recurring events.
           </p>
+          <label className="demo-theme">
+            Theme{" "}
+            <select value={theme} onChange={(e) => setTheme(e.target.value as ThemePreset)}>
+              <option value="calm">Calm</option>
+              <option value="vivid">Vivid</option>
+              <option value="editorial">Editorial</option>
+            </select>
+          </label>
         </div>
 
         <div className="demo-frame">
@@ -213,6 +222,7 @@ export default function Home() {
             onEventDelete={handleEventDelete}
             resources={demoResources}
             eventTypes={demoEventTypes}
+            theme={theme}
             isDarkMode={isDarkMode}
             onThemeToggle={() => setIsDarkMode(!isDarkMode)}
             timezone={timezone}

@@ -14,7 +14,7 @@ import { MonthViewSkeleton, WeekViewSkeleton, DayViewSkeleton, AgendaViewSkeleto
 import { EventContextMenu, useEventContextMenu } from './components/ContextMenu';
 import { CalendarProps, CalendarEvent } from './types';
 import { cx } from './utils';
-import { getThemeStyles } from './lib/theme';
+import { colorMode, getThemeStyles, themePreset } from './lib/theme';
 import { resolveTranslations, timeFormats } from './core/format';
 import { toDisplay } from './core/timezone';
 import { resolveWeekStartsOn } from './core/week';
@@ -38,6 +38,8 @@ export type {
   EventReminder,
   EventAttachment,
   ThemeColors,
+  ThemePreset,
+  ColorMode,
 } from './types';
 
 // A stable default: a new `[]` on every render would look like new events to the engine.
@@ -60,6 +62,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
   onTimezoneChange,
   className,
   theme,
+  mode,
   renderEventForm,
   readOnly,
   calendars,
@@ -225,6 +228,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
         ref={rootRef}
         className={cx("ck-root ck:flex ck:flex-col ck:h-full ck:bg-background ck:text-foreground ck:relative", className)}
         style={getThemeStyles(theme)}
+        data-ck-theme={themePreset(theme)}
+        data-ck-mode={colorMode(mode, isDarkMode)}
       >
         {injectStyles && <CalendarStyles />}
         <CalendarHeader
@@ -235,7 +240,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
           view={view}
           onViewChange={handleViewChange}
           onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          isDarkMode={isDarkMode}
+          isDarkMode={colorMode(mode, isDarkMode) === 'dark'}
           onThemeToggle={onThemeToggle}
           translations={t} // Pass translations
           hideViewSwitcher={hideViewSwitcher}
