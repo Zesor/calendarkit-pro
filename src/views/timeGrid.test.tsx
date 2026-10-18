@@ -43,7 +43,7 @@ describe('time grids', () => {
     ]
     render(<DndContext><WeekView currentDate={new Date(2026, 9, 15)} events={events} /></DndContext>)
     const block = (title: string) => screen.getAllByText(title).map((el) => el.closest('[aria-roledescription="draggable"]') as HTMLElement)
-    expect(block('A')[0].style.width).toBe('50%')
+    expect(block('A')[0].style.width).toBe('calc(50% - 2px)')
     expect(block('B')[0].style.left).toBe('50%')
     expect(block('Night')).toHaveLength(2)
     expect(block('Night').map((el) => el.style.height)).toEqual(['120px', '120px'])

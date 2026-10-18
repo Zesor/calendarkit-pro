@@ -1,16 +1,14 @@
 import React from 'react';
-import { addDays, format, differenceInMinutes, isSameDay, Locale, startOfDay } from 'date-fns';
+import { addDays, format, isSameDay, Locale, startOfDay } from 'date-fns';
 import { CalendarEvent, CalendarTranslations } from '../types';
-import { cx, isEventDragDisabled } from '../utils';
 import { DaySegment, segmentsByDisplayDay } from '../core/events';
 import { partitionDayEvents } from '../core/allDay';
 import { AllDayRow } from '../components/AllDayRow';
 import { timeFormats } from '../core/format';
-import { layoutDayEvents } from '../core/layout';
 import { displayToday, minutesSinceDisplayMidnight, toDisplay } from '../core/timezone';
-import { DraggableEvent } from '../components/dnd/DraggableEvent';
 import { DroppableCell } from '../components/dnd/DroppableCell';
-import { ResizableEvent } from '../components/dnd/ResizableEvent';
+import { useElementWidth } from '../hooks/useElementWidth';
+import { TimeGridEvents } from './TimeGridEvents';
 
 interface DayViewProps {
   currentDate: Date;
@@ -59,6 +57,7 @@ const DayViewImpl: React.FC<DayViewProps> = ({
   }, [currentDate]);
 
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  const [gridRef, gridWidth] = useElementWidth<HTMLDivElement>();
   const [now, setNow] = React.useState(() => new Date());
 
   React.useEffect(() => {
@@ -78,7 +77,7 @@ const DayViewImpl: React.FC<DayViewProps> = ({
   // All-day and 24 h+ events go to the all-day row; the grid only shows timed events.
   const { dayEvents, timedEvents } = partitionDayEvents(events, timezone);
   const rowDays = React.useMemo(() => [visibleRange.start], [visibleRange]);
-  const positioned = layoutDayEvents(segmentsByDisplayDay(timedEvents, timezone, visibleRange).get(dayKey) ?? NO_SEGMENTS);
+  const segments = segmentsByDisplayDay(timedEvents, timezone, visibleRange).get(dayKey) ?? NO_SEGMENTS;
   const isToday = isSameDay(currentDate, displayToday(timezone, now));
   const zonedNow = toDisplay(now, timezone);
   const nowTop = (minutesSinceDisplayMidnight(now, timezone) / 60) * HOUR_HEIGHT;
@@ -147,7 +146,7 @@ const DayViewImpl: React.FC<DayViewProps> = ({
                 </div>
 
                 {/* Day Column */}
-                <div className="ck:flex-1 ck:relative">
+                <div ref={gridRef} className="ck:flex-1 ck:relative">
                      {HOURS.map((hour) => (
                         <div
                             key={hour}
@@ -174,99 +173,19 @@ const DayViewImpl: React.FC<DayViewProps> = ({
                         </div>
                      ))}
 
-                     {positioned.map(({ event, start, end, column, columns }) => {
-                       const widthPercent = 100 / columns;
-                       const leftPercent = column * widthPercent;
-
-                       const zonedStart = toDisplay(event.start, timezone);
-                       const zonedEnd = toDisplay(event.end, timezone);
-
-                       const startMinutes = start.getHours() * 60 + start.getMinutes();
-                       const durationMinutes = differenceInMinutes(end, start);
-                       const top = (startMinutes / 60) * HOUR_HEIGHT;
-                       const height = (durationMinutes / 60) * HOUR_HEIGHT;
-
-                       const isShortEvent = durationMinutes < 45;
-                       // Only the segment holding the event's real end can be resized.
-                       const isLastSegment = end.getTime() === zonedEnd.getTime();
-
-                       return (
-                         <DraggableEvent
-                            key={`${event.id}-${dayKey}`}
-                            dragId={`${event.id}@${dayKey}`}
-                            grabOffsetMs={start.getTime() - zonedStart.getTime()}
-                            event={event}
-                            className={`ck:absolute ck:z-10 ck:transition-all ${readonly ? "ck:cursor-default" : ""}`}
-                            style={{
-                                top: `${top}px`,
-                                height: `${Math.max(height, 28)}px`,
-                                left: `calc(${leftPercent}% + 4px)`,
-                                width: `calc(${widthPercent}% - 8px)`,
-                                paddingRight: columns > 1 ? '2px' : '0'
-                            }}
-                         >
-                            <ResizableEvent
-                                readonly={readonly || !isLastSegment}
-                                event={event}
-                                hourHeight={HOUR_HEIGHT}
-                                onResize={onEventResize}
-                                className="ck:h-full"
-                                style={{ height: '100%' }}
-                            >
-                                <div
-                                    className={cx(
-                                        "ck:h-full ck:rounded-lg ck:border-[0.5px] ck:shadow-xs ck:overflow-hidden ck:transition-all ck:hover:shadow-lg ck:hover:z-20 ck:group",
-                                        "ck:backdrop-blur-xs",
-                                        readonly || isEventDragDisabled(event) ? "ck:cursor-default" : "ck:cursor-grab ck:active:cursor-grabbing",
-                                        !event.color && "ck:bg-primary/10 ck:border-primary/20",
-                                        isShortEvent ? "ck:px-2 ck:flex ck:items-center" : "ck:px-3 ck:py-2",
-                                        columns > 1 && "ck:border-l-4"
-                                    )}
-                                    style={{
-                                        backgroundColor: event.color ? `${event.color}15` : undefined,
-                                        borderColor: event.color ? `${event.color}30` : undefined,
-                                        borderLeftColor: event.color || 'var(--ck-primary)',
-                                        borderLeftWidth: columns > 1 ? '4px' : '3px'
-                                    }}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onEventClick?.(event);
-                                    }}
-                                    onContextMenu={onEventContextMenu ? (e) => onEventContextMenu(event, e) : undefined}
-                                    title={columns > 1 ? `${event.title} (${column + 1}/${columns})` : undefined}
-                                >
-                                    <div className="ck:flex ck:flex-col ck:h-full ck:overflow-hidden ck:w-full">
-                                        <div className={cx(
-                                            "ck:font-semibold ck:truncate",
-                                            isShortEvent ? "ck:text-xs" : "ck:text-sm",
-                                            event.color ? "ck:text-foreground" : "ck:text-foreground/90"
-                                        )}>
-                                            {event.title}
-                                        </div>
-                                        {!isShortEvent && (
-                                            <>
-                                                <div className="ck:text-xs ck:text-muted-foreground ck:mt-0.5 ck:font-medium">
-                                                    {format(zonedStart, formats.time, { locale })} - {format(zonedEnd, formats.time, { locale })}
-                                                </div>
-                                                {event.description && height > 60 && (
-                                                    <div className="ck:text-xs ck:text-muted-foreground/80 ck:mt-1 ck:line-clamp-2">
-                                                        {event.description}
-                                                    </div>
-                                                )}
-                                            </>
-                                        )}
-                                        {/* Overlap Badge */}
-                                        {columns > 1 && !isShortEvent && (
-                                            <div className="ck:absolute ck:top-1.5 ck:right-1.5 ck:bg-background/90 ck:backdrop-blur-xs ck:rounded-full ck:w-5 ck:h-5 ck:flex ck:items-center ck:justify-center ck:text-[10px] ck:font-bold ck:text-muted-foreground ck:border ck:border-border ck:shadow-xs">
-                                                {columns}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </ResizableEvent>
-                         </DraggableEvent>
-                       );
-                     })}
+                     <TimeGridEvents
+                        dayKey={dayKey}
+                        segments={segments}
+                        hourHeight={HOUR_HEIGHT}
+                        columnWidth={gridWidth}
+                        inset={4}
+                        timezone={timezone}
+                        locale={locale}
+                        readonly={readonly}
+                        onEventClick={onEventClick}
+                        onEventContextMenu={onEventContextMenu}
+                        onEventResize={onEventResize}
+                     />
 
                      {/* Current Time Indicator */}
                      {isToday && (
