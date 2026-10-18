@@ -141,9 +141,13 @@ export const MonthView: React.FC<MonthViewProps> = ({
                   date={day}
                   className={cx(
                     "ck:h-full ck:p-2 ck:border-b-[0.5px] ck:border-r-[0.5px] ck:border-border/30 ck:last:border-r-0 ck:relative ck:transition-all ck:duration-200 ck:flex ck:flex-col ck:gap-1.5 ck:overflow-hidden ck:group",
-                    !isCurrentMonth && "ck:bg-muted/5 ck:text-muted-foreground/60",
-                    isSameDay(day, today) && "ck:bg-primary/5 ck:ring-1 ck:ring-inset ck:ring-primary/20"
+                    !isCurrentMonth && "ck:text-muted-foreground/60"
                   )}
+                  idleClassName={
+                    isSameDay(day, today)
+                      ? "ck:bg-primary/5 ck:ring-1 ck:ring-inset ck:ring-primary/20"
+                      : !isCurrentMonth ? "ck:bg-muted/5" : undefined
+                  }
                   onClick={() => onDateClick?.(day)}
                 >
                   <div className="ck:flex ck:justify-between ck:items-start">

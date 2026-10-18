@@ -10,6 +10,8 @@ interface DroppableCellProps {
   allDayRow?: boolean;
   children?: React.ReactNode;
   className?: string;
+  /** Background and ring of the cell when no drag is over it (the drop highlight replaces them). */
+  idleClassName?: string;
   style?: React.CSSProperties;
   onClick?: () => void;
   /** Stable alternative to `onClick` for time slots: called with the cell's date and resource. */
@@ -32,23 +34,28 @@ const QUARTER_ACTIVE = [
 
 const quarterOf = (date: Date) => Math.min(3, Math.floor(date.getMinutes() / 15));
 
-const DroppableCellImpl: React.FC<DroppableCellProps> = ({ id, date, resourceId, allDayRow, children, className, style, onClick, onSlotClick }) => {
+/** A cell's classes: while a drag is over it, the drop highlight replaces its idle background and ring. */
+export function droppableCellClasses({ className, idleClassName, date, isOver, clickable }: {
+  className?: string;
+  idleClassName?: string;
+  date: Date;
+  isOver: boolean;
+  clickable?: boolean;
+}) {
+  const quarter = quarterOf(date);
+  return cx(className, !isOver && idleClassName, QUARTER_HOVER[quarter], isOver && QUARTER_ACTIVE[quarter], clickable && "ck:cursor-pointer");
+}
+
+const DroppableCellImpl: React.FC<DroppableCellProps> = ({ id, date, resourceId, allDayRow, children, className, idleClassName, style, onClick, onSlotClick }) => {
   const { isOver, setNodeRef } = useDroppable({
     id: id,
     data: { date, resourceId, allDayRow },
   });
 
-  const quarter = quarterOf(date);
-
   return (
     <div
       ref={setNodeRef}
-      className={cx(
-        className,
-        QUARTER_HOVER[quarter],
-        isOver && QUARTER_ACTIVE[quarter],
-        onSlotClick && "ck:cursor-pointer"
-      )}
+      className={droppableCellClasses({ className, idleClassName, date, isOver, clickable: !!onSlotClick })}
       style={style}
       onClick={onSlotClick ? () => onSlotClick(date, resourceId) : onClick}
     >
@@ -74,6 +81,7 @@ export const DroppableCell = React.memo(
     prev.allDayRow === next.allDayRow &&
     prev.children === next.children &&
     prev.className === next.className &&
+    prev.idleClassName === next.idleClassName &&
     prev.onClick === next.onClick &&
     prev.onSlotClick === next.onSlotClick &&
     shallowEqualStyle(prev.style, next.style),
