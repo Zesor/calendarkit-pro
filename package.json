@@ -8,6 +8,7 @@
   "files": [
     "dist",
     "core",
+    "react",
     "README.md",
     "LICENSE"
   ],
@@ -30,6 +31,16 @@
       "require": {
         "types": "./dist/core.d.ts",
         "default": "./dist/core.js"
+      }
+    },
+    "./react": {
+      "import": {
+        "types": "./dist/react.d.mts",
+        "default": "./dist/react.mjs"
+      },
+      "require": {
+        "types": "./dist/react.d.ts",
+        "default": "./dist/react.js"
       }
     }
   },

@@ -20,9 +20,15 @@ const shared: Options = {
   outDir: 'dist',
 }
 
+// The React entries import the engine by its public name and keep it external: at runtime they share
+// dist/core.* (one store implementation, one set of caches) instead of each bundling a copy.
+const client: Options = { ...shared, external: ['react', 'react-dom', 'calendarkit-pro/core'], banner: { js: '"use client";' } }
+
 export default defineConfig([
   // calendarkit-pro: React components, client-only.
-  { ...shared, entry: { index: 'src/index.tsx' }, banner: { js: '"use client";' } },
+  { ...client, entry: { index: 'src/index.tsx' } },
+  // calendarkit-pro/react: hooks, provider, prop-getters and dnd-kit bridge, client-only.
+  { ...client, entry: { react: 'src/react/index.ts' } },
   // calendarkit-pro/core: framework-agnostic engine, usable on the server and from any framework.
   { ...shared, entry: { core: 'src/core/index.ts' } },
 ])
