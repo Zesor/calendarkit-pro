@@ -50,6 +50,7 @@
   ],
   "scripts": {
     "css": "node scripts/build-css.mjs",
+    "prepare": "npm run css",
     "dev": "npm run css && next dev",
     "dev:css": "node scripts/build-css.mjs --watch",
     "build": "npm run css && next build",
