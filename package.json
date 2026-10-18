@@ -1,12 +1,13 @@
 {
   "name": "calendarkit-pro",
-  "version": "1.4.0",
+  "version": "2.0.0-alpha.0",
   "description": "Professional React calendar with drag-drop, recurring events, timezone support, resource scheduling, and i18n",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "files": [
     "dist",
+    "core",
     "README.md",
     "LICENSE"
   ],
@@ -20,13 +21,23 @@
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
       }
+    },
+    "./core": {
+      "import": {
+        "types": "./dist/core.d.mts",
+        "default": "./dist/core.mjs"
+      },
+      "require": {
+        "types": "./dist/core.d.ts",
+        "default": "./dist/core.js"
+      }
     }
   },
   "sideEffects": false,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:lib": "tsup",
+    "build:lib": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsup",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

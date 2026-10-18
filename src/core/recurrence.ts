@@ -95,6 +95,8 @@ function cachedMonth(event: CalendarEvent, monthStart: Date, tz?: string): Calen
  * `originalEventId` and `occurrenceStart`. Non-recurring events pass through unchanged. An invalid
  * rule renders the master event once (and warns).
  */
+const YEAR_MS = 366 * 24 * 60 * 60 * 1000
+
 export function expandRecurrences(events: CalendarEvent[], range: DateRange, anchorTz?: string): CalendarEvent[] {
   const result: CalendarEvent[] = []
   for (const event of events) {
@@ -106,8 +108,10 @@ export function expandRecurrences(events: CalendarEvent[], range: DateRange, anc
     const tz = event.allDay ? undefined : anchorTz
     const lastMonth = startOfMonth(toDisplay(range.end, tz))
     // Start from the month of (range start − duration): an occurrence may begin before the range.
+    // The look-back is capped at one year so an absurdly long occurrence cannot scan decades.
     const duration = event.end.getTime() - event.start.getTime()
-    const firstMonth = startOfMonth(toDisplay(new Date(range.start.getTime() - duration), tz))
+    if (duration > YEAR_MS) warnOnce(`long-occurrence:${event.id}`, `Event "${event.id}" lasts more than a year: occurrences starting over a year before the visible range are not shown.`)
+    const firstMonth = startOfMonth(toDisplay(new Date(range.start.getTime() - Math.min(duration, YEAR_MS)), tz))
     try {
       for (let month = firstMonth; month <= lastMonth; month = addMonths(month, 1)) {
         for (const occurrence of cachedMonth(event, fromDisplay(month, tz), tz)) {

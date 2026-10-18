@@ -117,6 +117,16 @@ describe('expandRecurrences', () => {
     expect(janAgain).toEqual(janFirst)
   })
 
+  test('occurrences lasting over a year: the look-back is capped at one year, with a warning', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    // Yearly series, each occurrence lasts 3 years: from 2020, 2021, … all overlap October 2026.
+    const marathon = series({ start: new Date(2020, 0, 1), end: new Date(2023, 0, 1), recurrence: { freq: 'YEARLY' } })
+    const shown = expandRecurrences([marathon], range(new Date(2026, 9, 1), new Date(2026, 9, 31)))
+    expect(shown.map((e) => e.start.getFullYear())).toEqual([2026])
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0][0])).toContain('lasts more than a year')
+  })
+
   test('an invalid rule renders the master once and warns', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const broken = series({ recurrence: { freq: 'FORTNIGHTLY' as never } })

@@ -333,6 +333,26 @@ const calendars = [
 
 `initialAllDay` is `true` when the form is opened from the all-day row.
 
+## Headless core (2.0 preview)
+
+The 2.0 engine ships ahead of the new UI as `calendarkit-pro/core`: no React, no DOM, usable on the server and from any framework. Install the preview with `npm install calendarkit-pro@next`; the API may still change until 2.0.0.
+
+```ts
+import { createCalendar, selectTimeGrid } from 'calendarkit-pro/core'
+
+const calendar = createCalendar({ defaultEvents: events, onEventsChange: save })
+calendar.subscribe(() => draw(selectTimeGrid(calendar.getState(), { maxColumns: 3 })))
+
+calendar.openSlot(new Date(2026, 9, 15, 14))
+calendar.updateDraft({ title: 'Lunch with Lea tomorrow 1pm for 2h' }) // moves the draft
+calendar.saveDraft() // creates "Lunch with Lea", then calls onEventsChange
+calendar.undo()
+```
+
+- `createCalendar` keeps the view, the date, the events (controlled with `events`, or uncontrolled with `defaultEvents`), dialogs and drafts. Moving, resizing, deleting and duplicating call the 1.x callbacks, then `onEventsChange` with the full list; `undo()` reverts the last change.
+- `selectTimeGrid`, `selectMonth`, `selectAgenda`, `selectFlowDay` and `selectResources` turn a state into plain data ready to render (overlaps laid out, extra events grouped into "+N").
+- `parseEventSentence` reads dates, times, durations and repetition in a title, in English and French.
+
 ## Exports
 
 ```typescript
