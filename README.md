@@ -353,7 +353,7 @@ export type {
   ThemeColors,
 } from 'calendarkit-pro';
 
-// Utilities
+// Utilities (deprecated, removed in 2.0: copy `twMerge(clsx(inputs))` into your project)
 export { cn } from 'calendarkit-pro';
 ```
 

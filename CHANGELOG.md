@@ -1,5 +1,10 @@
 # Pro-Scheduler Changelog
 
+## 1.4.1
+
+### Deprecated
+- The root `cn` export (clsx + tailwind-merge) is removed in 2.0. Copy it into your project: `const cn = (...inputs: ClassValue[]) => twMerge(clsx(inputs))`. Calling it logs a one-time warning in development.
+
 ## 1.4.0
 
 ### Added
