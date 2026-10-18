@@ -164,13 +164,13 @@ interface CalendarTheme {
 ## Views
 
 ### Month View
-Full month grid. All-day and multi-day events are continuous bars across their days. Click a date to switch to day view.
+Full month grid. All-day and multi-day events are continuous bars across their days; up to three timed events per day show as chips with their colour, then "+N more" opens the day. Click a date to switch to day view.
 
 ### Week View
-7-day view with hourly time slots and an all-day row on top. Drag events to reschedule, resize from bottom edge.
+7-day view with hourly time slots and an all-day row on top. Drag events to reschedule, resize from bottom edge. Each event shows as much as its size allows: the title alone for 15 minutes, "Title · 9:00" for 30 minutes, then the title over up to three lines and the times. Overlapping events sit side by side and stretch into free columns; past 2 or 3 columns (75 px each at least), the rest collapse into a "+N" button that lists them.
 
 ### Day View
-Single day with 15-minute time slots and the all-day row. Ideal for detailed scheduling.
+Single day with 15-minute time slots and the all-day row, up to 4 overlapping events side by side. Ideal for detailed scheduling.
 
 ### Agenda View
 Chronological list of upcoming events for 30 days. Shows event details and metadata.
@@ -280,7 +280,8 @@ Three built-in themes, each in light and dark: `calm` (default, neutral), `vivid
 ```
 
 - `mode` is `'light'`, `'dark'` or `'system'` (follows the operating system). `isDarkMode` still works as an alias. Without either, the calendar turns dark inside a `.dark` element, as in 1.x.
-- Every colour is a CSS variable on `.ck-root`, so plain CSS can override any of them: `--ck-background`, `--ck-foreground`, `--ck-muted`, `--ck-muted-foreground`, `--ck-accent`, `--ck-border`, `--ck-primary`, `--ck-primary-foreground`, `--ck-ring`, `--ck-destructive`, `--ck-destructive-foreground`, and `--ck-radius`, `--ck-font`, `--ck-font-display`.
+- Every colour is a CSS variable on `.ck-root`, so plain CSS can override any of them: `--ck-background`, `--ck-foreground`, `--ck-muted`, `--ck-muted-foreground`, `--ck-accent`, `--ck-border`, `--ck-primary`, `--ck-primary-foreground`, `--ck-ring`, `--ck-destructive`, `--ck-destructive-foreground`, `--ck-warning`, `--ck-event` (events without a colour) with `--ck-event-ink-light` and `--ck-event-ink-dark`, and `--ck-radius`, `--ck-font`, `--ck-font-display`.
+- Events are drawn per theme: a tint with coloured text (calm), the solid colour with white text (vivid), a card with a coloured top edge (editorial). Today's date is a rounded square, a circle or an underline.
 
 ```css
 .ck-root { --ck-primary: #0b7285; --ck-ring: #0b7285; }
@@ -333,6 +334,8 @@ const calendars = [
   }}
 />
 ```
+
+An event takes its own `color`, else the colour of its calendar (`calendarId`), else its resource's in the resource view, else the theme's. Hex and `rgb()` colours are adjusted so that every text reaches 4.5:1 contrast: white on the solid colour, a dark ink on the light tint, a light ink on the dark one. Other colour syntaxes are used as they are.
 
 ## Custom Event Form
 

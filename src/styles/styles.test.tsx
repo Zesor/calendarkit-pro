@@ -8,16 +8,48 @@ import { css } from './css.generated'
 
 afterEach(cleanup)
 
-// Markers read by group-*/peer-* variants, and the scope of the reset and the tokens.
-const MARKERS = new Set(['ck-root', 'ck:group', 'ck:peer'])
+// Markers read by group-*/peer-* variants. Other classes are ck: utilities or ck-* component classes
+// (the root, event fills), and the compiled stylesheet must define every one of them.
+const MARKERS = new Set(['ck:group', 'ck:peer'])
 const selectorOf = (name: string) => '.' + name.replace(/[^\w-]/g, (c) => `\\${c}`)
 
 describe('compiled stylesheet', () => {
   test.each(SCHEDULER_STATES)('%s: every class is a ck: class of the compiled stylesheet', (_label, show) => {
     show()
     const names = new Set(classLists().flatMap((list) => list.split(/\s+/)))
-    const unstyled = [...names].filter((n) => !MARKERS.has(n) && !(n.startsWith('ck:') && css.includes(selectorOf(n))))
+    const unstyled = [...names].filter((n) => !MARKERS.has(n) && !(/^ck[:-]/.test(n) && css.includes(selectorOf(n))))
     expect(unstyled.sort()).toEqual([])
+  })
+
+  test.each(SCHEDULER_STATES)('%s: every colour comes from the theme (no Tailwind palette colour)', (_label, show) => {
+    show()
+    const palette = /^ck:(?:[\w-]+:)*(?:bg|text|border|ring|from|via|to|fill|stroke|shadow|outline|decoration)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\d/
+    const names = new Set(classLists().flatMap((list) => list.split(/\s+/)))
+    expect([...names].filter((n) => palette.test(n)).sort()).toEqual([])
+  })
+
+  test.each(SCHEDULER_STATES)('%s: no box-shadow utility on an event (its theme fill draws the ring and the editorial edge)', (_label, show) => {
+    show()
+    const shadowed = [...document.querySelectorAll('.ck-event')].flatMap((el) =>
+      el.getAttribute('class')!.split(/\s+/).filter((n) => /^ck:(?:[\w-]+:)*shadow(?:-|$)/.test(n)),
+    )
+    expect([...new Set(shadowed)]).toEqual([])
+  })
+
+  test('the today marker changes shape with the theme: rounded square, circle (vivid), underline (editorial)', () => {
+    const rules: string[] = []
+    postcss.parse(css).walkRules((rule) => {
+      if (/^\.ck\\:(vivid\\:rounded-full|editorial\\:underline)/.test(rule.selector)) rules.push(rule.selector)
+    })
+    document.body.innerHTML = `
+      <div class="ck-root" data-ck-theme="vivid"><b id="vivid" class="ck:vivid:rounded-full ck:editorial:underline"></b></div>
+      <div class="ck-root" data-ck-theme="editorial"><b id="editorial" class="ck:vivid:rounded-full ck:editorial:underline"></b></div>
+      <div class="ck-root" data-ck-theme="calm"><b id="calm" class="ck:vivid:rounded-full ck:editorial:underline"></b></div>`
+    const active = (id: string) => rules.filter((selector) => document.getElementById(id)!.matches(selector)).map((s) => /^\.ck\\:(\w+)\\:/.exec(s)![1])
+    expect(active('vivid')).toEqual(['vivid'])
+    expect(active('editorial')).toEqual(['editorial'])
+    expect(active('calm')).toEqual([])
+    document.body.innerHTML = ''
   })
 
   test('is unlayered and never reaches outside the calendar', () => {
@@ -53,7 +85,7 @@ describe('compiled stylesheet', () => {
     // Every rule of one dark-mode class, with the media query it sits in (if any).
     const rules: Array<{ selector: string; media: string }> = []
     postcss.parse(css).walkRules((rule) => {
-      if (!rule.selector.startsWith('.ck\\:dark\\:text-amber-400')) return
+      if (!rule.selector.startsWith('.ck\\:dark\\:text-foreground')) return
       const parent = rule.parent as postcss.AtRule
       rules.push({ selector: rule.selector, media: parent.type === 'atrule' ? parent.params : '' })
     })
@@ -65,7 +97,7 @@ describe('compiled stylesheet', () => {
       <div class="ck-root"><span id="no-mode"></span></div>`
     const activeIn = (id: string) => {
       const el = document.getElementById(id)!
-      el.className = 'ck:dark:text-amber-400'
+      el.className = 'ck:dark:text-foreground'
       return rules.filter((r) => el.matches(r.selector)).map((r) => r.media || 'always')
     }
     expect(activeIn('light-in-dark')).toEqual([])

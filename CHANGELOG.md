@@ -1,5 +1,21 @@
 # Pro-Scheduler Changelog
 
+## 2.0.0-alpha.3
+
+Pre-release on the `next` dist-tag (`latest` stays on 1.4.x).
+
+### Added
+- Calendar colours: an event takes its own colour, else its calendar's, else its resource's, else the theme's. Hex and `rgb()` colours become a solid fill and two inks that keep every text at 4.5:1 or more, in light and dark.
+- Events are drawn per theme: tint and coloured text (calm), solid colour and white text (vivid), card with a coloured top edge (editorial); today's date follows the theme too (rounded square, circle, underline).
+- Week and day blocks adapt to their size: the title alone under 22 px, "Title · 9:00" under 44 px (the time from 130 px wide), then the title over up to three lines and the times; narrow columns keep the title only. The full text is in the tooltip.
+- Overlaps: events stretch into free columns; past 2 or 3 columns in the week (4 in the day view), the rest collapse into a "+N" button that lists them, and each one opens its event.
+- `--ck-warning`, `--ck-event`, `--ck-event-ink-light` and `--ck-event-ink-dark` tokens.
+
+### Changed
+- Month days show up to three chips (calendar-coloured dot and title), with "+N more" next to the day number.
+- The last fixed colours (drop and hover tints, the mobile create button, the timezone button, the empty state, reminders, delete actions) come from the theme.
+- No more coloured side stripe on events and the drag preview.
+
 ## 2.0.0-alpha.2
 
 Pre-release on the `next` dist-tag (`latest` stays on 1.4.x). Breaking changes are listed in [MIGRATION.md](MIGRATION.md).

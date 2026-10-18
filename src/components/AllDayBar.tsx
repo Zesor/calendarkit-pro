@@ -5,6 +5,7 @@ import { addDays, differenceInCalendarDays, format, Locale } from 'date-fns';
 import { CalendarEvent, CalendarTranslations } from '../types';
 import { cx, isEventDragDisabled, isEventResizeDisabled } from '../utils';
 import { dayEventSpan, DaySpanSegment } from '../core/allDay';
+import { useEventColorStyle } from './eventColor';
 
 interface AllDayBarProps {
   segment: DaySpanSegment;
@@ -88,7 +89,7 @@ const AllDayBarImpl: React.FC<AllDayBarProps> = ({
     document.addEventListener('pointercancel', stop);
   };
 
-  const color = event.color || 'var(--ck-primary)';
+  const colorStyle = useEventColorStyle(event);
   const dateFormat = 'd MMM';
   const label = `${event.title}, ${format(firstDay, dateFormat, { locale })}${lastDay > firstDay ? ` – ${format(lastDay, dateFormat, { locale })}` : ''}`;
 
@@ -125,13 +126,11 @@ const AllDayBarImpl: React.FC<AllDayBarProps> = ({
     >
       <div
         className={cx(
-          "ck:relative ck:h-[calc(100%-4px)] ck:mt-[2px] ck:flex ck:items-center ck:gap-1 ck:px-1.5 ck:text-[11px] ck:font-semibold ck:overflow-hidden ck:shadow-xs",
-          // A colourless event is filled with the theme's primary: its text uses the matching foreground.
-          event.color ? "ck:text-white" : "ck:text-primary-foreground",
+          "ck-event ck-event-bar ck:relative ck:h-[calc(100%-4px)] ck:mt-[2px] ck:flex ck:items-center ck:gap-1 ck:px-1.5 ck:text-[11px] ck:font-semibold ck:overflow-hidden",
           continuesBefore ? "ck:rounded-l-none" : "ck:rounded-l-md",
           continuesAfter ? "ck:rounded-r-none" : "ck:rounded-r-md"
         )}
-        style={{ backgroundColor: color }}
+        style={colorStyle}
       >
         {continuesBefore && <span aria-label={translations?.continuesBefore}>‹</span>}
         <span className="ck:truncate">{event.title}</span>

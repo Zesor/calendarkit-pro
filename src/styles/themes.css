@@ -1,6 +1,7 @@
 /* Theme tokens. Every theme sets the same `--ck-*` variables; the utilities only read them.
    Each selector is wrapped in :where() (no weight), so a host rule such as
    `.ck-root { --ck-primary: #0b7285; }` or the `theme` prop overrides any token.
+   --ck-event* colour the events that have no colour of their own (eventColors of --ck-event).
    The Scheduler always sets data-ck-theme. data-ck-mode is absent when neither `mode` nor
    `isDarkMode` is passed: a `.dark` ancestor then switches the calendar to dark (1.x behavior). */
 
@@ -16,6 +17,10 @@
   --ck-ring: #3b5bdb;
   --ck-destructive: #c92a2a;
   --ck-destructive-foreground: #ffffff;
+  --ck-warning: #9a5800;
+  --ck-event: #3b5bdb;
+  --ck-event-ink-light: #2f49af;
+  --ck-event-ink-dark: #99aaec;
   --ck-radius: 10px;
   --ck-font: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
   --ck-font-display: var(--ck-font);
@@ -35,6 +40,10 @@
   --ck-ring: #3341c9;
   --ck-destructive: #c92a2a;
   --ck-destructive-foreground: #ffffff;
+  --ck-warning: #985600;
+  --ck-event: #3341c9;
+  --ck-event-ink-light: #3240c5;
+  --ck-event-ink-dark: #99a0e4;
   --ck-radius: 14px;
   --ck-font: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --ck-font-display: var(--ck-font);
@@ -53,6 +62,10 @@
   --ck-ring: #a8380c;
   --ck-destructive: #b42318;
   --ck-destructive-foreground: #ffffff;
+  --ck-warning: #8f5200;
+  --ck-event: #a8380c;
+  --ck-event-ink-light: #94310b;
+  --ck-event-ink-dark: #d49c86;
   --ck-radius: 4px;
   --ck-font: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
   --ck-font-display: "Newsreader", Georgia, ui-serif, serif;
@@ -71,6 +84,7 @@
   --ck-ring: #8ea2ff;
   --ck-destructive: #ff8787;
   --ck-destructive-foreground: #141417;
+  --ck-warning: #f5b74e;
   color-scheme: dark;
 }
 
@@ -86,6 +100,7 @@
   --ck-ring: #9aa5ff;
   --ck-destructive: #ff8787;
   --ck-destructive-foreground: #0a0e1a;
+  --ck-warning: #f5b74e;
   color-scheme: dark;
 }
 
@@ -101,6 +116,7 @@
   --ck-ring: #ff9a66;
   --ck-destructive: #ff8f7a;
   --ck-destructive-foreground: #1b1713;
+  --ck-warning: #f0b45a;
   color-scheme: dark;
 }
 
@@ -117,6 +133,7 @@
     --ck-ring: #8ea2ff;
     --ck-destructive: #ff8787;
     --ck-destructive-foreground: #141417;
+    --ck-warning: #f5b74e;
     color-scheme: dark;
   }
 
@@ -132,6 +149,7 @@
     --ck-ring: #9aa5ff;
     --ck-destructive: #ff8787;
     --ck-destructive-foreground: #0a0e1a;
+    --ck-warning: #f5b74e;
     color-scheme: dark;
   }
 
@@ -147,6 +165,7 @@
     --ck-ring: #ff9a66;
     --ck-destructive: #ff8f7a;
     --ck-destructive-foreground: #1b1713;
+    --ck-warning: #f0b45a;
     color-scheme: dark;
   }
 }

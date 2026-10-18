@@ -115,7 +115,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
             aria-label={translations.toggleTheme}
           >
             {isDarkMode ? (
-              <Sun className="ck:h-4 ck:w-4 ck:text-amber-500" />
+              <Sun className="ck:h-4 ck:w-4 ck:text-warning" />
             ) : (
               <Moon className="ck:h-4 ck:w-4 ck:text-muted-foreground" />
             )}

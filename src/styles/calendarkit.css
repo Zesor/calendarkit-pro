@@ -4,11 +4,15 @@
 @import "tailwindcss/theme.css" prefix(ck);
 @import "./reset.css";
 @import "./themes.css";
+@import "./events.css";
 @import "tailwindcss/utilities.css" source(none);
 
 @source "../components";
 @source "../views";
 @source "../index.tsx";
+/* No component uses `ck:dark:` today (the tokens follow the mode); this one rule keeps the variant
+   compiled and tested, so a future `ck:dark:` class follows the calendar's mode, not the system's. */
+@source inline("ck:dark:text-foreground");
 
 /* `ck:dark:` follows the mode of the calendar root: `mode="dark"`, `mode="system"` on a dark system,
    or no mode inside a `.dark` ancestor (the 1.x convention). */
@@ -22,6 +26,10 @@
     }
   }
 }
+
+/* `ck:vivid:` and `ck:editorial:`: the few shapes that change with the theme (the today marker). */
+@custom-variant vivid (&:where([data-ck-theme="vivid"], [data-ck-theme="vivid"] *));
+@custom-variant editorial (&:where([data-ck-theme="editorial"], [data-ck-theme="editorial"] *));
 
 /* Entrance animations (no exit animations: a closed element leaves at once). */
 @theme {
@@ -65,6 +73,7 @@
   --color-accent-foreground: var(--ck-foreground);
   --color-destructive: var(--ck-destructive);
   --color-destructive-foreground: var(--ck-destructive-foreground);
+  --color-warning: var(--ck-warning);
   --color-border: var(--ck-border);
   --color-input: var(--ck-border);
   --color-ring: var(--ck-ring);

@@ -1,9 +1,10 @@
 // The three themes, light and dark: readable everywhere (WCAG AA), selected by the theme and mode props.
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render } from '@testing-library/react'
 import { readFileSync } from 'node:fs'
 import postcss from 'postcss'
 import React from 'react'
 import { afterEach, describe, expect, test } from 'vitest'
+import { eventColors } from '../core/eventColors'
 import { Scheduler } from '../index'
 
 afterEach(cleanup)
@@ -32,6 +33,9 @@ const contrast = (a: string, b: string) => {
   return (hi + 0.05) / (lo + 0.05)
 }
 
+const mixHex = (a: string, b: string, share: number) =>
+  '#' + [1, 3, 5].map((i) => Math.round(parseInt(a.slice(i, i + 2), 16) * share + parseInt(b.slice(i, i + 2), 16) * (1 - share)).toString(16).padStart(2, '0')).join('')
+
 const TEXT_PAIRS = [
   ['foreground', 'background'],
   ['foreground', 'muted'],
@@ -40,6 +44,8 @@ const TEXT_PAIRS = [
   ['muted-foreground', 'muted'],
   ['primary-foreground', 'primary'],
   ['destructive-foreground', 'destructive'],
+  ['destructive', 'background'],
+  ['warning', 'background'],
 ]
 
 describe('themes', () => {
@@ -53,27 +59,27 @@ describe('themes', () => {
     const t = themes[name]
     const failing = TEXT_PAIRS.filter(([fg, bg]) => contrast(t[fg], t[bg]) < 4.5).map(([fg, bg]) => `${fg} on ${bg}: ${contrast(t[fg], t[bg]).toFixed(2)}`)
     if (contrast(t.ring, t.background) < 3) failing.push(`ring on background: ${contrast(t.ring, t.background).toFixed(2)}`)
+    // Danger menu items and reminder chips: the colour as text on its own 10 % tint.
+    for (const token of ['destructive', 'warning']) {
+      const tint = mixHex(t[token], t.background, 0.1)
+      if (contrast(t[token], tint) < 4.5) failing.push(`${token} on its tint: ${contrast(t[token], tint).toFixed(2)}`)
+    }
     expect(failing).toEqual([])
   })
 
   test('text on a primary fill uses the primary foreground (white on #f2f2f4 in calm dark is unreadable)', () => {
-    const day = new Date()
-    const bar = { id: 'off', title: 'Offsite', start: new Date(day.getFullYear(), day.getMonth(), day.getDate()), end: new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1), allDay: true }
-    const slot = { id: 'rv', title: 'Review', start: new Date(day.getFullYear(), day.getMonth(), day.getDate(), 10), end: new Date(day.getFullYear(), day.getMonth(), day.getDate(), 11), resourceId: 'a' }
-    const { container, unmount } = render(<Scheduler view="day" date={day} events={[bar]} calendars={[{ id: 'w', label: 'Work' }]} mode="dark" />)
+    const { container } = render(<Scheduler view="day" date={new Date()} calendars={[{ id: 'w', label: 'Work' }]} mode="dark" />)
     const check = container.querySelector('input[aria-label="Work"]')!.parentElement!.querySelector('svg')!
     expect(check.getAttribute('class')).toContain('ck:text-primary-foreground')
-    const fill = screen.getByText('Offsite').parentElement!
-    expect(fill.style.backgroundColor).toBe('var(--ck-primary)')
-    expect(fill.className).toContain('ck:text-primary-foreground')
-    expect(fill.className).not.toContain('ck:text-white')
     const now = container.querySelector('span.ck\\:bg-primary')!
     expect(now.className).toContain('ck:text-primary-foreground')
-    unmount()
-    render(<Scheduler view="resource" date={day} events={[slot]} resources={[{ id: 'a', label: 'Room A' }]} mode="dark" />)
-    const block = screen.getByText('Review').parentElement!
-    expect(block.style.backgroundColor).toBe('var(--ck-primary)')
-    expect(block.style.color).toBe('var(--ck-primary-foreground)')
+  })
+
+  test("each theme's colour for events without one is a readable event colour (eventColors of --ck-event)", () => {
+    for (const theme of ['calm', 'vivid', 'editorial']) {
+      const t = themes[`${theme} light`]
+      expect({ theme, ...eventColors(t.event) }).toEqual({ theme, solid: t.event, inkLight: t['event-ink-light'], inkDark: t['event-ink-dark'] })
+    }
   })
 
   test('the Scheduler root carries the preset and the mode', () => {

@@ -211,7 +211,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div className="ck:relative">
                 <button
                     onClick={() => setTimezoneOpen(!timezoneOpen)}
-                    className="ck:w-full ck:flex ck:items-center ck:justify-between ck:bg-blue-200/40  ck:hover:bg-blue-200/80 ck:rounded-xl ck:py-2.5 ck:pl-4 ck:pr-3 ck:text-sm ck:text-foreground ck:focus:outline-hidden ck:focus:ring-2 ck:focus:ring-primary/20 ck:focus:border-primary/50 ck:transition-all ck:duration-200 ck:text-left"
+                    className="ck:w-full ck:flex ck:items-center ck:justify-between ck:bg-muted ck:hover:bg-accent ck:rounded-xl ck:py-2.5 ck:pl-4 ck:pr-3 ck:text-sm ck:text-foreground ck:focus:outline-hidden ck:focus:ring-2 ck:focus:ring-primary/20 ck:focus:border-primary/50 ck:transition-all ck:duration-200 ck:text-left"
                 >
                     <div className="ck:flex-1 ck:truncate ck:mr-2 ck:font-medium">{selectedTimezoneLabel}</div>
                     <ChevronDown className={cx("ck:w-4 ck:h-4 ck:text-muted-foreground ck:transition-transform ck:duration-200", timezoneOpen && "ck:rotate-180")} />
