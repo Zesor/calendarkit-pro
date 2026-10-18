@@ -8,6 +8,7 @@ import { layoutDayRow, partitionDayEvents } from '../core/allDay';
 import { AllDayBar } from '../components/AllDayBar';
 import { displayToday } from '../core/timezone';
 import { getMonthGrid, getWeekDays, resolveWeekStartsOn } from '../core/week';
+import { useEventColorStyle } from '../components/eventColor';
 import { DraggableEvent } from '../components/dnd/DraggableEvent';
 import { DroppableCell } from '../components/dnd/DroppableCell';
 
@@ -30,30 +31,26 @@ interface EventItemProps {
   onEventContextMenu?: (event: CalendarEvent, e: React.MouseEvent) => void;
 }
 
-// Memoized Event Item Component for performance
-const EventItem = React.memo(({ event, onEventClick, onEventContextMenu }: EventItemProps) => (
+// A timed event in a month cell: its calendar colour as a dot, the title in the text colour.
+const EventItem = React.memo(({ event, onEventClick, onEventContextMenu }: EventItemProps) => {
+    const colorStyle = useEventColorStyle(event);
+    return (
     <DraggableEvent event={event}>
         <div
-            className={cx(
-              "ck:text-xs ck:px-2.5 ck:py-1.5 ck:rounded-lg ck:truncate ck:cursor-pointer ck:shadow-xs ck:transition-all ck:duration-200",
-              "ck:hover:shadow-md ck:hover:scale-[1.02] ck:hover:z-10",
-              !event.color && "ck:bg-primary/10 ck:text-primary ck:hover:bg-primary/15 ck:border-[0.5px] ck:border-primary/20"
-            )}
-            style={event.color ? {
-              backgroundColor: `${event.color}20`,
-              color: event.color,
-              borderLeft: `3px solid ${event.color}`,
-            } : undefined}
+            className="ck:flex ck:items-center ck:gap-1.5 ck:text-xs ck:px-1.5 ck:py-0.5 ck:rounded-md ck:cursor-pointer ck:text-foreground ck:hover:bg-muted ck:transition-colors"
+            title={event.title}
             onClick={(e) => {
               e.stopPropagation();
               onEventClick?.(event);
             }}
             onContextMenu={onEventContextMenu ? (e) => onEventContextMenu(event, e) : undefined}
         >
-            <span className="ck:font-medium">{event.title}</span>
+            <span className="ck-dot ck:w-2 ck:h-2 ck:rounded-[3px] ck:shrink-0" style={colorStyle} aria-hidden="true" />
+            <span className="ck:font-medium ck:truncate">{event.title}</span>
         </div>
     </DraggableEvent>
-));
+    );
+});
 
 EventItem.displayName = 'EventItem';
 
@@ -63,7 +60,7 @@ const MAX_LANES = 3; // all-day lanes shown per week before "+N more"
 const MAX_ITEMS = 4; // timed events shown per cell when the week has no bars (historical)
 const BARS_TOP = 38; // below the day number
 const CELL_CHROME = 16 + 28 + 6; // cell padding, day number, gap
-const ITEM_STEP = 29 + 4; // timed chip + gap
+const ITEM_STEP = 20 + 4; // timed chip + gap
 const MORE_HEIGHT = 20; // "+N more" link
 
 // Timed chips that fit under the bars without being clipped. Weeks without bars keep the

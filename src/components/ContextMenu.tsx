@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { CalendarEvent } from '../types';
 import { cx } from '../utils';
 import { Edit3, Trash2, Copy } from './icons';
+import { eventColorStyle, resolveEventColor, useCalendars } from './eventColor';
 
 interface ContextMenuAction {
   id: string;
@@ -38,6 +39,7 @@ export const EventContextMenu: React.FC<EventContextMenuProps> = ({
   translations,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
+  const calendars = useCalendars();
 
   // Close on escape key
   useEffect(() => {
@@ -71,6 +73,7 @@ export const EventContextMenu: React.FC<EventContextMenuProps> = ({
   }, [position, onClose]);
 
   if (!event || !position) return null;
+  const colorStyle = eventColorStyle(resolveEventColor(event, calendars));
 
   const actions: ContextMenuAction[] = [
     ...(onEdit ? [{
@@ -122,10 +125,7 @@ export const EventContextMenu: React.FC<EventContextMenuProps> = ({
         {/* Event preview header */}
         <div className="ck:px-3 ck:py-2 ck:border-b-[0.5px] ck:border-border ck:bg-muted/30">
           <div className="ck:flex ck:items-center ck:gap-2">
-            <div
-              className="ck:w-2.5 ck:h-2.5 ck:rounded-full ck:shrink-0"
-              style={{ backgroundColor: event.color || 'var(--ck-primary)' }}
-            />
+            <div className="ck-dot ck:w-2.5 ck:h-2.5 ck:rounded-full ck:shrink-0" style={colorStyle} />
             <span className="ck:text-sm ck:font-medium ck:truncate ck:text-foreground">
               {event.title}
             </span>

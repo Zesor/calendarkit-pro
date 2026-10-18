@@ -8,15 +8,16 @@ import { css } from './css.generated'
 
 afterEach(cleanup)
 
-// Markers read by group-*/peer-* variants, and the scope of the reset and the tokens.
-const MARKERS = new Set(['ck-root', 'ck:group', 'ck:peer'])
+// Markers read by group-*/peer-* variants. Other classes are ck: utilities or ck-* component classes
+// (the root, event fills), and the compiled stylesheet must define every one of them.
+const MARKERS = new Set(['ck:group', 'ck:peer'])
 const selectorOf = (name: string) => '.' + name.replace(/[^\w-]/g, (c) => `\\${c}`)
 
 describe('compiled stylesheet', () => {
   test.each(SCHEDULER_STATES)('%s: every class is a ck: class of the compiled stylesheet', (_label, show) => {
     show()
     const names = new Set(classLists().flatMap((list) => list.split(/\s+/)))
-    const unstyled = [...names].filter((n) => !MARKERS.has(n) && !(n.startsWith('ck:') && css.includes(selectorOf(n))))
+    const unstyled = [...names].filter((n) => !MARKERS.has(n) && !(/^ck[:-]/.test(n) && css.includes(selectorOf(n))))
     expect(unstyled.sort()).toEqual([])
   })
 

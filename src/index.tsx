@@ -24,6 +24,7 @@ import { useViewSwipe } from './hooks/useSwipeGesture';
 import { dragOverlaySize } from './components/dnd/dragOverlay';
 import { restrictToWindowEdges, snapToGrid } from './components/dnd/modifiers';
 import { CalendarStyles, useMissingStylesWarning } from './styles/CalendarStyles';
+import { EventColorProvider, eventColorStyle, resolveEventColor } from './components/eventColor';
 
 // Re-export types for consumers
 export type {
@@ -215,6 +216,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
   const contextMenuHandler = readOnly ? undefined : openContextMenu;
 
   return (
+    <EventColorProvider value={calendars}>
     <CalendarDndContext
         calendar={calendar}
         id={id}
@@ -430,30 +432,16 @@ export const Scheduler: React.FC<CalendarProps> = ({
         <DragOverlay dropAnimation={null}>
             {activeDragEvent ? (
                 <div
-                    className={cx(
-                      "ck:rounded-lg ck:shadow-2xl ck:border-2 ck:overflow-hidden ck:cursor-grabbing ck:transition-transform",
-                      "ck:backdrop-blur-xs",
-                      !activeDragEvent.color && "ck:bg-primary/90 ck:border-primary/60 ck:text-primary-foreground",
-                    )}
+                    className="ck-event ck:relative ck:rounded-lg ck:shadow-2xl ck:overflow-hidden ck:cursor-grabbing ck:transition-transform"
                     style={{
-                        backgroundColor: activeDragEvent.color ? `${activeDragEvent.color}e0` : undefined,
-                        borderColor: activeDragEvent.color ? `${activeDragEvent.color}80` : undefined,
-                        color: activeDragEvent.color ? '#fff' : undefined,
+                        ...eventColorStyle(resolveEventColor(activeDragEvent, calendars)),
                         width: dragSize.width,
                         height: dragSize.height ? `${dragSize.height}px` : undefined,
-                        boxShadow: `0 20px 40px -15px ${activeDragEvent.color || 'var(--ck-primary)'}40, 0 10px 20px -10px rgba(0,0,0,0.2)`,
                         transform: 'rotate(-2deg) scale(1.02)',
                     }}
                 >
                     <div className="ck:p-2.5 ck:h-full ck:flex ck:flex-col">
-                        {/* Event color accent bar */}
-                        <div
-                          className="ck:absolute ck:left-0 ck:top-0 ck:bottom-0 ck:w-1 ck:rounded-l-lg"
-                          style={{ backgroundColor: activeDragEvent.color || 'var(--ck-primary)' }}
-                        />
-
-                        {/* Content */}
-                        <div className="ck:pl-2">
+                        <div>
                           <div className="ck:font-semibold ck:truncate ck:text-sm">{activeDragEvent.title}</div>
                           {(view === 'week' || view === 'day') && dragSize.height !== undefined && dragSize.height > 40 && (
                             <div className="ck:text-xs ck:opacity-80 ck:mt-0.5 ck:flex ck:items-center ck:gap-1">
@@ -484,5 +472,6 @@ export const Scheduler: React.FC<CalendarProps> = ({
 
       </div>
     </CalendarDndContext>
+    </EventColorProvider>
   );
 };

@@ -6,6 +6,7 @@ import { eventsByStartDay } from '../core/events';
 import { timeFormats, uses24HourClock } from '../core/format';
 import { displayToday, toDisplay } from '../core/timezone';
 import { AgendaEmptyState } from '../components/EmptyState';
+import { eventColorStyle, resolveEventColor, useCalendars } from '../components/eventColor';
 import { Clock, Users, Paperclip, Bell } from '../components/icons';
 
 interface AgendaViewProps {
@@ -56,6 +57,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
   const today = displayToday(timezone);
 
   // Group events by display day (T1) for the next 30 days starting from currentDate.
+  const calendars = useCalendars();
   const groupedEvents = useMemo(() => {
     const byDay = eventsByStartDay(events, timezone);
     const groups: { date: Date; events: CalendarEvent[] }[] = [];
@@ -132,12 +134,6 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                                   "ck:bg-linear-to-br ck:from-card ck:via-card ck:to-card/80"
                                 )}
                             >
-                                {/* Left accent bar */}
-                                <div
-                                  className="ck:absolute ck:left-0 ck:top-3 ck:bottom-3 ck:w-1 ck:rounded-full"
-                                  style={{ backgroundColor: event.color || 'var(--ck-primary)' }}
-                                />
-
                                 {/* Time Column */}
                                 <div className="ck:flex ck:flex-col ck:items-center ck:min-w-[70px] ck:pl-2">
                                     {event.allDay ? (
@@ -172,8 +168,8 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                                       </h4>
                                       {/* Color dot */}
                                       <div
-                                        className="ck:w-3 ck:h-3 ck:rounded-full ck:shrink-0 ck:mt-1.5"
-                                        style={{ backgroundColor: event.color || 'var(--ck-primary)' }}
+                                        className="ck-dot ck:w-3 ck:h-3 ck:rounded-full ck:shrink-0 ck:mt-1.5"
+                                        style={eventColorStyle(resolveEventColor(event, calendars))}
                                       />
                                     </div>
 

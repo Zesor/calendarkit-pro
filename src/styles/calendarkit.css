@@ -4,6 +4,7 @@
 @import "tailwindcss/theme.css" prefix(ck);
 @import "./reset.css";
 @import "./themes.css";
+@import "./events.css";
 @import "tailwindcss/utilities.css" source(none);
 
 @source "../components";
