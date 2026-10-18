@@ -449,7 +449,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
         <DragOverlay dropAnimation={null}>
             {activeDragEvent ? (
                 <div
-                    className="ck-event ck:relative ck:rounded-lg ck:shadow-2xl ck:overflow-hidden ck:cursor-grabbing ck:transition-transform"
+                    className="ck-event ck:relative ck:rounded-lg ck:drop-shadow-2xl ck:overflow-hidden ck:cursor-grabbing ck:transition-transform"
                     style={{
                         ...eventColorStyle(resolveEventColor(activeDragEvent, calendars)),
                         width: dragSize.width,

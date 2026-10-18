@@ -55,7 +55,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ event, height, width, ti
   return (
     <div
       className={cx(
-        "ck-event ck:h-full ck:w-full ck:rounded-md ck:overflow-hidden ck:text-xs ck:font-semibold ck:leading-tight ck:transition-shadow ck:hover:shadow-md",
+        "ck-event ck:h-full ck:w-full ck:rounded-md ck:overflow-hidden ck:text-xs ck:font-semibold ck:leading-tight ck:transition-[filter] ck:hover:drop-shadow-md",
         layout.size === 'lg' ? "ck:flex ck:flex-col ck:gap-px ck:py-1" : "ck:flex ck:items-center ck:gap-1.5",
         layout.narrow ? "ck:px-1.5" : "ck:px-2",
         className

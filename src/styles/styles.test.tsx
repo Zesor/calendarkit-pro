@@ -28,6 +28,14 @@ describe('compiled stylesheet', () => {
     expect([...names].filter((n) => palette.test(n)).sort()).toEqual([])
   })
 
+  test.each(SCHEDULER_STATES)('%s: no box-shadow utility on an event (its theme fill draws the ring and the editorial edge)', (_label, show) => {
+    show()
+    const shadowed = [...document.querySelectorAll('.ck-event')].flatMap((el) =>
+      el.getAttribute('class')!.split(/\s+/).filter((n) => /^ck:(?:[\w-]+:)*shadow(?:-|$)/.test(n)),
+    )
+    expect([...new Set(shadowed)]).toEqual([])
+  })
+
   test('the today marker changes shape with the theme: rounded square, circle (vivid), underline (editorial)', () => {
     const rules: string[] = []
     postcss.parse(css).walkRules((rule) => {

@@ -3,7 +3,8 @@
    4.5:1 guaranteed by src/core/eventColors.ts); without a colour it uses the theme's --ck-event*.
    calm: a tint with a coloured ink; vivid: the solid colour with white text; editorial: a card with a
    coloured top edge (its all-day bars stay tinted). Tints mix in srgb, as eventColors computes them.
-   Selectors weigh two classes, so they win over a utility and the later ones (dark, then themes) win. */
+   Selectors weigh two classes, so they win over a plain utility and the later ones (dark, then themes)
+   win. The fills own box-shadow (ring, editorial edge): elevation on events uses drop-shadow (filter). */
 .ck-root .ck-event {
   background-color: color-mix(in srgb, var(--ck-ev, var(--ck-event)) 14%, var(--ck-background));
   color: var(--ck-ev-ink-l, var(--ck-event-ink-light));
