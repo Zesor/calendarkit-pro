@@ -37,8 +37,8 @@ export type {
   ThemeColors,
 } from './types';
 
-// Re-export utilities
-export { cn } from './utils';
+// Re-export utilities (`cn` is deprecated, removed in 2.0)
+export { deprecatedCn as cn } from './utils';
 
 export const Scheduler: React.FC<CalendarProps> = ({
   events = [],
