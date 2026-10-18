@@ -148,7 +148,7 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
                                         ...getEventStyle(event),
                                         backgroundColor: event.color || resource.color || 'var(--ck-primary)',
                                         borderColor: 'rgba(0,0,0,0.1)',
-                                        color: '#fff'
+                                        color: event.color || resource.color ? '#fff' : 'var(--ck-primary-foreground)'
                                     }}
                                 >
                                     <div className="ck:truncate">{event.title}</div>

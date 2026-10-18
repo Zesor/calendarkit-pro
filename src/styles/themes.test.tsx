@@ -1,5 +1,5 @@
 // The three themes, light and dark: readable everywhere (WCAG AA), selected by the theme and mode props.
-import { cleanup, render } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import { readFileSync } from 'node:fs'
 import postcss from 'postcss'
 import React from 'react'
@@ -54,6 +54,26 @@ describe('themes', () => {
     const failing = TEXT_PAIRS.filter(([fg, bg]) => contrast(t[fg], t[bg]) < 4.5).map(([fg, bg]) => `${fg} on ${bg}: ${contrast(t[fg], t[bg]).toFixed(2)}`)
     if (contrast(t.ring, t.background) < 3) failing.push(`ring on background: ${contrast(t.ring, t.background).toFixed(2)}`)
     expect(failing).toEqual([])
+  })
+
+  test('text on a primary fill uses the primary foreground (white on #f2f2f4 in calm dark is unreadable)', () => {
+    const day = new Date()
+    const bar = { id: 'off', title: 'Offsite', start: new Date(day.getFullYear(), day.getMonth(), day.getDate()), end: new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1), allDay: true }
+    const slot = { id: 'rv', title: 'Review', start: new Date(day.getFullYear(), day.getMonth(), day.getDate(), 10), end: new Date(day.getFullYear(), day.getMonth(), day.getDate(), 11), resourceId: 'a' }
+    const { container, unmount } = render(<Scheduler view="day" date={day} events={[bar]} calendars={[{ id: 'w', label: 'Work' }]} mode="dark" />)
+    const check = container.querySelector('input[aria-label="Work"]')!.parentElement!.querySelector('svg')!
+    expect(check.getAttribute('class')).toContain('ck:text-primary-foreground')
+    const fill = screen.getByText('Offsite').parentElement!
+    expect(fill.style.backgroundColor).toBe('var(--ck-primary)')
+    expect(fill.className).toContain('ck:text-primary-foreground')
+    expect(fill.className).not.toContain('ck:text-white')
+    const now = container.querySelector('span.ck\\:bg-primary')!
+    expect(now.className).toContain('ck:text-primary-foreground')
+    unmount()
+    render(<Scheduler view="resource" date={day} events={[slot]} resources={[{ id: 'a', label: 'Room A' }]} mode="dark" />)
+    const block = screen.getByText('Review').parentElement!
+    expect(block.style.backgroundColor).toBe('var(--ck-primary)')
+    expect(block.style.color).toBe('var(--ck-primary-foreground)')
   })
 
   test('the Scheduler root carries the preset and the mode', () => {

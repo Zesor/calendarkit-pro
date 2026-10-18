@@ -178,7 +178,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         className="ck:peer ck:h-5 ck:w-5 ck:rounded-md ck:border-2 ck:border-border/60 ck:cursor-pointer ck:appearance-none ck:checked:border-transparent ck:checked:bg-[var(--cal-color)] ck:focus:ring-2 ck:focus:ring-[var(--cal-color)] ck:transition-all ck:duration-200"
                     />
                     <div className="ck:absolute ck:inset-0 ck:flex ck:items-center ck:justify-center ck:pointer-events-none ck:opacity-0 ck:peer-checked:opacity-100 ck:transition-opacity">
-                        <svg className="ck:w-3.5 ck:h-3.5 ck:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <svg className={cx("ck:w-3.5 ck:h-3.5", safeColor(cal.color, '') ? "ck:text-white" : "ck:text-primary-foreground")} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                         </svg>
                     </div>

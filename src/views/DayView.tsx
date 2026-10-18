@@ -139,7 +139,7 @@ const DayViewImpl: React.FC<DayViewProps> = ({
                              className="ck:absolute ck:left-0 ck:w-full ck:pointer-events-none ck:z-30 ck:flex ck:justify-end ck:pr-2"
                              style={{ top: `${nowTop}px` }}
                          >
-                             <span className="ck:text-[10px] ck:font-bold ck:text-white ck:bg-primary ck:px-2 ck:py-1 ck:rounded-lg ck:shadow-md ck:shadow-primary/30 ck:-translate-y-1/2">
+                             <span className="ck:text-[10px] ck:font-bold ck:text-primary-foreground ck:bg-primary ck:px-2 ck:py-1 ck:rounded-lg ck:shadow-md ck:shadow-primary/30 ck:-translate-y-1/2">
                                  {format(zonedNow, formats.time, { locale })}
                              </span>
                          </div>

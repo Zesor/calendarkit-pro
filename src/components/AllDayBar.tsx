@@ -125,7 +125,9 @@ const AllDayBarImpl: React.FC<AllDayBarProps> = ({
     >
       <div
         className={cx(
-          "ck:relative ck:h-[calc(100%-4px)] ck:mt-[2px] ck:flex ck:items-center ck:gap-1 ck:px-1.5 ck:text-[11px] ck:font-semibold ck:text-white ck:overflow-hidden ck:shadow-xs",
+          "ck:relative ck:h-[calc(100%-4px)] ck:mt-[2px] ck:flex ck:items-center ck:gap-1 ck:px-1.5 ck:text-[11px] ck:font-semibold ck:overflow-hidden ck:shadow-xs",
+          // A colourless event is filled with the theme's primary: its text uses the matching foreground.
+          event.color ? "ck:text-white" : "ck:text-primary-foreground",
           continuesBefore ? "ck:rounded-l-none" : "ck:rounded-l-md",
           continuesAfter ? "ck:rounded-r-none" : "ck:rounded-r-md"
         )}
