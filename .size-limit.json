@@ -13,5 +13,10 @@
     "name": "Core (calendarkit-pro/core, ESM)",
     "path": "dist/core.mjs",
     "limit": "12 kB"
+  },
+  {
+    "name": "React bindings (calendarkit-pro/react, ESM)",
+    "path": "dist/react.mjs",
+    "limit": "6 kB"
   }
 ]

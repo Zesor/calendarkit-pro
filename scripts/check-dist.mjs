@@ -20,6 +20,22 @@ for (const file of ['dist/core.js', 'dist/core.mjs', 'dist/core.d.ts', 'dist/cor
   if (code.startsWith('"use client";')) errors.push(`${file} must not start with "use client"`)
   if (/from ['"]react['"]|require\(['"]react['"]\)/.test(code)) errors.push(`${file} must not import React`)
 }
+// calendarkit-pro/react: client-only, and it shares the engine with calendarkit-pro/core instead of
+// bundling a second copy (one store implementation, one set of caches).
+for (const file of ['dist/react.js', 'dist/react.mjs', 'dist/react.d.ts', 'dist/react.d.mts']) {
+  let code
+  try {
+    code = readFileSync(file, 'utf8')
+  } catch {
+    errors.push(`${file} is missing (calendarkit-pro/react entry)`)
+    continue
+  }
+  if (file.endsWith('.js') || file.endsWith('.mjs')) {
+    if (!code.startsWith('"use client";')) errors.push(`${file} must start with "use client";`)
+    if (!/['"]calendarkit-pro\/core['"]/.test(code)) errors.push(`${file} must import calendarkit-pro/core`)
+    if (/function createCalendar\(/.test(code)) errors.push(`${file} must not bundle a copy of the engine`)
+  }
+}
 const maps = readdirSync('dist').filter((name) => name.endsWith('.map'))
 if (maps.length > 0) errors.push(`sourcemaps must not be published: ${maps.join(', ')}`)
 
@@ -27,4 +43,4 @@ if (errors.length > 0) {
   console.error(errors.join('\n'))
   process.exit(1)
 }
-console.log('dist OK: "use client" banner on the React entry, framework-free core entry, no sourcemaps')
+console.log('dist OK: "use client" banner on the React entries, framework-free core entry shared by them, no sourcemaps')

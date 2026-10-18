@@ -1,5 +1,5 @@
-import React, { useCallback, useId, useState, useMemo } from 'react';
-import { DndContext, useSensor, useSensors, PointerSensor, Modifier, DragOverlay, DragEndEvent, DragStartEvent } from '@dnd-kit/core';
+import React, { useCallback, useId, useState, useMemo, useRef } from 'react';
+import { Modifier, DragOverlay, DragStartEvent } from '@dnd-kit/core';
 import { createSnapModifier, restrictToWindowEdges } from '@dnd-kit/modifiers';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CalendarHeader } from './components/CalendarHeader';
@@ -18,10 +18,12 @@ import { getThemeStyles } from './lib/theme';
 import { resolveTranslations, timeFormats } from './core/format';
 import { toDisplay } from './core/timezone';
 import { resolveWeekStartsOn } from './core/week';
-import { useCalendarLogic } from './hooks/useCalendarLogic';
+import { useCalendar, useCalendarSelector } from './react/useCalendar';
+import { CalendarDndContext } from './react/dnd';
+import { useStableCallback } from './hooks/useStableCallback';
 import { format, startOfWeek } from 'date-fns';
 import { useViewSwipe } from './hooks/useSwipeGesture';
-import { dayAwareCollision, dragOverlaySize } from './components/dnd/dragOverlay';
+import { dragOverlaySize } from './components/dnd/dragOverlay';
 
 // Re-export types for consumers
 export type {
@@ -40,8 +42,11 @@ export type {
 // Re-export utilities
 export { cn } from './utils';
 
+// A stable default: a new `[]` on every render would look like new events to the engine.
+const NO_EVENTS: CalendarEvent[] = [];
+
 export const Scheduler: React.FC<CalendarProps> = ({
-  events = [],
+  events = NO_EVENTS,
   view: controlledView,
   onViewChange: controlledOnViewChange,
   date: controlledDate,
@@ -83,66 +88,82 @@ export const Scheduler: React.FC<CalendarProps> = ({
     closeContextMenu,
   } = useEventContextMenu();
 
-  const {
-    view,
-    currentDate,
-    isSidebarOpen,
-    setIsSidebarOpen,
-    isModalOpen,
-    setIsModalOpen,
-    selectedEvent,
-    modalInitialDate,
-    modalInitialAllDay,
-    handleViewChange,
-    handleDateChange,
-    handlePrev,
-    handleNext,
-    handleToday,
-    handleDateClick,
-    handleTimeSlotClick,
-    handleAllDaySlotClick,
-    handleEventClickInternal,
-    handleCreateEvent,
-    handleModalSave,
-    handleModalDelete,
-    handleEventDelete,
-    handleEventDuplicate,
-    handleEventResize,
-    handleDayEventResize,
-    handleDragEnd,
-    expandedEvents
-  } = useCalendarLogic({
+  // The calendar engine (calendarkit-pro/core) holds view, date, events and dialogs; the Scheduler
+  // keeps only UI state (sidebar, drag ghost, context menu).
+  const calendar = useCalendar({
     events,
     view: controlledView,
     onViewChange: controlledOnViewChange,
     date: controlledDate,
     onDateChange: controlledOnDateChange,
-    onEventClick,
-    onEventUpdate,
     onEventCreate,
+    onEventUpdate,
     onEventDelete,
     onEventDrop,
     onEventResize,
     onOccurrenceDelete,
     readOnly,
-    timezone
+    timezone,
+    stripGeneratedIds: true,
   });
+  const view = useCalendarSelector(calendar, (s) => s.view);
+  const currentDate = useCalendarSelector(calendar, (s) => s.date);
+  const expandedEvents = useCalendarSelector(calendar, (s) => s.occurrences);
+  const dialog = useCalendarSelector(calendar, (s) => s.dialog);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  // DnD Sensors
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  );
+  // The 1.x modal reads the dialog: an event being shown or edited, or a new event at a slot.
+  const editingId = dialog?.kind === 'event' || dialog?.kind === 'editor' ? dialog.eventId : undefined;
+  // Like 1.x, the form gets a snapshot of the event taken when it opened: new event objects from the
+  // parent (a refetch) do not reset what the user is typing, and the last event stays available
+  // after the form closes (exit animations, a save that comes after onClose).
+  const lastOpened = useRef<{ id?: string; event: CalendarEvent | null }>({ event: null });
+  if (dialog && dialog.kind !== 'more') {
+    if (editingId === undefined) lastOpened.current = { event: null };
+    else if (lastOpened.current.id !== editingId) lastOpened.current = { id: editingId, event: expandedEvents.find((e) => e.id === editingId) ?? null };
+  }
+  const selectedEvent = lastOpened.current.event;
+  const draft = dialog?.kind === 'quick' || dialog?.kind === 'editor' ? dialog.draft : undefined;
+  const isModalOpen = dialog !== null && dialog.kind !== 'more';
+  const modalInitialDate = editingId === undefined ? draft?.start : undefined;
+  const modalInitialAllDay = editingId === undefined && !!draft?.allDay;
+
+  // Stable handlers (the store's actions never change identity).
+  const handlers = useMemo(() => ({
+    handleViewChange: calendar.setView,
+    handleDateChange: (date: Date) => calendar.navigate(date),
+    handlePrev: () => calendar.navigate('prev'),
+    handleNext: () => calendar.navigate('next'),
+    handleToday: () => calendar.navigate('today'),
+    handleDateClick: (date: Date) => {
+      calendar.navigate(date);
+      calendar.setView('day');
+    },
+    handleTimeSlotClick: (date: Date, resourceId?: string) => calendar.openSlot(date, { resourceId, editor: true }),
+    handleAllDaySlotClick: (day: Date) => calendar.openSlot(day, { allDay: true, editor: true }),
+    handleCreateEvent: () => calendar.openSlot(new Date(), { editor: true }),
+    handleModalSave: (data: Partial<CalendarEvent>) => calendar.saveEvent(data, { eventId: lastOpened.current.id ?? null }),
+    handleModalDelete: (eventId: string) => calendar.remove(eventId),
+    handleModalClose: () => calendar.closeDialog(),
+    handleEventDelete: (event: CalendarEvent) => calendar.remove(event.id),
+    handleEventDuplicate: (event: CalendarEvent) => calendar.duplicate(event.id),
+    handleEventResize: (event: CalendarEvent, newEnd: Date) => calendar.resize(event.id, newEnd),
+    handleDayEventResize: (event: CalendarEvent, newLastDay: Date) => calendar.resizeDays(event.id, newLastDay),
+  }), [calendar]);
+  const {
+    handleViewChange, handleDateChange, handlePrev, handleNext, handleToday, handleDateClick, handleTimeSlotClick,
+    handleAllDaySlotClick, handleCreateEvent, handleModalSave, handleModalDelete, handleModalClose, handleEventDelete,
+    handleEventDuplicate, handleEventResize, handleDayEventResize,
+  } = handlers;
+  // 1.x: a click calls onEventClick, then opens the event unless readOnly.
+  const handleEventClickInternal = useStableCallback((event: CalendarEvent) => {
+    onEventClick?.(event);
+    if (!readOnly) calendar.openEvent(event.id);
+  });
 
   const gridSize = 15; // 15px snap (15 minutes if 60px/hr)
   const snapToGrid = createSnapModifier(gridSize);
   const modifiers: Modifier[] = [snapToGrid, restrictToWindowEdges];
-
-  // Disable DnD if readOnly
-  const dndSensors = readOnly ? [] : sensors;
 
   const id = useId();
 
@@ -164,10 +185,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
     }
   }, []);
 
-  const onDragEndWrapper = useCallback((event: DragEndEvent) => {
-      setActiveDragEvent(null);
-      handleDragEnd(event);
-  }, [handleDragEnd]);
+  // The drop itself is applied by CalendarDndContext (calendar.move); here we only clear the ghost.
+  const onDragEndWrapper = useCallback(() => setActiveDragEvent(null), []);
   
   const dragSize = activeDragEvent ? dragOverlaySize(view, activeDragEvent, activeDayDrag) : {};
 
@@ -194,13 +213,12 @@ export const Scheduler: React.FC<CalendarProps> = ({
   const contextMenuHandler = readOnly ? undefined : openContextMenu;
 
   return (
-    <DndContext 
-        id={id} 
-        sensors={dndSensors} 
+    <CalendarDndContext
+        calendar={calendar}
+        id={id}
         onDragStart={handleDragStart}
-        onDragEnd={onDragEndWrapper} 
+        onDragEnd={onDragEndWrapper}
         modifiers={modifiers}
-        collisionDetection={dayAwareCollision}
     >
       <div
         className={cn("flex flex-col h-full bg-background text-foreground relative", className)}
@@ -387,7 +405,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
         {renderEventForm ? (
             renderEventForm({
                 isOpen: isModalOpen,
-                onClose: () => setIsModalOpen(false),
+                onClose: handleModalClose,
                 event: selectedEvent,
                 initialDate: modalInitialDate,
                 initialAllDay: modalInitialAllDay,
@@ -397,7 +415,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
         ) : (
             <EventModal
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                onClose={handleModalClose}
                 event={selectedEvent}
                 initialDate={modalInitialDate}
                 onSave={handleModalSave}
@@ -490,6 +508,6 @@ export const Scheduler: React.FC<CalendarProps> = ({
         </DragOverlay>
 
       </div>
-    </DndContext>
+    </CalendarDndContext>
   );
 };

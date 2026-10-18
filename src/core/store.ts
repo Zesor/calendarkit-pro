@@ -40,6 +40,11 @@ export interface CalendarOptions extends CalendarCallbacks {
   now?: () => Date
   /** Id factory for created and duplicated events. */
   createId?: () => string
+  /**
+   * `onEventCreate` receives events created from a form without the id the store generated, like
+   * 1.x (the consumer assigns ids). The store and `onEventsChange` still use the generated id.
+   */
+  stripGeneratedIds?: boolean
 }
 
 /** A draft's `start` and `end` are wall-clock times of the display timezone (like the grid's slots). */
@@ -112,6 +117,13 @@ export interface CalendarStore {
   closeDialog(): void
   toggleCalendar(calendarId: string): void
   saveDraft(): void
+  /**
+   * Saves the event of the open dialog with the fields of a custom form (`renderEventForm`, the
+   * 1.x modal). Dates are used as given. Without an event being edited, creates a new one. Pass
+   * `target.eventId` to save a given event (or `null` to create) whatever the dialog shows now, e.g.
+   * when the form saves after it was closed.
+   */
+  saveEvent(data: Partial<CalendarEvent>, target?: { eventId?: string | null }): void
   create(event: Partial<CalendarEvent> & Pick<CalendarEvent, 'title' | 'start' | 'end'>): void
   update(event: CalendarEvent): void
   move(eventId: string, target: MoveTarget): void
@@ -123,6 +135,17 @@ export interface CalendarStore {
 }
 
 const HOUR = 60 * 60 * 1000
+
+/** Value equality for event data (dates by time, nested objects and arrays by content, 4 levels). */
+function sameValue(a: unknown, b: unknown, depth = 0): boolean {
+  if (a === b) return true
+  if (a instanceof Date && b instanceof Date) return a.getTime() === b.getTime()
+  if (depth > 3 || typeof a !== 'object' || typeof b !== 'object' || a === null || b === null || Array.isArray(a) !== Array.isArray(b)) return false
+  const keys = Object.keys(a)
+  if (keys.length !== Object.keys(b).length) return false
+  return keys.every((key) => sameValue((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key], depth + 1))
+}
+const sameEvents = (a: CalendarEvent[], b: CalendarEvent[]) => a.length === b.length && a.every((event, i) => sameValue(event, b[i]))
 
 /** Shifts a date like the views' "previous/next" buttons do. */
 function step(view: ViewType, date: Date, dir: 1 | -1): Date {
@@ -150,7 +173,7 @@ export function createCalendar(initial: CalendarOptions = {}): CalendarStore {
   let undoEntry: { revert: (list: CalendarEvent[]) => CalendarEvent[]; inverse: () => void } | null = null
   let snapshot: CalendarState | null = null
   const listeners = new Set<() => void>()
-  const memo: { normalized?: CalendarEvent[]; rangeKey?: string; range?: DateRange; tz?: string; occurrences?: CalendarEvent[]; visibleFor?: [CalendarEvent[], readonly string[]]; visible?: CalendarEvent[] } = {}
+  const memo: { source?: CalendarEvent[]; normalized?: CalendarEvent[]; rangeKey?: string; range?: DateRange; tz?: string; occurrences?: CalendarEvent[]; visibleFor?: [CalendarEvent[], readonly string[]]; visible?: CalendarEvent[] } = {}
 
   const now = () => (options.now ?? (() => new Date()))()
   const source = () => options.events ?? ownEvents
@@ -158,7 +181,12 @@ export function createCalendar(initial: CalendarOptions = {}): CalendarStore {
   function compute(): CalendarState {
     const view = options.view ?? ownView
     const date = options.date ?? ownDate
-    const normalized = normalizeEvents(source())
+    // A new array of the same events (`events={items.map(toEvent)}`) keeps the previous one, so a
+    // component rebuilding its events on every render does not loop through the store.
+    let events = source()
+    if (memo.source && events !== memo.source && sameEvents(memo.source, events)) events = memo.source
+    else memo.source = events
+    const normalized = normalizeEvents(events)
     // Occurrences are recomputed only when the events, the zone or the focused month change (R4).
     const rangeKey = format(date, 'yyyy-MM')
     if (memo.rangeKey !== rangeKey) {
@@ -338,10 +366,33 @@ export function createCalendar(initial: CalendarOptions = {}): CalendarStore {
       }
       store.update({ ...event, ...fields })
     },
+    saveEvent(data, target) {
+      if (options.readOnly) return
+      const eventId = target && 'eventId' in target
+        ? target.eventId ?? undefined
+        : dialog?.kind === 'event' || dialog?.kind === 'editor' ? dialog.eventId : undefined
+      if (eventId === undefined) {
+        const draft = dialog?.kind === 'quick' || dialog?.kind === 'editor' ? dialog.draft : undefined
+        const resourceId = data.resourceId ?? draft?.resourceId
+        return store.create({ ...data, ...(resourceId !== undefined ? { resourceId } : {}) } as CalendarEvent)
+      }
+      const event = find(eventId)
+      if (!event) return
+      if (event.originalEventId) {
+        // R5: saving one occurrence updates the series, shifted by the same delta.
+        const master = masterOf(event, store.getState().events)
+        if (!master) return
+        const edited = { ...master, ...stripOccurrenceFields({ ...event, ...data } as CalendarEvent), id: master.id, start: master.start, end: master.end }
+        return store.update(shiftSeries(edited, event, data.start ?? event.start, data.end ?? event.end, edited.allDay ? undefined : options.timezone))
+      }
+      const raw = source().find((e) => e.id === event.id) ?? event
+      store.update({ ...raw, ...data, id: event.id } as CalendarEvent)
+    },
     create(fields) {
       if (options.readOnly) return
       const event = { ...fields, id: fields.id ?? (options.createId ?? (() => `evt-${now().getTime()}-${Math.random().toString(36).slice(2, 7)}`))() } as CalendarEvent
-      commit('create', [...source(), event], event, () => options.onEventCreate?.(event), (list) => without(list, event.id), () => options.onEventDelete?.(event.id))
+      const payload = fields.id === undefined && options.stripGeneratedIds ? (({ id: _id, ...rest }) => rest)(event) : event
+      commit('create', [...source(), event], event, () => options.onEventCreate?.(payload), (list) => without(list, event.id), () => options.onEventDelete?.(event.id))
     },
     update(event) {
       if (options.readOnly) return
