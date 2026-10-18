@@ -33,6 +33,9 @@ const contrast = (a: string, b: string) => {
   return (hi + 0.05) / (lo + 0.05)
 }
 
+const mixHex = (a: string, b: string, share: number) =>
+  '#' + [1, 3, 5].map((i) => Math.round(parseInt(a.slice(i, i + 2), 16) * share + parseInt(b.slice(i, i + 2), 16) * (1 - share)).toString(16).padStart(2, '0')).join('')
+
 const TEXT_PAIRS = [
   ['foreground', 'background'],
   ['foreground', 'muted'],
@@ -41,6 +44,8 @@ const TEXT_PAIRS = [
   ['muted-foreground', 'muted'],
   ['primary-foreground', 'primary'],
   ['destructive-foreground', 'destructive'],
+  ['destructive', 'background'],
+  ['warning', 'background'],
 ]
 
 describe('themes', () => {
@@ -54,6 +59,11 @@ describe('themes', () => {
     const t = themes[name]
     const failing = TEXT_PAIRS.filter(([fg, bg]) => contrast(t[fg], t[bg]) < 4.5).map(([fg, bg]) => `${fg} on ${bg}: ${contrast(t[fg], t[bg]).toFixed(2)}`)
     if (contrast(t.ring, t.background) < 3) failing.push(`ring on background: ${contrast(t.ring, t.background).toFixed(2)}`)
+    // Danger menu items and reminder chips: the colour as text on its own 10 % tint.
+    for (const token of ['destructive', 'warning']) {
+      const tint = mixHex(t[token], t.background, 0.1)
+      if (contrast(t[token], tint) < 4.5) failing.push(`${token} on its tint: ${contrast(t[token], tint).toFixed(2)}`)
+    }
     expect(failing).toEqual([])
   })
 

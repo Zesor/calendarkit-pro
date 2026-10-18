@@ -472,14 +472,14 @@ export const EventModal: React.FC<EventModalProps> = ({
         {/* Reminders */}
         {event?.reminders && event.reminders.length > 0 && (
           <div className="ck:animate-rise-in ck:flex ck:items-center ck:gap-3" style={{ animationDelay: '100ms' }}>
-            <div className="ck:p-2 ck:bg-amber-500/10 ck:rounded-xl">
-              <Bell className="ck:w-4 ck:h-4 ck:text-amber-500" />
+            <div className="ck:p-2 ck:bg-warning/10 ck:rounded-xl">
+              <Bell className="ck:w-4 ck:h-4 ck:text-warning" />
             </div>
             <div className="ck:flex ck:flex-wrap ck:gap-2">
               {event.reminders.map(reminder => (
                 <span
                   key={reminder.id}
-                  className="ck:text-xs ck:font-medium ck:px-2.5 ck:py-1 ck:rounded-full ck:bg-amber-500/10 ck:text-amber-600 ck:dark:text-amber-400"
+                  className="ck:text-xs ck:font-medium ck:px-2.5 ck:py-1 ck:rounded-full ck:bg-warning/10 ck:text-warning"
                 >
                   {reminder.label || reminderLabel(reminder.time, t)}
                 </span>
@@ -689,19 +689,19 @@ export const EventModal: React.FC<EventModalProps> = ({
                 {formData.reminders.map(reminder => (
                   <div
                     key={reminder.id}
-                    className="ck:flex ck:items-center ck:gap-2 ck:px-3 ck:py-1.5 ck:rounded-full ck:bg-amber-500/10 ck:border ck:border-amber-500/20"
+                    className="ck:flex ck:items-center ck:gap-2 ck:px-3 ck:py-1.5 ck:rounded-full ck:bg-warning/10 ck:border ck:border-warning/20"
                   >
-                    <BellRing className="ck:w-3.5 ck:h-3.5 ck:text-amber-500" />
-                    <span className="ck:text-xs ck:font-medium ck:text-amber-600 ck:dark:text-amber-400">
+                    <BellRing className="ck:w-3.5 ck:h-3.5 ck:text-warning" />
+                    <span className="ck:text-xs ck:font-medium ck:text-warning">
                       {reminder.label || reminderLabel(reminder.time, t)}
                     </span>
                     <button
                       type="button"
                       onClick={() => removeReminder(reminder.id)}
-                      className="ck:p-0.5 ck:hover:bg-amber-500/20 ck:rounded-full ck:transition-colors"
+                      className="ck:p-0.5 ck:hover:bg-warning/20 ck:rounded-full ck:transition-colors"
                       aria-label={t.removeReminder}
                     >
-                      <X className="ck:w-3 ck:h-3 ck:text-amber-500" />
+                      <X className="ck:w-3 ck:h-3 ck:text-warning" />
                     </button>
                   </div>
                 ))}

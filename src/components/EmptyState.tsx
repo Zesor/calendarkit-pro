@@ -14,10 +14,10 @@ export const AgendaEmptyState: React.FC<{
 }> = ({ onCreateEvent, translations }) => (
   <div className="ck:flex ck:flex-col ck:items-center ck:justify-center ck:h-full ck:min-h-[400px] ck:py-12">
     <div className="ck:relative ck:mb-8">
-      <div className="ck:p-8 ck:bg-linear-to-br ck:from-green-50 ck:to-blue-50 ck:dark:from-green-900/10 ck:dark:to-blue-900/10 ck:rounded-3xl ck:border ck:border-border/30">
+      <div className="ck:p-8 ck:bg-muted ck:rounded-3xl ck:border ck:border-border/30">
         <div className="ck:flex ck:items-center ck:gap-4">
-          <div className="ck:w-12 ck:h-12 ck:rounded-2xl ck:bg-green-100 ck:dark:bg-green-900/30 ck:flex ck:items-center ck:justify-center">
-            <svg className="ck:w-6 ck:h-6 ck:text-green-600 ck:dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <div className="ck:w-12 ck:h-12 ck:rounded-2xl ck:bg-background ck:flex ck:items-center ck:justify-center">
+            <svg className="ck:w-6 ck:h-6 ck:text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>

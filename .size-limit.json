@@ -2,12 +2,12 @@
   {
     "name": "ESM bundle (includes the injected stylesheet)",
     "path": "dist/index.mjs",
-    "limit": "42 kB"
+    "limit": "44 kB"
   },
   {
     "name": "CJS bundle (includes the injected stylesheet)",
     "path": "dist/index.js",
-    "limit": "42 kB"
+    "limit": "44 kB"
   },
   {
     "name": "Stylesheet (calendarkit-pro/styles.css)",

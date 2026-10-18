@@ -146,7 +146,7 @@ export const EventContextMenu: React.FC<EventContextMenuProps> = ({
                   "ck:w-full ck:flex ck:items-center ck:gap-3 ck:px-3 ck:py-2 ck:text-sm ck:transition-colors",
                   action.disabled && "ck:opacity-50 ck:cursor-not-allowed",
                   action.variant === 'danger'
-                    ? "ck:text-red-600 ck:hover:bg-red-50 ck:dark:text-red-400 ck:dark:hover:bg-red-900/20"
+                    ? "ck:text-destructive ck:hover:bg-destructive/10"
                     : "ck:text-foreground ck:hover:bg-accent"
                 )}
               >

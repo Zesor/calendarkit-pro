@@ -45,9 +45,9 @@ describe('month view all-day bars', () => {
         <MonthView currentDate={new Date(2026, 9, 15)} events={[wed('A'), wed('B'), wed('C'), wed('D'), timed('T1', 14, 9), timed('T2', 14, 10)]} />
       </DndContext>,
     )
-    // 3 lanes fill the 130 px cell: no timed slot left, hidden = 1 bar (D) + 2 timed
-    expect(screen.getByRole('button', { name: '+3 more' })).toBeTruthy()
-    expect(screen.queryByText('T1')).toBeNull()
+    // 3 lanes leave room for 1 chip: hidden = 1 bar (D) + 1 timed (T2)
+    expect(screen.getByRole('button', { name: '+2 more' })).toBeTruthy()
+    expect(screen.getByText('T1')).toBeTruthy()
     expect(screen.queryByText('T2')).toBeNull()
   })
 
@@ -60,21 +60,21 @@ describe('month view all-day bars', () => {
         />
       </DndContext>,
     )
-    // 1 lane leaves room for 1 chip plus the "+N" link
-    expect(screen.getByText('T1')).toBeTruthy()
-    expect(screen.queryByText('T2')).toBeNull()
-    expect(screen.getByRole('button', { name: '+2 more' })).toBeTruthy()
+    // 1 lane leaves room for 2 chips; "+N more" sits next to the day number
+    expect(screen.getByText('T2')).toBeTruthy()
+    expect(screen.queryByText('T3')).toBeNull()
+    expect(screen.getByRole('button', { name: '+1 more' })).toBeTruthy()
   })
 
-  test('without bars a day keeps the historical 4 chips', () => {
+  test('§8.4: without bars a day shows 3 chips, then "+N more"', () => {
     render(
       <DndContext>
         <MonthView currentDate={new Date(2026, 9, 15)} events={[9, 10, 11, 12, 13].map((h) => timed(`T${h}`, 14, h))} />
       </DndContext>,
     )
-    expect(screen.getByText('T12')).toBeTruthy()
-    expect(screen.queryByText('T13')).toBeNull()
-    expect(screen.getByRole('button', { name: '+1 more' })).toBeTruthy()
+    expect(screen.getByText('T11')).toBeTruthy()
+    expect(screen.queryByText('T12')).toBeNull()
+    expect(screen.getByRole('button', { name: '+2 more' })).toBeTruthy()
   })
 
   test('a long timed event (30 h) becomes a bar instead of a chip', () => {

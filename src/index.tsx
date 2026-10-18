@@ -378,7 +378,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                     <button
                         onClick={handleCreateEvent}
                         aria-label={t.createEvent}
-                        className="ck:w-14 ck:h-14 ck:bg-blue-600 ck:rounded-full ck:shadow-lg ck:flex ck:items-center ck:justify-center ck:text-white ck:active:scale-90 ck:transition-transform"
+                        className="ck:w-14 ck:h-14 ck:bg-primary ck:rounded-full ck:shadow-lg ck:flex ck:items-center ck:justify-center ck:text-primary-foreground ck:active:scale-90 ck:transition-transform"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
                     </button>

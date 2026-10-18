@@ -11,6 +11,7 @@ import { getWeekDays, resolveWeekStartsOn } from '../core/week';
 import { DroppableCell } from '../components/dnd/DroppableCell';
 import { useElementWidth } from '../hooks/useElementWidth';
 import { TimeGridEvents, weekMaxColumns } from './TimeGridEvents';
+import { TODAY_MARK } from '../components/todayMark';
 
 interface WeekViewProps {
   currentDate: Date;
@@ -120,10 +121,8 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
               <div key={day.toISOString()} className={cx("ck:py-3 ck:px-2 ck:text-center", index > 0 && "ck:border-l-[0.5px] ck:border-border/30")}>
                   <div className="ck:text-[10px] ck:font-semibold ck:text-muted-foreground ck:uppercase ck:tracking-wider ck:mb-1.5">{format(day, 'EEE', { locale })}</div>
                   <div className={cx(
-                    "ck:w-9 ck:h-9 ck:flex ck:items-center ck:justify-center ck:rounded-xl ck:mx-auto ck:text-sm ck:font-semibold ck:transition-all ck:duration-200",
-                    isSameDay(day, today)
-                      ? "ck:bg-primary ck:text-primary-foreground ck:shadow-lg ck:shadow-primary/30 ck:scale-110"
-                      : "ck:text-foreground ck:hover:bg-accent/80"
+                    "ck:w-9 ck:h-9 ck:flex ck:items-center ck:justify-center ck:mx-auto ck:text-sm ck:font-semibold ck:tabular-nums ck:transition-colors ck:duration-200",
+                    isSameDay(day, today) ? TODAY_MARK : "ck:rounded-xl ck:text-foreground ck:hover:bg-accent/80"
                   )}>
                     {format(day, 'd', { locale })}
                   </div>

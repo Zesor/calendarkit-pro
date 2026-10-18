@@ -23,7 +23,7 @@ describe('translated views (I1)', () => {
   test('U7: month view "+N more" is translated and opens the day', () => {
     const onDateClick = vi.fn()
     render(<DndContext><MonthView currentDate={day} events={[1, 2, 3, 4, 5, 6].map((h) => at(h))} translations={fr} locale={frLocale} onDateClick={onDateClick} /></DndContext>)
-    fireEvent.click(screen.getByRole('button', { name: '+2 de plus' }))
+    fireEvent.click(screen.getByRole('button', { name: '+3 de plus' }))
     expect(onDateClick).toHaveBeenCalledWith(day)
   })
 

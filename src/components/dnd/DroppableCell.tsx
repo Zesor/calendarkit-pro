@@ -18,18 +18,19 @@ interface DroppableCellProps {
   onSlotClick?: (date: Date, resourceId?: string) => void;
 }
 
+// Primary tints, a touch stronger each quarter of the hour.
 const QUARTER_HOVER = [
-  "ck:hover:bg-blue-50/50 ck:dark:hover:bg-blue-900/10",
-  "ck:hover:bg-blue-50/80 ck:dark:hover:bg-blue-900/20",
-  "ck:hover:bg-blue-100/50 ck:dark:hover:bg-blue-900/30",
-  "ck:hover:bg-blue-100/80 ck:dark:hover:bg-blue-900/40",
+  "ck:hover:bg-primary/4",
+  "ck:hover:bg-primary/6",
+  "ck:hover:bg-primary/8",
+  "ck:hover:bg-primary/10",
 ];
 
 const QUARTER_ACTIVE = [
-  "ck:bg-blue-50/50 ck:dark:bg-blue-900/10 ck:ring-2 ck:ring-primary ck:ring-inset",
-  "ck:bg-blue-50/80 ck:dark:bg-blue-900/20 ck:ring-2 ck:ring-primary ck:ring-inset",
-  "ck:bg-blue-100/50 ck:dark:bg-blue-900/30 ck:ring-2 ck:ring-primary ck:ring-inset",
-  "ck:bg-blue-100/80 ck:dark:bg-blue-900/40 ck:ring-2 ck:ring-primary ck:ring-inset",
+  "ck:bg-primary/8 ck:ring-2 ck:ring-primary ck:ring-inset",
+  "ck:bg-primary/10 ck:ring-2 ck:ring-primary ck:ring-inset",
+  "ck:bg-primary/12 ck:ring-2 ck:ring-primary ck:ring-inset",
+  "ck:bg-primary/14 ck:ring-2 ck:ring-primary ck:ring-inset",
 ];
 
 const quarterOf = (date: Date) => Math.min(3, Math.floor(date.getMinutes() / 15));

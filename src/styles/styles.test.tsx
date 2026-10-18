@@ -21,6 +21,29 @@ describe('compiled stylesheet', () => {
     expect(unstyled.sort()).toEqual([])
   })
 
+  test.each(SCHEDULER_STATES)('%s: every colour comes from the theme (no Tailwind palette colour)', (_label, show) => {
+    show()
+    const palette = /^ck:(?:[\w-]+:)*(?:bg|text|border|ring|from|via|to|fill|stroke|shadow|outline|decoration)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\d/
+    const names = new Set(classLists().flatMap((list) => list.split(/\s+/)))
+    expect([...names].filter((n) => palette.test(n)).sort()).toEqual([])
+  })
+
+  test('the today marker changes shape with the theme: rounded square, circle (vivid), underline (editorial)', () => {
+    const rules: string[] = []
+    postcss.parse(css).walkRules((rule) => {
+      if (/^\.ck\\:(vivid\\:rounded-full|editorial\\:underline)/.test(rule.selector)) rules.push(rule.selector)
+    })
+    document.body.innerHTML = `
+      <div class="ck-root" data-ck-theme="vivid"><b id="vivid" class="ck:vivid:rounded-full ck:editorial:underline"></b></div>
+      <div class="ck-root" data-ck-theme="editorial"><b id="editorial" class="ck:vivid:rounded-full ck:editorial:underline"></b></div>
+      <div class="ck-root" data-ck-theme="calm"><b id="calm" class="ck:vivid:rounded-full ck:editorial:underline"></b></div>`
+    const active = (id: string) => rules.filter((selector) => document.getElementById(id)!.matches(selector)).map((s) => /^\.ck\\:(\w+)\\:/.exec(s)![1])
+    expect(active('vivid')).toEqual(['vivid'])
+    expect(active('editorial')).toEqual(['editorial'])
+    expect(active('calm')).toEqual([])
+    document.body.innerHTML = ''
+  })
+
   test('is unlayered and never reaches outside the calendar', () => {
     const root = postcss.parse(css)
     const layers: string[] = []
@@ -54,7 +77,7 @@ describe('compiled stylesheet', () => {
     // Every rule of one dark-mode class, with the media query it sits in (if any).
     const rules: Array<{ selector: string; media: string }> = []
     postcss.parse(css).walkRules((rule) => {
-      if (!rule.selector.startsWith('.ck\\:dark\\:text-amber-400')) return
+      if (!rule.selector.startsWith('.ck\\:dark\\:text-foreground')) return
       const parent = rule.parent as postcss.AtRule
       rules.push({ selector: rule.selector, media: parent.type === 'atrule' ? parent.params : '' })
     })
@@ -66,7 +89,7 @@ describe('compiled stylesheet', () => {
       <div class="ck-root"><span id="no-mode"></span></div>`
     const activeIn = (id: string) => {
       const el = document.getElementById(id)!
-      el.className = 'ck:dark:text-amber-400'
+      el.className = 'ck:dark:text-foreground'
       return rules.filter((r) => el.matches(r.selector)).map((r) => r.media || 'always')
     }
     expect(activeIn('light-in-dark')).toEqual([])

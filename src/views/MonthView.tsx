@@ -9,6 +9,7 @@ import { AllDayBar } from '../components/AllDayBar';
 import { displayToday } from '../core/timezone';
 import { getMonthGrid, getWeekDays, resolveWeekStartsOn } from '../core/week';
 import { useEventColorStyle } from '../components/eventColor';
+import { TODAY_MARK } from '../components/todayMark';
 import { DraggableEvent } from '../components/dnd/DraggableEvent';
 import { DroppableCell } from '../components/dnd/DroppableCell';
 
@@ -57,19 +58,17 @@ EventItem.displayName = 'EventItem';
 const ROW_HEIGHT = 130; // px per week row (unchanged)
 const LANE_HEIGHT = 20;
 const MAX_LANES = 3; // all-day lanes shown per week before "+N more"
-const MAX_ITEMS = 4; // timed events shown per cell when the week has no bars (historical)
+const MAX_ITEMS = 3; // timed chips per day, then "+N more" (spec §8.4)
 const BARS_TOP = 38; // below the day number
 const CELL_CHROME = 16 + 28 + 6; // cell padding, day number, gap
-const ITEM_STEP = 20 + 4; // timed chip + gap
-const MORE_HEIGHT = 20; // "+N more" link
+const ITEM_GAP = 4;
+const ITEM_STEP = 20 + ITEM_GAP; // timed chip + gap
 
-// Timed chips that fit under the bars without being clipped. Weeks without bars keep the
-// historical 4 chips.
-function timedSlots(visibleLanes: number, timedCount: number, hiddenBars: number): number {
-  if (visibleLanes === 0) return Math.min(timedCount, MAX_ITEMS);
+// Timed chips that fit under the bars (at most 3). "+N more" sits next to the day number, so the
+// chips keep the whole room.
+function timedSlots(visibleLanes: number, timedCount: number): number {
   const room = ROW_HEIGHT - CELL_CHROME - visibleLanes * LANE_HEIGHT;
-  if (hiddenBars === 0 && timedCount * ITEM_STEP - 4 <= room) return timedCount;
-  return Math.max(0, Math.floor((room - MORE_HEIGHT) / ITEM_STEP));
+  return Math.min(timedCount, MAX_ITEMS, Math.max(0, Math.floor((room + ITEM_GAP) / ITEM_STEP)));
 }
 
 export const MonthView: React.FC<MonthViewProps> = ({
@@ -124,9 +123,8 @@ export const MonthView: React.FC<MonthViewProps> = ({
               const dayTimed = eventsByDay.get(dayKey) || [];
               const barsOnDay = segments.filter((s) => column >= s.startCol && column < s.startCol + s.span);
               const hiddenBars = barsOnDay.filter((s) => s.lane >= MAX_LANES).length;
-              const shown = timedSlots(visibleLanes, dayTimed.length, hiddenBars);
+              const shown = timedSlots(visibleLanes, dayTimed.length);
               const hidden = hiddenBars + dayTimed.length - shown;
-              const total = barsOnDay.length + dayTimed.length;
 
               const isCurrentMonth = isSameMonth(day, currentDate);
               const cellId = day.toISOString();
@@ -149,32 +147,16 @@ export const MonthView: React.FC<MonthViewProps> = ({
                 >
                   <div className="ck:flex ck:justify-between ck:items-start">
                     <div className={cx(
-                      "ck:text-sm ck:font-semibold ck:w-7 ck:h-7 ck:flex ck:items-center ck:justify-center ck:rounded-full ck:transition-all ck:duration-200",
-                      isSameDay(day, today)
-                        ? "ck:bg-primary ck:text-primary-foreground ck:shadow-md ck:shadow-primary/30"
-                        : "ck:group-hover:bg-accent"
+                      "ck:text-sm ck:font-semibold ck:w-7 ck:h-7 ck:flex ck:items-center ck:justify-center ck:tabular-nums ck:transition-colors ck:duration-200",
+                      isSameDay(day, today) ? TODAY_MARK : "ck:rounded-full ck:group-hover:bg-accent"
                     )}>
                       {format(day, 'd', { locale })}
                     </div>
-                    {total > 0 && (
-                      <div className="ck:text-[10px] ck:font-medium ck:text-muted-foreground/60 ck:bg-muted/50 ck:px-1.5 ck:py-0.5 ck:rounded-full">
-                        {total}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Room for the all-day bars drawn across the week */}
-                  {visibleLanes > 0 && <div className="ck:shrink-0" style={{ height: visibleLanes * LANE_HEIGHT - 6 }} />}
-
-                  <div className="ck:flex-1 ck:flex ck:flex-col ck:gap-1 ck:overflow-y-auto ck:overflow-x-hidden">
-                    {dayTimed.slice(0, shown).map(event => (
-                       <EventItem key={`${event.id}-${dayKey}`} event={event} onEventClick={onEventClick} onEventContextMenu={onEventContextMenu} />
-                    ))}
                     {hidden > 0 && (
                         // "+N more" counts hidden bars and hidden timed events, and opens the day.
                         <button
                             type="button"
-                            className="ck:shrink-0 ck:text-[10px] ck:leading-4 ck:text-primary ck:font-semibold ck:text-center ck:py-0.5 ck:px-2 ck:rounded-md ck:bg-primary/5 ck:hover:bg-primary/10 ck:cursor-pointer ck:transition-colors"
+                            className="ck:text-xs ck:font-semibold ck:text-muted-foreground ck:px-1.5 ck:py-0.5 ck:rounded-md ck:hover:bg-muted ck:hover:text-foreground ck:transition-colors"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onDateClick?.(day);
@@ -183,6 +165,15 @@ export const MonthView: React.FC<MonthViewProps> = ({
                             {interpolate(translations?.moreEvents || '+{n} more', { n: hidden })}
                         </button>
                     )}
+                  </div>
+
+                  {/* Room for the all-day bars drawn across the week */}
+                  {visibleLanes > 0 && <div className="ck:shrink-0" style={{ height: visibleLanes * LANE_HEIGHT - 6 }} />}
+
+                  <div className="ck:flex-1 ck:flex ck:flex-col ck:gap-1 ck:overflow-hidden">
+                    {dayTimed.slice(0, shown).map(event => (
+                       <EventItem key={`${event.id}-${dayKey}`} event={event} onEventClick={onEventClick} onEventContextMenu={onEventContextMenu} />
+                    ))}
                   </div>
                 </DroppableCell>
               );
