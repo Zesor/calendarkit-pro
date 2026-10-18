@@ -4,7 +4,7 @@ import { cx } from "../../utils"
 // Focus ring and disabled state shared by the toolbar buttons; each caller sets its own look
 // (display, size, colors), so no class is ever overridden.
 const BUTTON =
-  "items-center justify-center whitespace-nowrap ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+  "ck:items-center ck:justify-center ck:whitespace-nowrap ck:ring-offset-background ck:focus-visible:outline-hidden ck:focus-visible:ring-2 ck:focus-visible:ring-ring ck:focus-visible:ring-offset-2 ck:disabled:pointer-events-none ck:disabled:opacity-50"
 
 const Button = ({ className, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
   <button className={cx(BUTTON, className)} {...props} />

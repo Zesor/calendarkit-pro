@@ -77,7 +77,7 @@ export const EventContextMenu: React.FC<EventContextMenuProps> = ({
     ...(onEdit ? [{
       id: 'edit',
       label: translations?.edit || 'Edit',
-      icon: <Edit3 className="w-4 h-4" />,
+      icon: <Edit3 className="ck:w-4 ck:h-4" />,
       onClick: () => {
         onEdit(event);
         onClose();
@@ -86,7 +86,7 @@ export const EventContextMenu: React.FC<EventContextMenuProps> = ({
     ...(onDuplicate ? [{
       id: 'duplicate',
       label: translations?.duplicate || 'Duplicate',
-      icon: <Copy className="w-4 h-4" />,
+      icon: <Copy className="ck:w-4 ck:h-4" />,
       onClick: () => {
         onDuplicate(event);
         onClose();
@@ -96,7 +96,7 @@ export const EventContextMenu: React.FC<EventContextMenuProps> = ({
     ...(onDelete ? [{
       id: 'delete',
       label: translations?.delete || 'Delete',
-      icon: <Trash2 className="w-4 h-4" />,
+      icon: <Trash2 className="ck:w-4 ck:h-4" />,
       onClick: () => {
         onDelete(event.id);
         onClose();
@@ -119,41 +119,41 @@ export const EventContextMenu: React.FC<EventContextMenuProps> = ({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: -5 }}
         transition={{ duration: 0.15, ease: 'easeOut' }}
-        className="fixed z-[100] min-w-[180px] bg-background border-[0.5px] border-border rounded-xl shadow-xl overflow-hidden"
+        className="ck:fixed ck:z-[100] ck:min-w-[180px] ck:bg-background ck:border-[0.5px] ck:border-border ck:rounded-xl ck:shadow-xl ck:overflow-hidden"
         style={{
           left: adjustedPosition.x,
           top: adjustedPosition.y,
         }}
       >
         {/* Event preview header */}
-        <div className="px-3 py-2 border-b-[0.5px] border-border bg-muted/30">
-          <div className="flex items-center gap-2">
+        <div className="ck:px-3 ck:py-2 ck:border-b-[0.5px] ck:border-border ck:bg-muted/30">
+          <div className="ck:flex ck:items-center ck:gap-2">
             <div
-              className="w-2.5 h-2.5 rounded-full shrink-0"
-              style={{ backgroundColor: event.color || 'var(--primary)' }}
+              className="ck:w-2.5 ck:h-2.5 ck:rounded-full ck:shrink-0"
+              style={{ backgroundColor: event.color || 'var(--ck-primary)' }}
             />
-            <span className="text-sm font-medium truncate text-foreground">
+            <span className="ck:text-sm ck:font-medium ck:truncate ck:text-foreground">
               {event.title}
             </span>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="py-1">
+        <div className="ck:py-1">
           {actions.map((action, index) => (
             <React.Fragment key={action.id}>
               {index > 0 && action.variant === 'danger' && (
-                <div className="h-px bg-border my-1" />
+                <div className="ck:h-px ck:bg-border ck:my-1" />
               )}
               <button
                 onClick={action.onClick}
                 disabled={action.disabled}
                 className={cx(
-                  "w-full flex items-center gap-3 px-3 py-2 text-sm transition-colors",
-                  action.disabled && "opacity-50 cursor-not-allowed",
+                  "ck:w-full ck:flex ck:items-center ck:gap-3 ck:px-3 ck:py-2 ck:text-sm ck:transition-colors",
+                  action.disabled && "ck:opacity-50 ck:cursor-not-allowed",
                   action.variant === 'danger'
-                    ? "text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-                    : "text-foreground hover:bg-accent"
+                    ? "ck:text-red-600 ck:hover:bg-red-50 ck:dark:text-red-400 ck:dark:hover:bg-red-900/20"
+                    : "ck:text-foreground ck:hover:bg-accent"
                 )}
               >
                 {action.icon}

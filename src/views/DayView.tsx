@@ -85,15 +85,15 @@ const DayViewImpl: React.FC<DayViewProps> = ({
   const formats = timeFormats(locale);
 
   return (
-    <div className="flex flex-col h-full bg-background border-[0.5px] border-border/50 rounded-2xl overflow-hidden shadow-sm">
+    <div className="ck:flex ck:flex-col ck:h-full ck:bg-background ck:border-[0.5px] ck:border-border/50 ck:rounded-2xl ck:overflow-hidden ck:shadow-xs">
         {/* Header */}
-        <div className="px-6 py-4 border-b-[0.5px] border-border/50 bg-gradient-to-r from-muted/20 via-background to-muted/20 text-center shrink-0">
-            <div className="flex items-center justify-center gap-3">
-                <h2 className="text-xl font-semibold capitalize text-foreground">
+        <div className="ck:px-6 ck:py-4 ck:border-b-[0.5px] ck:border-border/50 ck:bg-linear-to-r ck:from-muted/20 ck:via-background ck:to-muted/20 ck:text-center ck:shrink-0">
+            <div className="ck:flex ck:items-center ck:justify-center ck:gap-3">
+                <h2 className="ck:text-xl ck:font-semibold ck:capitalize ck:text-foreground">
                     {format(currentDate, 'EEEE, MMMM d, yyyy', { locale })}
                 </h2>
                 {isToday && (
-                    <span className="text-xs font-semibold bg-primary text-primary-foreground px-3 py-1 rounded-full shadow-md shadow-primary/20">
+                    <span className="ck:text-xs ck:font-semibold ck:bg-primary ck:text-primary-foreground ck:px-3 ck:py-1 ck:rounded-full ck:shadow-md ck:shadow-primary/20">
                         {translations?.today || 'Today'}
                     </span>
                 )}
@@ -107,7 +107,7 @@ const DayViewImpl: React.FC<DayViewProps> = ({
           locale={locale}
           translations={translations}
           readonly={readonly}
-          gutterClassName="w-20"
+          gutterClassName="ck:w-20"
           onEventClick={onEventClick}
           onEventContextMenu={onEventContextMenu}
           onDayEventResize={onDayEventResize}
@@ -115,18 +115,18 @@ const DayViewImpl: React.FC<DayViewProps> = ({
         />
 
         {/* Grid */}
-        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto relative">
-            <div className="flex relative" style={{ height: HOURS.length * HOUR_HEIGHT }}>
+        <div ref={scrollContainerRef} className="ck:flex-1 ck:overflow-y-auto ck:relative">
+            <div className="ck:flex ck:relative" style={{ height: HOURS.length * HOUR_HEIGHT }}>
                 {/* Time Labels */}
-                <div className="w-20 bg-muted/5 border-r-[0.5px] border-border/30 relative">
+                <div className="ck:w-20 ck:bg-muted/5 ck:border-r-[0.5px] ck:border-border/30 ck:relative">
                      {HOURS.map((hour) => (
                         <div
                             key={hour}
-                            className="relative w-full"
+                            className="ck:relative ck:w-full"
                             style={{ height: HOUR_HEIGHT }}
                         >
                             {hour !== 0 && (
-                                <span className="absolute w-full text-center -top-3 left-1/2 -translate-x-1/2 text-[11px] text-muted-foreground/80 font-medium tabular-nums bg-background px-1.5 py-0.5 rounded-md">
+                                <span className="ck:absolute ck:w-full ck:text-center ck:-top-3 ck:left-1/2 ck:-translate-x-1/2 ck:text-[11px] ck:text-muted-foreground/80 ck:font-medium ck:tabular-nums ck:bg-background ck:px-1.5 ck:py-0.5 ck:rounded-md">
                                     {format(slotDate(currentDate, hour, 0), formats.hour, { locale })}
                                 </span>
                             )}
@@ -136,10 +136,10 @@ const DayViewImpl: React.FC<DayViewProps> = ({
                      {/* Left Side Current Time Indicator (Overlay) */}
                      {isToday && (
                          <div
-                             className="absolute left-0 w-full pointer-events-none z-30 flex justify-end pr-2"
+                             className="ck:absolute ck:left-0 ck:w-full ck:pointer-events-none ck:z-30 ck:flex ck:justify-end ck:pr-2"
                              style={{ top: `${nowTop}px` }}
                          >
-                             <span className="text-[10px] font-bold text-white bg-primary px-2 py-1 rounded-lg shadow-md shadow-primary/30 -translate-y-1/2">
+                             <span className="ck:text-[10px] ck:font-bold ck:text-white ck:bg-primary ck:px-2 ck:py-1 ck:rounded-lg ck:shadow-md ck:shadow-primary/30 ck:-translate-y-1/2">
                                  {format(zonedNow, formats.time, { locale })}
                              </span>
                          </div>
@@ -147,11 +147,11 @@ const DayViewImpl: React.FC<DayViewProps> = ({
                 </div>
 
                 {/* Day Column */}
-                <div className="flex-1 relative">
+                <div className="ck:flex-1 ck:relative">
                      {HOURS.map((hour) => (
                         <div
                             key={hour}
-                            className="border-b-[0.5px] border-dashed border-border/20 box-border relative hover:bg-accent/5 transition-colors"
+                            className="ck:border-b-[0.5px] ck:border-dashed ck:border-border/20 ck:box-border ck:relative ck:hover:bg-accent/5 ck:transition-colors"
                             style={{ height: HOUR_HEIGHT }}
                         >
                             {/* 4 x 15-minute intervals */}
@@ -162,7 +162,7 @@ const DayViewImpl: React.FC<DayViewProps> = ({
                                         key={minute}
                                         id={cellDate.toISOString()}
                                         date={cellDate}
-                                        className="w-full absolute left-0 right-0 z-0 transition-colors"
+                                        className="ck:w-full ck:absolute ck:left-0 ck:right-0 ck:z-0 ck:transition-colors"
                                         style={{
                                             height: '25%',
                                             top: `${(minute / 60) * 100}%`
@@ -196,7 +196,7 @@ const DayViewImpl: React.FC<DayViewProps> = ({
                             dragId={`${event.id}@${dayKey}`}
                             grabOffsetMs={start.getTime() - zonedStart.getTime()}
                             event={event}
-                            className={`absolute z-10 transition-all ${readonly ? "cursor-default" : ""}`}
+                            className={`ck:absolute ck:z-10 ck:transition-all ${readonly ? "ck:cursor-default" : ""}`}
                             style={{
                                 top: `${top}px`,
                                 height: `${Math.max(height, 28)}px`,
@@ -210,22 +210,22 @@ const DayViewImpl: React.FC<DayViewProps> = ({
                                 event={event}
                                 hourHeight={HOUR_HEIGHT}
                                 onResize={onEventResize}
-                                className="h-full"
+                                className="ck:h-full"
                                 style={{ height: '100%' }}
                             >
                                 <div
                                     className={cx(
-                                        "h-full rounded-lg border-[0.5px] shadow-sm overflow-hidden transition-all hover:shadow-lg hover:z-20 group",
-                                        "glass backdrop-blur-sm",
-                                        readonly || isEventDragDisabled(event) ? "cursor-default" : "cursor-grab active:cursor-grabbing",
-                                        !event.color && "bg-primary/10 border-primary/20",
-                                        isShortEvent ? "px-2 flex items-center" : "px-3 py-2",
-                                        columns > 1 && "border-l-4"
+                                        "ck:h-full ck:rounded-lg ck:border-[0.5px] ck:shadow-xs ck:overflow-hidden ck:transition-all ck:hover:shadow-lg ck:hover:z-20 ck:group",
+                                        "ck:backdrop-blur-xs",
+                                        readonly || isEventDragDisabled(event) ? "ck:cursor-default" : "ck:cursor-grab ck:active:cursor-grabbing",
+                                        !event.color && "ck:bg-primary/10 ck:border-primary/20",
+                                        isShortEvent ? "ck:px-2 ck:flex ck:items-center" : "ck:px-3 ck:py-2",
+                                        columns > 1 && "ck:border-l-4"
                                     )}
                                     style={{
                                         backgroundColor: event.color ? `${event.color}15` : undefined,
                                         borderColor: event.color ? `${event.color}30` : undefined,
-                                        borderLeftColor: event.color || 'var(--primary)',
+                                        borderLeftColor: event.color || 'var(--ck-primary)',
                                         borderLeftWidth: columns > 1 ? '4px' : '3px'
                                     }}
                                     onClick={(e) => {
@@ -235,21 +235,21 @@ const DayViewImpl: React.FC<DayViewProps> = ({
                                     onContextMenu={onEventContextMenu ? (e) => onEventContextMenu(event, e) : undefined}
                                     title={columns > 1 ? `${event.title} (${column + 1}/${columns})` : undefined}
                                 >
-                                    <div className="flex flex-col h-full overflow-hidden w-full">
+                                    <div className="ck:flex ck:flex-col ck:h-full ck:overflow-hidden ck:w-full">
                                         <div className={cx(
-                                            "font-semibold truncate",
-                                            isShortEvent ? "text-xs" : "text-sm",
-                                            event.color ? "text-foreground" : "text-foreground/90"
+                                            "ck:font-semibold ck:truncate",
+                                            isShortEvent ? "ck:text-xs" : "ck:text-sm",
+                                            event.color ? "ck:text-foreground" : "ck:text-foreground/90"
                                         )}>
                                             {event.title}
                                         </div>
                                         {!isShortEvent && (
                                             <>
-                                                <div className="text-xs text-muted-foreground mt-0.5 font-medium">
+                                                <div className="ck:text-xs ck:text-muted-foreground ck:mt-0.5 ck:font-medium">
                                                     {format(zonedStart, formats.time, { locale })} - {format(zonedEnd, formats.time, { locale })}
                                                 </div>
                                                 {event.description && height > 60 && (
-                                                    <div className="text-xs text-muted-foreground/80 mt-1 line-clamp-2">
+                                                    <div className="ck:text-xs ck:text-muted-foreground/80 ck:mt-1 ck:line-clamp-2">
                                                         {event.description}
                                                     </div>
                                                 )}
@@ -257,7 +257,7 @@ const DayViewImpl: React.FC<DayViewProps> = ({
                                         )}
                                         {/* Overlap Badge */}
                                         {columns > 1 && !isShortEvent && (
-                                            <div className="absolute top-1.5 right-1.5 bg-background/90 backdrop-blur-sm rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold text-muted-foreground border border-border shadow-sm">
+                                            <div className="ck:absolute ck:top-1.5 ck:right-1.5 ck:bg-background/90 ck:backdrop-blur-xs ck:rounded-full ck:w-5 ck:h-5 ck:flex ck:items-center ck:justify-center ck:text-[10px] ck:font-bold ck:text-muted-foreground ck:border ck:border-border ck:shadow-xs">
                                                 {columns}
                                             </div>
                                         )}
@@ -271,13 +271,13 @@ const DayViewImpl: React.FC<DayViewProps> = ({
                      {/* Current Time Indicator */}
                      {isToday && (
                        <div
-                         className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
+                         className="ck:absolute ck:left-0 ck:right-0 ck:z-20 ck:pointer-events-none ck:flex ck:items-center"
                          style={{ top: `${nowTop}px` }}
                        >
                          {/* Line */}
-                         <div className="h-[2px] w-full bg-gradient-to-r from-primary via-primary to-primary/50" />
+                         <div className="ck:h-[2px] ck:w-full ck:bg-linear-to-r ck:from-primary ck:via-primary ck:to-primary/50" />
                          {/* Dot */}
-                         <div className="absolute -left-1.5 w-3 h-3 bg-primary rounded-full shadow-lg shadow-primary/40 ring-2 ring-background animate-pulse" />
+                         <div className="ck:absolute ck:-left-1.5 ck:w-3 ck:h-3 ck:bg-primary ck:rounded-full ck:shadow-lg ck:shadow-primary/40 ck:ring-2 ck:ring-background ck:animate-pulse" />
                        </div>
                      )}
                 </div>

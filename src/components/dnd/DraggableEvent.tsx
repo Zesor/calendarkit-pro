@@ -36,7 +36,7 @@ const DraggableEventImpl: React.FC<DraggableEventProps> = ({ event, dragId, grab
       {...listeners}
       {...attributes}
       {...props}
-      className={cx(!dragDisabled && "touch-none", className)}
+      className={cx(!dragDisabled && "ck:touch-none", className)}
     >
       {children}
     </div>

@@ -125,6 +125,11 @@ export interface CalendarProps {
   eventTypes?: EventType[]; // Pre-defined types
   onCalendarToggle?: (calendarId: string, active: boolean) => void;
   isLoading?: boolean;
+  /**
+   * Adds the compiled stylesheet to the page (once, however many calendars). Pass `false` and
+   * `import 'calendarkit-pro/styles.css'` instead for a strict Content-Security-Policy or a cached file.
+   */
+  injectStyles?: boolean;
   isDarkMode?: boolean;
   onThemeToggle?: () => void;
   hideViewSwitcher?: boolean;

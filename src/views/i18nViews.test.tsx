@@ -57,7 +57,7 @@ describe('Scheduler wiring', () => {
     expect(screen.getByText('Duplicate')).toBeTruthy()
   })
 
-  const mobileCreateButton = (container: HTMLElement) => container.querySelector('.md\\:hidden button')
+  const mobileCreateButton = (container: HTMLElement) => container.querySelector('.ck\\:md\\:hidden button')
 
   test('the mobile create button has an accessible name (A1)', () => {
     const { container } = render(<Scheduler events={[]} view="agenda" date={day} />)

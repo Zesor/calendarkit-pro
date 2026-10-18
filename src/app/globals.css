@@ -1,226 +1,61 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-:root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --primary: 221.2 83.2% 53.3%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96.1%;
-  --secondary-foreground: 222.2 47.4% 11.2%;
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 210 40% 96.1%;
-  --accent-foreground: 222.2 47.4% 11.2%;
-  --border: 214.3 31.8% 91.4%;
-  --ring: 221.2 83.2% 53.3%;
-  --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
-  --success: 142 76% 36%;
-  --success-foreground: 0 0% 100%;
-  --warning: 38 92% 50%;
-  --warning-foreground: 0 0% 100%;
-}
-
-.dark {
-  --background: 224 71% 4%;
-  --foreground: 213 31% 91%;
-  --primary: 217.2 91.2% 59.8%;
-  --primary-foreground: 222.2 47.4% 11.2%;
-  --secondary: 222 47% 11%;
-  --secondary-foreground: 210 40% 98%;
-  --muted: 223 47% 11%;
-  --muted-foreground: 218 11% 65%;
-  --accent: 216 34% 17%;
-  --accent-foreground: 210 40% 98%;
-  --border: 216 34% 17%;
-  --ring: 224.3 76.3% 48%;
-  --card: 224 71% 6%;
-  --card-foreground: 213 31% 91%;
-  --popover: 224 71% 6%;
-  --popover-foreground: 213 31% 91%;
-  --destructive: 0 63% 31%;
-  --destructive-foreground: 210 40% 98%;
-  --success: 142 69% 31%;
-  --success-foreground: 0 0% 100%;
-  --warning: 32 95% 44%;
-  --warning-foreground: 0 0% 100%;
-}
-
+/* Demo page only. The Scheduler brings its own stylesheet: no Tailwind, no CSS variables to define. */
 * {
   box-sizing: border-box;
+}
+
+body {
   margin: 0;
-  padding: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: #f7f7f8;
+  color: #17171a;
 }
 
-html {
-  scroll-behavior: smooth;
+.demo {
+  min-height: 100vh;
+  padding: 16px;
 }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
-  transition: background-color 0.3s ease, color 0.3s ease;
+.demo.dark {
+  background: #0c0c0e;
+  color: #f2f2f4;
 }
 
-/* Smooth theme transitions */
-.dark body,
-body {
-  transition: background-color 0.3s ease, color 0.3s ease;
+.demo-inner {
+  max-width: 80rem;
+  margin: 0 auto;
 }
 
-/* Custom scrollbar for dark mode */
-.dark ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+.demo-header {
+  margin-bottom: 32px;
 }
 
-.dark ::-webkit-scrollbar-track {
-  background: hsl(var(--muted));
-  border-radius: 4px;
+.demo-header h1 {
+  margin: 0 0 8px;
+  font-size: 1.875rem;
 }
 
-.dark ::-webkit-scrollbar-thumb {
-  background: hsl(var(--border));
-  border-radius: 4px;
+.demo-header p {
+  margin: 0;
+  color: #52525b;
 }
 
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.5);
+.demo.dark .demo-header p {
+  color: #b4b4bd;
 }
 
-/* Light mode scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+.demo-frame {
+  height: 800px;
+  border: 1px solid #e2e2e6;
+  border-radius: 10px;
+  overflow: hidden;
 }
 
-::-webkit-scrollbar-track {
-  background: hsl(var(--muted) / 0.5);
-  border-radius: 4px;
+.demo.dark .demo-frame {
+  border-color: #2a2a30;
 }
 
-::-webkit-scrollbar-thumb {
-  background: hsl(var(--border));
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.3);
-}
-
-/* Glass effect utility */
-@layer utilities {
-  .glass {
-    @apply backdrop-blur-sm bg-background/80;
+@media (min-width: 768px) {
+  .demo {
+    padding: 32px;
   }
-
-  .dark .glass {
-    @apply backdrop-blur-md bg-background/70;
-  }
-
-  /* Better focus states for dark mode */
-  .dark .focus-ring:focus-visible {
-    @apply ring-2 ring-primary/50 ring-offset-2 ring-offset-background;
-  }
-
-  /* Improved event cards in dark mode */
-  .dark .event-card {
-    @apply border-border/30 hover:border-primary/40;
-    box-shadow: 0 4px 6px -1px hsl(var(--background) / 0.3);
-  }
-
-  .dark .event-card:hover {
-    box-shadow: 0 10px 15px -3px hsl(var(--primary) / 0.1),
-                0 4px 6px -2px hsl(var(--background) / 0.3);
-  }
-}
-
-/* Better selection colors in dark mode */
-.dark ::selection {
-  background-color: hsl(var(--primary) / 0.3);
-  color: hsl(var(--foreground));
-}
-
-::selection {
-  background-color: hsl(var(--primary) / 0.2);
-  color: hsl(var(--foreground));
-}
-
-/* Improved input focus for dark mode */
-.dark input:focus,
-.dark textarea:focus,
-.dark select:focus {
-  border-color: hsl(var(--primary) / 0.5);
-  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.15);
-}
-
-/* Subtle gradient overlay for depth in dark mode */
-.dark .gradient-overlay {
-  background: linear-gradient(
-    180deg,
-    hsl(var(--background)) 0%,
-    hsl(var(--background) / 0.95) 50%,
-    hsl(var(--muted) / 0.1) 100%
-  );
-}
-
-/* Better shadows for dark mode */
-.dark .shadow-soft {
-  box-shadow: 0 4px 6px -1px hsl(0 0% 0% / 0.3),
-              0 2px 4px -1px hsl(0 0% 0% / 0.2);
-}
-
-.dark .shadow-elevated {
-  box-shadow: 0 10px 25px -5px hsl(0 0% 0% / 0.4),
-              0 8px 10px -6px hsl(0 0% 0% / 0.3);
-}
-
-/* Calendar grid lines for dark mode */
-.dark .calendar-grid-line {
-  border-color: hsl(var(--border) / 0.3);
-}
-
-/* Event color adjustments for dark mode */
-.dark [data-event-color] {
-  filter: brightness(1.1) saturate(0.9);
-}
-
-/* Smooth backdrop for modals in dark mode */
-.dark [data-modal-backdrop] {
-  background-color: hsl(0 0% 0% / 0.7);
-  backdrop-filter: blur(4px);
-}
-
-/* Time indicator glow in dark mode */
-.dark .time-indicator {
-  box-shadow: 0 0 20px 4px hsl(var(--primary) / 0.3);
-}
-
-/* Better text rendering in dark mode */
-.dark {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* Pulse animation for current time indicator */
-@keyframes time-pulse {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.7;
-    transform: scale(1.1);
-  }
-}
-
-.time-indicator-dot {
-  animation: time-pulse 2s ease-in-out infinite;
 }

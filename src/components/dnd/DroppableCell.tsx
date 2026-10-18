@@ -17,17 +17,17 @@ interface DroppableCellProps {
 }
 
 const QUARTER_HOVER = [
-  "hover:bg-blue-50/50 dark:hover:bg-blue-900/10",
-  "hover:bg-blue-50/80 dark:hover:bg-blue-900/20",
-  "hover:bg-blue-100/50 dark:hover:bg-blue-900/30",
-  "hover:bg-blue-100/80 dark:hover:bg-blue-900/40",
+  "ck:hover:bg-blue-50/50 ck:dark:hover:bg-blue-900/10",
+  "ck:hover:bg-blue-50/80 ck:dark:hover:bg-blue-900/20",
+  "ck:hover:bg-blue-100/50 ck:dark:hover:bg-blue-900/30",
+  "ck:hover:bg-blue-100/80 ck:dark:hover:bg-blue-900/40",
 ];
 
 const QUARTER_ACTIVE = [
-  "bg-blue-50/50 dark:bg-blue-900/10 ring-2 ring-primary ring-inset",
-  "bg-blue-50/80 dark:bg-blue-900/20 ring-2 ring-primary ring-inset",
-  "bg-blue-100/50 dark:bg-blue-900/30 ring-2 ring-primary ring-inset",
-  "bg-blue-100/80 dark:bg-blue-900/40 ring-2 ring-primary ring-inset",
+  "ck:bg-blue-50/50 ck:dark:bg-blue-900/10 ck:ring-2 ck:ring-primary ck:ring-inset",
+  "ck:bg-blue-50/80 ck:dark:bg-blue-900/20 ck:ring-2 ck:ring-primary ck:ring-inset",
+  "ck:bg-blue-100/50 ck:dark:bg-blue-900/30 ck:ring-2 ck:ring-primary ck:ring-inset",
+  "ck:bg-blue-100/80 ck:dark:bg-blue-900/40 ck:ring-2 ck:ring-primary ck:ring-inset",
 ];
 
 const quarterOf = (date: Date) => Math.min(3, Math.floor(date.getMinutes() / 15));
@@ -47,7 +47,7 @@ const DroppableCellImpl: React.FC<DroppableCellProps> = ({ id, date, resourceId,
         className,
         QUARTER_HOVER[quarter],
         isOver && QUARTER_ACTIVE[quarter],
-        onSlotClick && "cursor-pointer"
+        onSlotClick && "ck:cursor-pointer"
       )}
       style={style}
       onClick={onSlotClick ? () => onSlotClick(date, resourceId) : onClick}

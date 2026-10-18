@@ -24,6 +24,7 @@ import { useStableCallback } from './hooks/useStableCallback';
 import { format, startOfWeek } from 'date-fns';
 import { useViewSwipe } from './hooks/useSwipeGesture';
 import { dragOverlaySize } from './components/dnd/dragOverlay';
+import { CalendarStyles, useMissingStylesWarning } from './styles/CalendarStyles';
 
 // Re-export types for consumers
 export type {
@@ -72,7 +73,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
   hideViewSwitcher,
   language,
   onLanguageChange,
-  locale // Date-fns locale
+  locale, // Date-fns locale
+  injectStyles = true,
 }) => {
   const [activeDragEvent, setActiveDragEvent] = useState<CalendarEvent | null>(null);
   const [activeDayDrag, setActiveDayDrag] = useState(false);
@@ -115,6 +117,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
   // parent (a refetch) do not reset what the user is typing, and the last event stays available
   // after the form closes (exit animations, a save that comes after onClose).
   const lastOpened = useRef<{ id?: string; event: CalendarEvent | null }>({ event: null });
+  const rootRef = useRef<HTMLDivElement>(null);
+  useMissingStylesWarning(rootRef, injectStyles);
   if (dialog && dialog.kind !== 'more') {
     if (editingId === undefined) lastOpened.current = { event: null };
     else if (lastOpened.current.id !== editingId) lastOpened.current = { id: editingId, event: expandedEvents.find((e) => e.id === editingId) ?? null };
@@ -218,9 +222,11 @@ export const Scheduler: React.FC<CalendarProps> = ({
         modifiers={modifiers}
     >
       <div
-        className={cx("flex flex-col h-full bg-background text-foreground relative", className)}
+        ref={rootRef}
+        className={cx("ck-root ck:flex ck:flex-col ck:h-full ck:bg-background ck:text-foreground ck:relative", className)}
         style={getThemeStyles(theme)}
       >
+        {injectStyles && <CalendarStyles />}
         <CalendarHeader
           currentDate={currentDate}
           onPrev={handlePrev}
@@ -238,10 +244,10 @@ export const Scheduler: React.FC<CalendarProps> = ({
           locale={locale} // Pass locale
         />
         
-        <div className="flex flex-1 overflow-hidden">
+        <div className="ck:flex ck:flex-1 ck:overflow-hidden">
             <motion.div
                 className={cx(
-                  "hidden md:block overflow-hidden",
+                  "ck:hidden ck:md:block ck:overflow-hidden",
                 )}
                 initial={false}
                 animate={{
@@ -260,7 +266,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                     onEventCreate={handleCreateEvent}
                     timezone={timezone}
                     onTimezoneChange={onTimezoneChange}
-                    className="w-full"
+                    className="ck:w-full"
                     readOnly={readOnly}
                     calendars={calendars}
                     onCalendarToggle={onCalendarToggle}
@@ -269,10 +275,10 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 />
             </motion.div>
 
-            <div className="flex-1 flex flex-col overflow-hidden relative">
+            <div className="ck:flex-1 ck:flex ck:flex-col ck:overflow-hidden ck:relative">
                 {isLoading ? (
-                    <div className="flex-1 overflow-auto p-0 md:p-4">
-                      <div className="h-full min-w-full">
+                    <div className="ck:flex-1 ck:overflow-auto ck:p-0 ck:md:p-4">
+                      <div className="ck:h-full ck:min-w-full">
                         {view === 'month' && <MonthViewSkeleton />}
                         {view === 'week' && <WeekViewSkeleton />}
                         {view === 'day' && <DayViewSkeleton />}
@@ -281,8 +287,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
                       </div>
                     </div>
                 ) : (
-                <div ref={swipeRef} className="flex-1 overflow-auto p-0 md:p-4 touch-pan-y">
-                  <div className="h-full min-w-full">
+                <div ref={swipeRef} className="ck:flex-1 ck:overflow-auto ck:p-0 ck:md:p-4 ck:touch-pan-y">
+                  <div className="ck:h-full ck:min-w-full">
                     <AnimatePresence mode="wait" initial={false}>
                         <motion.div
                             key={`${view}-${periodKey}-${timezone || 'local'}`}
@@ -305,7 +311,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                 ease: [0.25, 0.1, 0.25, 1],
                               }
                             }}
-                            className="h-full"
+                            className="ck:h-full"
                         >
                             {view === 'month' && (
                                 <MonthView
@@ -386,11 +392,11 @@ export const Scheduler: React.FC<CalendarProps> = ({
 
                 {/* Mobile Create Button (FAB), hidden in read-only mode (U3) */}
                 {!readOnly && (
-                <div className="md:hidden absolute bottom-6 right-6 z-50">
+                <div className="ck:md:hidden ck:absolute ck:bottom-6 ck:right-6 ck:z-50">
                     <button
                         onClick={handleCreateEvent}
                         aria-label={t.createEvent}
-                        className="w-14 h-14 bg-blue-600 rounded-full shadow-lg flex items-center justify-center text-white active:scale-90 transition-transform"
+                        className="ck:w-14 ck:h-14 ck:bg-blue-600 ck:rounded-full ck:shadow-lg ck:flex ck:items-center ck:justify-center ck:text-white ck:active:scale-90 ck:transition-transform"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
                     </button>
@@ -453,9 +459,9 @@ export const Scheduler: React.FC<CalendarProps> = ({
             {activeDragEvent ? (
                 <div
                     className={cx(
-                      "rounded-lg shadow-2xl border-2 overflow-hidden cursor-grabbing transition-transform",
-                      "backdrop-blur-sm",
-                      !activeDragEvent.color && "bg-primary/90 border-primary/60 text-primary-foreground",
+                      "ck:rounded-lg ck:shadow-2xl ck:border-2 ck:overflow-hidden ck:cursor-grabbing ck:transition-transform",
+                      "ck:backdrop-blur-xs",
+                      !activeDragEvent.color && "ck:bg-primary/90 ck:border-primary/60 ck:text-primary-foreground",
                     )}
                     style={{
                         backgroundColor: activeDragEvent.color ? `${activeDragEvent.color}e0` : undefined,
@@ -463,23 +469,23 @@ export const Scheduler: React.FC<CalendarProps> = ({
                         color: activeDragEvent.color ? '#fff' : undefined,
                         width: dragSize.width,
                         height: dragSize.height ? `${dragSize.height}px` : undefined,
-                        boxShadow: `0 20px 40px -15px ${activeDragEvent.color || 'var(--primary)'}40, 0 10px 20px -10px rgba(0,0,0,0.2)`,
+                        boxShadow: `0 20px 40px -15px ${activeDragEvent.color || 'var(--ck-primary)'}40, 0 10px 20px -10px rgba(0,0,0,0.2)`,
                         transform: 'rotate(-2deg) scale(1.02)',
                     }}
                 >
-                    <div className="p-2.5 h-full flex flex-col">
+                    <div className="ck:p-2.5 ck:h-full ck:flex ck:flex-col">
                         {/* Event color accent bar */}
                         <div
-                          className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg"
-                          style={{ backgroundColor: activeDragEvent.color || 'var(--primary)' }}
+                          className="ck:absolute ck:left-0 ck:top-0 ck:bottom-0 ck:w-1 ck:rounded-l-lg"
+                          style={{ backgroundColor: activeDragEvent.color || 'var(--ck-primary)' }}
                         />
 
                         {/* Content */}
-                        <div className="pl-2">
-                          <div className="font-semibold truncate text-sm">{activeDragEvent.title}</div>
+                        <div className="ck:pl-2">
+                          <div className="ck:font-semibold ck:truncate ck:text-sm">{activeDragEvent.title}</div>
                           {(view === 'week' || view === 'day') && dragSize.height !== undefined && dragSize.height > 40 && (
-                            <div className="text-xs opacity-80 mt-0.5 flex items-center gap-1">
-                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <div className="ck:text-xs ck:opacity-80 ck:mt-0.5 ck:flex ck:items-center ck:gap-1">
+                              <svg className="ck:w-3 ck:h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <circle cx="12" cy="12" r="10"/>
                                 <path d="M12 6v6l4 2"/>
                               </svg>
@@ -489,8 +495,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
                         </div>
 
                         {/* Drag indicator */}
-                        <div className="absolute bottom-1.5 right-1.5 opacity-60">
-                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                        <div className="ck:absolute ck:bottom-1.5 ck:right-1.5 ck:opacity-60">
+                          <svg className="ck:w-4 ck:h-4" viewBox="0 0 24 24" fill="currentColor">
                             <circle cx="9" cy="5" r="1.5"/>
                             <circle cx="15" cy="5" r="1.5"/>
                             <circle cx="9" cy="12" r="1.5"/>

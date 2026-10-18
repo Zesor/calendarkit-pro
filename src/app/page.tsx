@@ -186,16 +186,16 @@ export default function Home() {
   };
 
   return (
-    <main className={`min-h-screen p-4 md:p-8 ${isDarkMode ? "dark" : ""}`}>
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">ProScheduler</h1>
-          <p className="text-muted-foreground">
+    <main className={`demo${isDarkMode ? " dark" : ""}`}>
+      <div className="demo-inner">
+        <div className="demo-header">
+          <h1>ProScheduler</h1>
+          <p>
             Professional React calendar with drag-drop, timezone support, i18n, resources, and recurring events.
           </p>
         </div>
 
-        <div className="h-[800px] border rounded-lg overflow-hidden">
+        <div className="demo-frame">
           <Scheduler
             events={filteredEvents}
             view={view}

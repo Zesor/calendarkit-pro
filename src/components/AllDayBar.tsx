@@ -88,7 +88,7 @@ const AllDayBarImpl: React.FC<AllDayBarProps> = ({
     document.addEventListener('pointercancel', stop);
   };
 
-  const color = event.color || 'hsl(var(--primary))';
+  const color = event.color || 'var(--ck-primary)';
   const dateFormat = 'd MMM';
   const label = `${event.title}, ${format(firstDay, dateFormat, { locale })}${lastDay > firstDay ? ` – ${format(lastDay, dateFormat, { locale })}` : ''}`;
 
@@ -101,8 +101,8 @@ const AllDayBarImpl: React.FC<AllDayBarProps> = ({
       role="button"
       aria-label={label}
       className={cx(
-        "group absolute px-[2px] select-none",
-        dragDisabled ? "cursor-pointer" : "cursor-grab active:cursor-grabbing touch-none"
+        "ck:group ck:absolute ck:px-[2px] ck:select-none",
+        dragDisabled ? "ck:cursor-pointer" : "ck:cursor-grab ck:active:cursor-grabbing ck:touch-none"
       )}
       style={{
         left: `${(startCol / columns) * 100}%`,
@@ -125,19 +125,19 @@ const AllDayBarImpl: React.FC<AllDayBarProps> = ({
     >
       <div
         className={cx(
-          "relative h-[calc(100%-4px)] mt-[2px] flex items-center gap-1 px-1.5 text-[11px] font-semibold text-white overflow-hidden shadow-sm",
-          continuesBefore ? "rounded-l-none" : "rounded-l-md",
-          continuesAfter ? "rounded-r-none" : "rounded-r-md"
+          "ck:relative ck:h-[calc(100%-4px)] ck:mt-[2px] ck:flex ck:items-center ck:gap-1 ck:px-1.5 ck:text-[11px] ck:font-semibold ck:text-white ck:overflow-hidden ck:shadow-xs",
+          continuesBefore ? "ck:rounded-l-none" : "ck:rounded-l-md",
+          continuesAfter ? "ck:rounded-r-none" : "ck:rounded-r-md"
         )}
         style={{ backgroundColor: color }}
       >
         {continuesBefore && <span aria-label={translations?.continuesBefore}>‹</span>}
-        <span className="truncate">{event.title}</span>
-        {continuesAfter && <span className="ml-auto" aria-label={translations?.continuesAfter}>›</span>}
+        <span className="ck:truncate">{event.title}</span>
+        {continuesAfter && <span className="ck:ml-auto" aria-label={translations?.continuesAfter}>›</span>}
         {canResize && (
           <div
             data-testid="all-day-resize"
-            className="absolute right-0 top-0 bottom-0 w-1.5 cursor-ew-resize opacity-0 group-hover:opacity-100 bg-black/20"
+            className="ck:absolute ck:right-0 ck:top-0 ck:bottom-0 ck:w-1.5 ck:cursor-ew-resize ck:opacity-0 ck:group-hover:opacity-100 ck:bg-black/20"
             onPointerDown={handleResizeStart}
           />
         )}

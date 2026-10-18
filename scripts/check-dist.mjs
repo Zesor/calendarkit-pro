@@ -36,6 +36,19 @@ for (const file of ['dist/react.js', 'dist/react.mjs', 'dist/react.d.ts', 'dist/
     if (/function createCalendar\(/.test(code)) errors.push(`${file} must not bundle a copy of the engine`)
   }
 }
+// calendarkit-pro/styles.css: the stylesheet the Scheduler injects, also importable as a file.
+let css = ''
+try {
+  css = readFileSync('dist/styles.css', 'utf8')
+} catch {
+  errors.push('dist/styles.css is missing (calendarkit-pro/styles.css)')
+}
+if (css && !css.includes('--ck-styles:1')) errors.push('dist/styles.css must define the theme tokens')
+// A host's unlayered reset (Tailwind v3 preflight, normalize.css) beats any cascade layer.
+if (/@layer (theme|base|components|utilities)\b/.test(css)) errors.push('dist/styles.css must not use cascade layers')
+for (const file of ['dist/index.js', 'dist/index.mjs']) {
+  if (!readFileSync(file, 'utf8').includes('--ck-styles:1')) errors.push(`${file} must embed the stylesheet it injects`)
+}
 const maps = readdirSync('dist').filter((name) => name.endsWith('.map'))
 if (maps.length > 0) errors.push(`sourcemaps must not be published: ${maps.join(', ')}`)
 
@@ -43,4 +56,4 @@ if (errors.length > 0) {
   console.error(errors.join('\n'))
   process.exit(1)
 }
-console.log('dist OK: "use client" banner on the React entries, framework-free core entry shared by them, no sourcemaps')
+console.log('dist OK: "use client" banner on the React entries, framework-free core entry shared by them, unlayered stylesheet embedded and published, no sourcemaps')

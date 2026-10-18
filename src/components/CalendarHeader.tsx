@@ -46,48 +46,48 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   ] as const;
 
   return (
-    <div className="flex flex-col md:flex-row items-center justify-between px-3 md:px-5 py-3 border-b-[0px] border-border/50 bg-gradient-to-r from-background via-background to-muted/20 gap-3 md:gap-0 min-h-[64px]">
+    <div className="ck:flex ck:flex-col ck:md:flex-row ck:items-center ck:justify-between ck:px-3 ck:md:px-5 ck:py-3 ck:border-b-[0px] ck:border-border/50 ck:bg-linear-to-r ck:from-background ck:via-background ck:to-muted/20 ck:gap-3 ck:md:gap-0 ck:min-h-[64px]">
       {/* Left Section: Menu, Navigation, Title */}
-      <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-start">
-        <div className="flex items-center gap-2 md:gap-3">
+      <div className="ck:flex ck:items-center ck:gap-2 ck:w-full ck:md:w-auto ck:justify-between ck:md:justify-start">
+        <div className="ck:flex ck:items-center ck:gap-2 ck:md:gap-3">
             {/* Menu Button */}
             <Button
-              className="text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent/80 rounded-xl h-10 w-10 hidden md:inline-flex transition-all duration-200"
+              className="ck:text-sm ck:font-medium ck:text-muted-foreground ck:hover:text-foreground ck:hover:bg-accent/80 ck:rounded-xl ck:h-10 ck:w-10 ck:hidden ck:md:inline-flex ck:transition-all ck:duration-200"
               onClick={onMenuClick}
               aria-label={translations.toggleSidebar}
             >
-                <Menu className="h-5 w-5" />
+                <Menu className="ck:h-5 ck:w-5" />
             </Button>
 
             {/* Today Button */}
             <Button
               onClick={onToday}
-              className="bg-background h-9 px-5 rounded-xl text-sm font-medium hidden sm:inline-flex border-[0.5px] border-border/60 hover:border-primary/40 hover:bg-primary/5 hover:text-primary transition-all duration-200"
+              className="ck:bg-background ck:h-9 ck:px-5 ck:rounded-xl ck:text-sm ck:font-medium ck:hidden ck:sm:inline-flex ck:border-[0.5px] ck:border-border/60 ck:hover:border-primary/40 ck:hover:bg-primary/5 ck:hover:text-primary ck:transition-all ck:duration-200"
             >
                 {translations.today}
             </Button>
 
             {/* Navigation Arrows */}
-            <div className="flex items-center bg-muted/40 rounded-xl p-0.5">
+            <div className="ck:flex ck:items-center ck:bg-muted/40 ck:rounded-xl ck:p-0.5">
                 <Button
                   onClick={onPrev}
-                  className="inline-flex text-sm font-medium hover:text-accent-foreground rounded-lg h-8 w-8 hover:bg-background/80 transition-all duration-200"
+                  className="ck:inline-flex ck:text-sm ck:font-medium ck:hover:text-accent-foreground ck:rounded-lg ck:h-8 ck:w-8 ck:hover:bg-background/80 ck:transition-all ck:duration-200"
                   aria-label={translations.previous}
                 >
-                    <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+                    <ChevronLeft className="ck:h-4 ck:w-4 ck:text-muted-foreground" />
                 </Button>
                 <Button
                   onClick={onNext}
-                  className="inline-flex text-sm font-medium hover:text-accent-foreground rounded-lg h-8 w-8 hover:bg-background/80 transition-all duration-200"
+                  className="ck:inline-flex ck:text-sm ck:font-medium ck:hover:text-accent-foreground ck:rounded-lg ck:h-8 ck:w-8 ck:hover:bg-background/80 ck:transition-all ck:duration-200"
                   aria-label={translations.next}
                 >
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    <ChevronRight className="ck:h-4 ck:w-4 ck:text-muted-foreground" />
                 </Button>
             </div>
 
             {/* Current Date Display */}
-            <div className="ml-2 md:ml-4">
-                <h2 className="text-lg md:text-xl font-semibold text-foreground whitespace-nowrap capitalize tracking-tight">
+            <div className="ck:ml-2 ck:md:ml-4">
+                <h2 className="ck:text-lg ck:md:text-xl ck:font-semibold ck:text-foreground ck:whitespace-nowrap ck:capitalize ck:tracking-tight">
                     {format(currentDate, 'MMMM yyyy', { locale })}
                 </h2>
             </div>
@@ -95,13 +95,13 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
       </div>
 
       {/* Right Section: View Switcher & Theme Toggle */}
-      <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto justify-end">
+      <div className="ck:flex ck:items-center ck:gap-2 ck:md:gap-3 ck:w-full ck:md:w-auto ck:justify-end">
         {/* Language Toggle */}
         {onLanguageChange && language && (
           <Button
             onClick={() => onLanguageChange(language === 'en' ? 'fr' : 'en')}
             aria-label={translations.switchLanguage}
-            className="inline-flex h-9 px-3 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-accent/80 transition-all duration-200 uppercase tracking-wider"
+            className="ck:inline-flex ck:h-9 ck:px-3 ck:rounded-xl ck:text-xs ck:font-semibold ck:text-muted-foreground ck:hover:text-foreground ck:hover:bg-accent/80 ck:transition-all ck:duration-200 ck:uppercase ck:tracking-wider"
           >
             {language}
           </Button>
@@ -110,21 +110,21 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
         {/* Theme Toggle */}
         {onThemeToggle && (
           <Button
-            className="inline-flex text-sm font-medium hover:text-accent-foreground rounded-xl h-9 w-9 hover:bg-accent/80 transition-all duration-200"
+            className="ck:inline-flex ck:text-sm ck:font-medium ck:hover:text-accent-foreground ck:rounded-xl ck:h-9 ck:w-9 ck:hover:bg-accent/80 ck:transition-all ck:duration-200"
             onClick={onThemeToggle}
             aria-label={translations.toggleTheme}
           >
             {isDarkMode ? (
-              <Sun className="h-4 w-4 text-amber-500" />
+              <Sun className="ck:h-4 ck:w-4 ck:text-amber-500" />
             ) : (
-              <Moon className="h-4 w-4 text-muted-foreground" />
+              <Moon className="ck:h-4 ck:w-4 ck:text-muted-foreground" />
             )}
           </Button>
         )}
 
         {/* View Switcher */}
         {!hideViewSwitcher && (
-          <div className="flex items-center bg-muted/50 backdrop-blur-sm rounded-xl p-1">
+          <div className="ck:flex ck:items-center ck:bg-muted/50 ck:backdrop-blur-xs ck:rounded-xl ck:p-1">
             {viewConfig.map(({ key, icon: Icon }) => (
               <Button
                 key={key}
@@ -132,14 +132,14 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
                 aria-pressed={view === key}
                 aria-label={translations[key]}
                 className={cx(
-                  "inline-flex font-medium h-8 px-3 text-xs rounded-lg transition-all duration-200 gap-1.5",
+                  "ck:inline-flex ck:font-medium ck:h-8 ck:px-3 ck:text-xs ck:rounded-lg ck:transition-all ck:duration-200 ck:gap-1.5",
                   view === key
-                    ? "hover:bg-accent hover:text-accent-foreground bg-background shadow-sm text-foreground border-[0.5px] border-border/50"
-                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                    ? "ck:hover:bg-accent ck:hover:text-accent-foreground ck:bg-background ck:shadow-xs ck:text-foreground ck:border-[0.5px] ck:border-border/50"
+                    : "ck:text-muted-foreground ck:hover:text-foreground ck:hover:bg-background/50"
                 )}
               >
-                <Icon className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">{translations[key]}</span>
+                <Icon className="ck:h-3.5 ck:w-3.5" />
+                <span className="ck:hidden ck:sm:inline">{translations[key]}</span>
               </Button>
             ))}
           </div>
