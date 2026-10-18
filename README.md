@@ -15,7 +15,7 @@ A professional, feature-rich React calendar component with drag-and-drop, recurr
 - **Timezone Support** - Full IANA timezone handling
 - **i18n Ready** - Built-in English/French, fully customizable
 - **Resource Scheduling** - Schedule across rooms, people, or equipment
-- **Themes** - Calm, Vivid and Editorial, each in light and dark, with WCAG AA contrast
+- **Themes** - Calm, Vivid and Editorial, each in light and dark, with WCAG AA text contrast on theme colours
 - **Zero setup** - Ships its own compiled CSS: no Tailwind, no stylesheet to import
 - **Mobile Friendly** - Touch gestures and responsive layout
 - **TypeScript** - Full type definitions included

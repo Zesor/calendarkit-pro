@@ -6,7 +6,7 @@ Pre-release on the `next` dist-tag (`latest` stays on 1.4.x). Breaking changes a
 
 ### Added
 - The `<Scheduler>` brings its own stylesheet (Tailwind v4 compiled by the library, every class prefixed with `ck:`, a reset scoped to `.ck-root`) and adds it to the page once: no Tailwind setup, no CSS import. `calendarkit-pro/styles.css` and `injectStyles={false}` cover strict Content-Security-Policies.
-- Themes: `theme="calm" | "vivid" | "editorial"` or `{ preset, colors, fontFamily, borderRadius }`, each in light and dark with text contrast of at least 4.5:1, and `mode="light" | "dark" | "system"`. Every colour is a `--ck-*` CSS variable.
+- Themes: `theme="calm" | "vivid" | "editorial"` or `{ preset, colors, fontFamily, borderRadius }`, each in light and dark, and `mode="light" | "dark" | "system"`. Theme colours are `--ck-*` CSS variables with text contrast of at least 4.5:1. A few accents (drop and hover tints, reminders, the empty state, the mobile create button) still use fixed colours until the next pre-release.
 
 ### Changed
 - Breaking: the default theme is `calm` (neutral) instead of the 1.x blue; `theme="vivid"` is the closest to 1.x.
