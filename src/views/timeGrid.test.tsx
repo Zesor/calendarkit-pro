@@ -116,6 +116,16 @@ describe('time grids', () => {
     expect(screen.queryByText('2 events')).toBeNull()
   })
 
+  test('the "+N" list is in time order, whatever the order of the events prop', () => {
+    const at = (id: string, h: number, m: number, endH: number, endM = 0): CalendarEvent => ({ id, title: id, start: new Date(2026, 9, 15, h, m), end: new Date(2026, 9, 15, endH, endM) })
+    // Week view, 3 columns: A and B are shown, C (9:00), E (10:00) and D (11:00) go behind "+3".
+    const events = [at('E', 10, 0, 10, 30), at('D', 11, 0, 11, 30), at('C', 9, 0, 12), at('B', 9, 0, 12), at('A', 9, 0, 12)]
+    render(<Scheduler view="week" date={new Date(2026, 9, 15)} events={events} />)
+    act(() => screen.getByRole('button', { name: '+3 more' }).click())
+    const items = screen.getAllByRole('button').filter((b) => /^\d+:\d+ [AP]M – /.test(b.textContent ?? ''))
+    expect(items.map((b) => b.textContent!.slice(-1))).toEqual(['C', 'E', 'D'])
+  })
+
   test('clicking a resource slot reports its date and resource', () => {
     const onTimeSlotClick = vi.fn()
     const { container } = render(

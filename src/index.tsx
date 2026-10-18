@@ -133,10 +133,12 @@ export const Scheduler: React.FC<CalendarProps> = ({
   const selectedEvent = lastOpened.current.event;
   const draft = dialog?.kind === 'quick' || dialog?.kind === 'editor' ? dialog.draft : undefined;
   const isModalOpen = dialog !== null && dialog.kind !== 'more';
-  const moreEvents = useMemo(
-    () => (dialog?.kind === 'more' ? expandedEvents.filter((event) => dialog.eventIds.includes(event.id)) : []),
-    [dialog, expandedEvents],
-  );
+  // In the order the grid listed them (by start time), not the order of the events prop.
+  const moreEvents = useMemo(() => {
+    if (dialog?.kind !== 'more') return [];
+    const byId = new Map(expandedEvents.map((event) => [event.id, event]));
+    return dialog.eventIds.flatMap((id) => byId.get(id) ?? []);
+  }, [dialog, expandedEvents]);
   const modalInitialDate = editingId === undefined ? draft?.start : undefined;
   const modalInitialAllDay = editingId === undefined && !!draft?.allDay;
 
