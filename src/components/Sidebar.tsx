@@ -3,9 +3,9 @@ import { Button } from './ui/button';
 import { Plus, ChevronDown, Globe } from './icons';
 import { MiniCalendar } from './MiniCalendar';
 import { cx } from '../utils';
-import { toZonedTime } from 'date-fns-tz';
 import { format, Locale } from 'date-fns';
 import { timeZoneAbbreviation } from '../core/format';
+import { toDisplay } from '../core/timezone';
 import { safeColor } from '../core/color';
 
 import { ViewType, CalendarEvent } from '../types';
@@ -95,7 +95,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               // Real local acronym, falling back to the static one
               acronym = timeZoneAbbreviation(now) || 'LOC';
           } else {
-              const zDate = toZonedTime(now, tz.value);
+              const zDate = toDisplay(now, tz.value);
               time = format(zDate, 'HH:mm');
               // Calculate dynamic acronym if needed (e.g. DST changes)
               const dynAcronym = getAcronym(tz.value);

@@ -13,6 +13,31 @@
 /* `ck:dark:` follows the resolved mode of the nearest calendar root. */
 @custom-variant dark (&:where([data-ck-mode="dark"], [data-ck-mode="dark"] *, .dark :not([data-ck-mode]) *));
 
+/* Entrance animations (no exit animations: a closed element leaves at once). */
+@theme {
+  --animate-fade-in: ck-fade-in 150ms ease-out both;
+  --animate-pop-in: ck-pop-in 150ms ease-out both;
+  --animate-rise-in: ck-rise-in 300ms ease-out both;
+  --animate-slide-in: ck-slide-in 300ms ease-out both;
+  --animate-view-in: ck-view-in 250ms cubic-bezier(0.25, 0.1, 0.25, 1) both;
+
+  @keyframes ck-fade-in {
+    from { opacity: 0; }
+  }
+  @keyframes ck-pop-in {
+    from { opacity: 0; transform: translateY(-5px) scale(0.95); }
+  }
+  @keyframes ck-rise-in {
+    from { opacity: 0; transform: translateY(10px); }
+  }
+  @keyframes ck-slide-in {
+    from { opacity: 0; transform: translateX(-20px); }
+  }
+  @keyframes ck-view-in {
+    from { opacity: 0; transform: translateY(15px) scale(0.98); }
+  }
+}
+
 @theme inline {
   --color-background: var(--ck-background);
   --color-foreground: var(--ck-foreground);

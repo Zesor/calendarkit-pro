@@ -1,7 +1,5 @@
 import React, { useCallback, useId, useState, useMemo, useRef } from 'react';
 import { Modifier, DragOverlay, DragStartEvent } from '@dnd-kit/core';
-import { createSnapModifier, restrictToWindowEdges } from '@dnd-kit/modifiers';
-import { AnimatePresence, motion } from 'framer-motion';
 import { CalendarHeader } from './components/CalendarHeader';
 import { Sidebar } from './components/Sidebar';
 import { MonthView } from './views/MonthView';
@@ -24,6 +22,7 @@ import { useStableCallback } from './hooks/useStableCallback';
 import { format, startOfWeek } from 'date-fns';
 import { useViewSwipe } from './hooks/useSwipeGesture';
 import { dragOverlaySize } from './components/dnd/dragOverlay';
+import { restrictToWindowEdges, snapToGrid } from './components/dnd/modifiers';
 import { CalendarStyles, useMissingStylesWarning } from './styles/CalendarStyles';
 
 // Re-export types for consumers
@@ -44,6 +43,9 @@ export type {
 
 // A stable default: a new `[]` on every render would look like new events to the engine.
 const NO_EVENTS: CalendarEvent[] = [];
+
+// Drag ghost: 15px snap (15 minutes at 60px per hour), kept inside the window.
+const MODIFIERS: Modifier[] = [snapToGrid(15), restrictToWindowEdges];
 
 export const Scheduler: React.FC<CalendarProps> = ({
   events = NO_EVENTS,
@@ -165,10 +167,6 @@ export const Scheduler: React.FC<CalendarProps> = ({
     if (!readOnly) calendar.openEvent(event.id);
   });
 
-  const gridSize = 15; // 15px snap (15 minutes if 60px/hr)
-  const snapToGrid = createSnapModifier(gridSize);
-  const modifiers: Modifier[] = [snapToGrid, restrictToWindowEdges];
-
   const id = useId();
 
   // Mobile swipe gesture support
@@ -222,7 +220,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
         id={id}
         onDragStart={handleDragStart}
         onDragEnd={onDragEndWrapper}
-        modifiers={modifiers}
+        modifiers={MODIFIERS}
     >
       <div
         ref={rootRef}
@@ -250,19 +248,9 @@ export const Scheduler: React.FC<CalendarProps> = ({
         />
         
         <div className="ck:flex ck:flex-1 ck:overflow-hidden">
-            <motion.div
-                className={cx(
-                  "ck:hidden ck:md:block ck:overflow-hidden",
-                )}
-                initial={false}
-                animate={{
-                  width: isSidebarOpen ? 256 : 0,
-                  opacity: isSidebarOpen ? 1 : 0,
-                }}
-                transition={{
-                  duration: 0.3,
-                  ease: [0.4, 0, 0.2, 1],
-                }}
+            <div
+                className="ck:hidden ck:md:block ck:overflow-hidden ck:transition-[width,opacity] ck:duration-300 ck:ease-[cubic-bezier(0.4,0,0.2,1)]"
+                style={{ width: isSidebarOpen ? 256 : 0, opacity: isSidebarOpen ? 1 : 0 }}
             >
                 <Sidebar
                     currentDate={currentDate}
@@ -278,7 +266,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                     translations={t}
                     locale={locale}
                 />
-            </motion.div>
+            </div>
 
             <div className="ck:flex-1 ck:flex ck:flex-col ck:overflow-hidden ck:relative">
                 {isLoading ? (
@@ -294,29 +282,9 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 ) : (
                 <div ref={swipeRef} className="ck:flex-1 ck:overflow-auto ck:p-0 ck:md:p-4 ck:touch-pan-y">
                   <div className="ck:h-full ck:min-w-full">
-                    <AnimatePresence mode="wait" initial={false}>
-                        <motion.div
+                        <div
                             key={`${view}-${periodKey}-${timezone || 'local'}`}
-                            initial={{ opacity: 0, scale: 0.98, y: 15 }}
-                            animate={{
-                              opacity: 1,
-                              scale: 1,
-                              y: 0,
-                              transition: {
-                                duration: 0.25,
-                                ease: [0.25, 0.1, 0.25, 1],
-                              }
-                            }}
-                            exit={{
-                              opacity: 0,
-                              scale: 0.98,
-                              y: -10,
-                              transition: {
-                                duration: 0.15,
-                                ease: [0.25, 0.1, 0.25, 1],
-                              }
-                            }}
-                            className="ck:h-full"
+                            className="ck:h-full ck:animate-view-in"
                         >
                             {view === 'month' && (
                                 <MonthView
@@ -389,8 +357,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                     onEventContextMenu={contextMenuHandler}
                                 />
                             )}
-                        </motion.div>
-                    </AnimatePresence>
+                        </div>
                   </div>
                 </div>
                 )}

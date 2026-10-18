@@ -2,7 +2,6 @@ import React, { useState, useEffect, useInsertionEffect, useRef } from 'react';
 import { Modal } from './ui/Modal';
 import { CalendarEvent, CalendarTranslations, EventType, EventAttachment, EventReminder } from '../types';
 import { addDays, differenceInCalendarDays, format, differenceInMinutes, Locale, startOfDay } from 'date-fns';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
     Clock, MapPin, AlignLeft, Trash2, X, Edit2,
     Users, Paperclip, File, Calendar, ChevronDown, Check, Download,
@@ -420,13 +419,11 @@ export const EventModal: React.FC<EventModalProps> = ({
       <div className="ck:px-6 ck:pb-6 ck:space-y-4 ck:overflow-y-auto ck:flex-1">
         {/* Location: U4, a real link to a maps search */}
         {event?.location && (
-          <motion.a
+          <a
             href={mapsUrl(event.location)}
             target="_blank"
             rel="noopener noreferrer"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="ck:flex ck:items-start ck:gap-3 ck:p-4 ck:rounded-2xl ck:bg-muted/30 ck:border ck:border-border/30 ck:group ck:hover:bg-muted/50 ck:transition-all ck:cursor-pointer"
+            className="ck:animate-rise-in ck:flex ck:items-start ck:gap-3 ck:p-4 ck:rounded-2xl ck:bg-muted/30 ck:border ck:border-border/30 ck:group ck:hover:bg-muted/50 ck:transition-all ck:cursor-pointer"
           >
             <div className="ck:p-2 ck:bg-primary/10 ck:rounded-xl">
               <MapPin className="ck:w-5 ck:h-5 ck:text-primary" />
@@ -436,17 +433,12 @@ export const EventModal: React.FC<EventModalProps> = ({
               <p className="ck:text-xs ck:text-muted-foreground ck:mt-0.5">{t.openInMaps}</p>
             </div>
             <ExternalLink className="ck:w-4 ck:h-4 ck:text-muted-foreground ck:opacity-0 ck:group-hover:opacity-100 ck:transition-opacity" />
-          </motion.a>
+          </a>
         )}
 
         {/* Guests */}
         {event?.guests && event.guests.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="ck:space-y-3"
-          >
+          <div className="ck:animate-rise-in ck:space-y-3" style={{ animationDelay: '50ms' }}>
             <div className="ck:flex ck:items-center ck:justify-between">
               <div className="ck:flex ck:items-center ck:gap-2">
                 <Users className="ck:w-4 ck:h-4 ck:text-muted-foreground" />
@@ -474,17 +466,12 @@ export const EventModal: React.FC<EventModalProps> = ({
                 </div>
               ))}
             </div>
-          </motion.div>
+          </div>
         )}
 
         {/* Reminders */}
         {event?.reminders && event.reminders.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="ck:flex ck:items-center ck:gap-3"
-          >
+          <div className="ck:animate-rise-in ck:flex ck:items-center ck:gap-3" style={{ animationDelay: '100ms' }}>
             <div className="ck:p-2 ck:bg-amber-500/10 ck:rounded-xl">
               <Bell className="ck:w-4 ck:h-4 ck:text-amber-500" />
             </div>
@@ -498,17 +485,12 @@ export const EventModal: React.FC<EventModalProps> = ({
                 </span>
               ))}
             </div>
-          </motion.div>
+          </div>
         )}
 
         {/* Description */}
         {event?.description && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="ck:space-y-2"
-          >
+          <div className="ck:animate-rise-in ck:space-y-2" style={{ animationDelay: '150ms' }}>
             <div className="ck:flex ck:items-center ck:gap-2">
               <AlignLeft className="ck:w-4 ck:h-4 ck:text-muted-foreground" />
               <span className="ck:text-sm ck:font-medium ck:text-foreground">{t.notesLabel}</span>
@@ -516,17 +498,12 @@ export const EventModal: React.FC<EventModalProps> = ({
             <div className="ck:text-sm ck:text-foreground/80 ck:whitespace-pre-wrap ck:leading-relaxed ck:pl-6 ck:p-3 ck:rounded-xl ck:bg-muted/20 ck:border ck:border-border/30">
               {event.description}
             </div>
-          </motion.div>
+          </div>
         )}
 
         {/* Attachments */}
         {event?.attachments && event.attachments.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="ck:space-y-2"
-          >
+          <div className="ck:animate-rise-in ck:space-y-2" style={{ animationDelay: '200ms' }}>
             <div className="ck:flex ck:items-center ck:gap-2">
               <Paperclip className="ck:w-4 ck:h-4 ck:text-muted-foreground" />
               <span className="ck:text-sm ck:font-medium ck:text-foreground">{t.attachments}</span>
@@ -534,7 +511,7 @@ export const EventModal: React.FC<EventModalProps> = ({
             <div className="ck:grid ck:gap-2">
               {event.attachments.map(renderAttachment)}
             </div>
-          </motion.div>
+          </div>
         )}
       </div>
     </div>
@@ -937,29 +914,15 @@ export const EventModal: React.FC<EventModalProps> = ({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} hideHeader className="ck:p-0 ck:overflow-hidden ck:max-w-lg">
-      <AnimatePresence mode="wait">
-        {mode === 'view' && event ? (
-          <motion.div
-            key="view"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-          >
-            {renderViewMode()}
-          </motion.div>
-        ) : (
-          <motion.div
-            key="edit"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-          >
-            {renderEditMode()}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {mode === 'view' && event ? (
+        <div key="view" className="ck:animate-fade-in">
+          {renderViewMode()}
+        </div>
+      ) : (
+        <div key="edit" className="ck:animate-fade-in">
+          {renderEditMode()}
+        </div>
+      )}
     </Modal>
   );
 };

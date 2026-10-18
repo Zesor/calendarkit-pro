@@ -74,3 +74,12 @@
   scrollbar-color: var(--ck-border) transparent;
   scrollbar-width: thin;
 }
+@media (prefers-reduced-motion: reduce) {
+  .ck-root,
+  .ck-root :where(*, ::before, ::after) {
+    animation-duration: 1ms !important;
+    animation-delay: 0s !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}

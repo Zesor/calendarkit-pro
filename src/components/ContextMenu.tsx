@@ -2,7 +2,6 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { CalendarEvent } from '../types';
 import { cx } from '../utils';
 import { Edit3, Trash2, Copy } from './icons';
-import { AnimatePresence, motion } from 'framer-motion';
 
 interface ContextMenuAction {
   id: string;
@@ -112,14 +111,9 @@ export const EventContextMenu: React.FC<EventContextMenuProps> = ({
   };
 
   return (
-    <AnimatePresence>
-      <motion.div
+      <div
         ref={menuRef}
-        initial={{ opacity: 0, scale: 0.95, y: -5 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: -5 }}
-        transition={{ duration: 0.15, ease: 'easeOut' }}
-        className="ck:fixed ck:z-[100] ck:min-w-[180px] ck:bg-background ck:border-[0.5px] ck:border-border ck:rounded-xl ck:shadow-xl ck:overflow-hidden"
+        className="ck:animate-pop-in ck:fixed ck:z-[100] ck:min-w-[180px] ck:bg-background ck:border-[0.5px] ck:border-border ck:rounded-xl ck:shadow-xl ck:overflow-hidden"
         style={{
           left: adjustedPosition.x,
           top: adjustedPosition.y,
@@ -162,8 +156,7 @@ export const EventContextMenu: React.FC<EventContextMenuProps> = ({
             </React.Fragment>
           ))}
         </div>
-      </motion.div>
-    </AnimatePresence>
+      </div>
   );
 };
 

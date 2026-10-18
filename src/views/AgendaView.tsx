@@ -6,7 +6,6 @@ import { eventsByStartDay } from '../core/events';
 import { timeFormats, uses24HourClock } from '../core/format';
 import { displayToday, toDisplay } from '../core/timezone';
 import { AgendaEmptyState } from '../components/EmptyState';
-import { motion } from 'framer-motion';
 import { Clock, Users, Paperclip, Bell } from '../components/icons';
 
 interface AgendaViewProps {
@@ -70,37 +69,18 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
     return groups;
   }, [currentDate, events, timezone]);
 
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.05
-      }
-    }
-  };
-
-  const item = {
-    hidden: { opacity: 0, x: -20 },
-    show: { opacity: 1, x: 0 }
-  };
 
   return (
     <div className="ck:flex ck:flex-col ck:h-full ck:bg-background ck:overflow-y-auto">
       {groupedEvents.length === 0 ? (
         <AgendaEmptyState onCreateEvent={onCreateEvent} translations={translations} />
       ) : (
-        <motion.div
-          className="ck:max-w-3xl ck:mx-auto ck:w-full ck:pb-10 ck:px-4 ck:md:px-6"
-          variants={container}
-          initial="hidden"
-          animate="show"
-        >
-            {groupedEvents.map((group) => (
-                <motion.div
+        <div className="ck:max-w-3xl ck:mx-auto ck:w-full ck:pb-10 ck:px-4 ck:md:px-6">
+            {groupedEvents.map((group, index) => (
+                <div
                   key={group.date.toISOString()}
-                  className="ck:relative"
-                  variants={item}
+                  className="ck:relative ck:animate-slide-in"
+                  style={{ animationDelay: `${index * 50}ms` }}
                 >
                     {/* Date Header */}
                     <div className="ck:sticky ck:top-0 ck:bg-background/95 ck:backdrop-blur-md ck:py-4 ck:z-10 ck:border-b ck:border-border/50">
@@ -141,18 +121,16 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                     {/* Events List */}
                     <div className="ck:py-4 ck:space-y-3">
                         {group.events.map((event) => (
-                            <motion.div
+                            <div
                                 key={event.id}
                                 onClick={() => onEventClick?.(event)}
                                 onContextMenu={onEventContextMenu ? (e) => onEventContextMenu(event, e) : undefined}
                                 className={cx(
                                   "ck:group ck:relative ck:flex ck:gap-4 ck:p-4 ck:rounded-2xl ck:border ck:border-border/40",
                                   "ck:hover:border-primary/40 ck:hover:shadow-lg ck:hover:shadow-primary/5",
-                                  "ck:transition-all ck:duration-200 ck:cursor-pointer",
+                                  "ck:transition-all ck:duration-200 ck:cursor-pointer ck:hover:scale-[1.01] ck:hover:-translate-y-0.5",
                                   "ck:bg-linear-to-br ck:from-card ck:via-card ck:to-card/80"
                                 )}
-                                whileHover={{ scale: 1.01, y: -2 }}
-                                transition={{ duration: 0.2 }}
                             >
                                 {/* Left accent bar */}
                                 <div
@@ -248,12 +226,12 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                                     <path d="M9 18l6-6-6-6" />
                                   </svg>
                                 </div>
-                            </motion.div>
+                            </div>
                         ))}
                     </div>
-                </motion.div>
+                </div>
             ))}
-        </motion.div>
+        </div>
       )}
     </div>
   );
