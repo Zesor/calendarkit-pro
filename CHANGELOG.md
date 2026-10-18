@@ -1,5 +1,18 @@
 # Pro-Scheduler Changelog
 
+## 2.0.0-alpha.1
+
+Pre-release on the `next` dist-tag (`latest` stays on 1.4.x).
+
+### Added
+- `calendarkit-pro/react`: `useCalendar`, `useCalendarSelector`, `useCalendarState`, `CalendarProvider` / `useCalendarContext`, the prop-getters `getEventProps`, `getSlotProps`, `getResizeHandleProps`, and the dnd-kit bridge `CalendarDndContext`, `useDraggableEvent`, `useDroppableSlot`, `useActiveDrag`.
+- `calendar.saveEvent(data)` in `calendarkit-pro/core`, to save the open dialog's event from a custom form.
+
+### Changed
+- The `<Scheduler>` runs on the calendar engine (same props, same callbacks). With a custom `renderEventForm`, `onEventUpdate` now receives the full event merged with the form's fields, and the form closes after saving.
+- Without `view` / `date`, `onViewChange` / `onDateChange` no longer freeze the Scheduler: its own view and date update too.
+- The React entries share the engine through `calendarkit-pro/core` instead of bundling a copy: the main bundle is about 3 kB smaller.
+
 ## 2.0.0-alpha.0
 
 Pre-release on the `next` dist-tag (`latest` stays on 1.4.x). The `<Scheduler>` is unchanged.

@@ -353,6 +353,29 @@ calendar.undo()
 - `selectTimeGrid`, `selectMonth`, `selectAgenda`, `selectFlowDay` and `selectResources` turn a state into plain data ready to render (overlaps laid out, extra events grouped into "+N").
 - `parseEventSentence` reads dates, times, durations and repetition in a title, in English and French.
 
+### React bindings
+
+`calendarkit-pro/react` connects the engine to React (the `<Scheduler>` itself now runs on it):
+
+```tsx
+import { useCalendar, useCalendarSelector, getEventProps, CalendarDndContext } from 'calendarkit-pro/react'
+import { selectTimeGrid } from 'calendarkit-pro/core'
+
+function MyWeek({ events, onEventsChange }) {
+  const calendar = useCalendar({ events, onEventsChange })
+  const grid = useCalendarSelector(calendar, (s) => selectTimeGrid(s, { maxColumns: 3 }))
+  return (
+    <CalendarDndContext calendar={calendar}>
+      {grid.columns.map((column) => column.blocks.map((b) => <button key={b.event.id} {...getEventProps(calendar, b.event)}>{b.event.title}</button>))}
+    </CalendarDndContext>
+  )
+}
+```
+
+- `useCalendar(options)` creates the store once and keeps it in sync with your props; `useCalendarSelector` re-renders only when the selected slice changes. `CalendarProvider` / `useCalendarContext` share the store without passing it down.
+- `getEventProps`, `getSlotProps` and `getResizeHandleProps` return the props of an accessible event button, an empty slot and a resize handle.
+- `CalendarDndContext`, `useDraggableEvent`, `useDroppableSlot` and `useActiveDrag` wire dnd-kit to the store (drops call `calendar.move`, dragging is off in `readOnly`).
+
 ## Exports
 
 ```typescript
