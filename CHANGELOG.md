@@ -1,5 +1,24 @@
 # Pro-Scheduler Changelog
 
+## 2.0.0-alpha.2
+
+Pre-release on the `next` dist-tag (`latest` stays on 1.4.x). Breaking changes are listed in [MIGRATION.md](MIGRATION.md).
+
+### Added
+- The `<Scheduler>` brings its own stylesheet (Tailwind v4 compiled by the library, every class prefixed with `ck:`, a reset scoped to `.ck-root`) and adds it to the page once: no Tailwind setup, no CSS import. `calendarkit-pro/styles.css` and `injectStyles={false}` cover strict Content-Security-Policies.
+- Themes: `theme="calm" | "vivid" | "editorial"` or `{ preset, colors, fontFamily, borderRadius }`, each in light and dark with text contrast of at least 4.5:1, and `mode="light" | "dark" | "system"`. Every colour is a `--ck-*` CSS variable.
+
+### Changed
+- Breaking: the default theme is `calm` (neutral) instead of the 1.x blue; `theme="vivid"` is the closest to 1.x.
+- Breaking: `cn` is no longer exported, and the host's `--primary`, `--background`… variables no longer theme the calendar.
+- Animations are CSS and respect `prefers-reduced-motion`.
+
+### Removed
+- Runtime dependencies `framer-motion`, `lucide-react`, `clsx`, `class-variance-authority`, `tailwind-merge`, `date-fns-tz` (time zones now use `Intl`) and `@dnd-kit/modifiers`. What remains: `date-fns`, `rrule`, `@dnd-kit/core`, `@dnd-kit/utilities`.
+
+### Fixed
+- Events without a colour use the theme's primary colour in the agenda, the resource view and the drag preview (1.x drew them transparent).
+
 ## 2.0.0-alpha.1
 
 Pre-release on the `next` dist-tag (`latest` stays on 1.4.x).

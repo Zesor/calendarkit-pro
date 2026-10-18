@@ -36,6 +36,10 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) to see the demo application.
 
+### Styles
+
+Components use Tailwind v4 classes prefixed with `ck:` (`ck:flex ck:text-sm`). `npm run css` compiles `src/styles/calendarkit.css` into `dist/styles.css` and `src/styles/css.generated.ts`, the string the Scheduler injects; `dev`, `test`, `typecheck` and `build:lib` run it first. While editing classes, keep `npm run dev:css` running next to `npm run dev`. Theme tokens live in `src/styles/themes.css`.
+
 ### Building the Library
 
 ```bash
