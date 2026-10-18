@@ -1,19 +1,5 @@
-import { pointerWithin, rectIntersection, type CollisionDetection } from '@dnd-kit/core';
 import { differenceInMinutes } from 'date-fns';
 import type { CalendarEvent, ViewType } from '../../types';
-
-/**
- * All-day bars move by "grabbed day → day under the pointer", so they target the cell under the
- * pointer; the overlay (left-aligned with the bar) would point at the wrong day. Timed events keep
- * dnd-kit's overlay-based detection.
- */
-export const dayAwareCollision: CollisionDetection = (args) => {
-  if (args.active.data.current?.grabDayOffset !== undefined) {
-    const underPointer = pointerWithin(args);
-    if (underPointer.length > 0) return underPointer;
-  }
-  return rectIntersection(args);
-};
 
 /** Size of the drag ghost. All-day bars keep the size of the dragged bar (dnd-kit's default). */
 export function dragOverlaySize(view: ViewType, event: CalendarEvent, isDayDrag: boolean): { width?: string; height?: number } {
