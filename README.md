@@ -15,7 +15,8 @@ A professional, feature-rich React calendar component with drag-and-drop, recurr
 - **Timezone Support** - Full IANA timezone handling
 - **i18n Ready** - Built-in English/French, fully customizable
 - **Resource Scheduling** - Schedule across rooms, people, or equipment
-- **Dark Mode** - Built-in theme toggle
+- **Themes** - Calm, Vivid and Editorial, each in light and dark, with WCAG AA text contrast on theme colours
+- **Zero setup** - Ships its own compiled CSS: no Tailwind, no stylesheet to import
 - **Mobile Friendly** - Touch gestures and responsive layout
 - **TypeScript** - Full type definitions included
 - **High Performance** - Handles 10,000+ events
@@ -28,17 +29,7 @@ npm install calendarkit-pro
 
 ## Requirements
 
-CalendarKit Pro requires **TailwindCSS**. Add the package to your Tailwind config:
-
-```js
-// tailwind.config.js
-module.exports = {
-  content: [
-    // ... your paths
-    './node_modules/calendarkit-pro/**/*.{js,mjs}',
-  ],
-}
-```
+React 18 or 19, nothing else: the calendar brings its own stylesheet and adds it to the page once. The Tailwind `content` entry that 1.x needed can be removed (see [Styles and Content-Security-Policy](#styles-and-content-security-policy) to load the CSS as a file instead).
 
 ## Quick Start
 
@@ -96,9 +87,11 @@ function MyCalendar() {
 | `language` | `'en'` \| `'fr'` | UI language |
 | `translations` | `Partial<CalendarTranslations>` | Custom translations |
 | `locale` | `Locale` | date-fns locale for formatting |
-| `isDarkMode` | `boolean` | Enable dark mode |
+| `theme` | `'calm'` \| `'vivid'` \| `'editorial'` \| `CalendarTheme` | Built-in theme or theme object (default `'calm'`, see [Theming](#theming)) |
+| `mode` | `'light'` \| `'dark'` \| `'system'` | Color mode. Without `mode` nor `isDarkMode`, a `.dark` ancestor turns the calendar dark |
+| `isDarkMode` | `boolean` | Dark mode (alias of `mode="dark"` / `mode="light"`) |
 | `onThemeToggle` | `() => void` | Dark mode toggle callback |
-| `theme` | `CalendarTheme` | Custom theme colors |
+| `injectStyles` | `boolean` | Adds the stylesheet to the page (default `true`) |
 | `readOnly` | `boolean` | Disable editing |
 | `isLoading` | `boolean` | Show loading skeletons |
 | `hideViewSwitcher` | `boolean` | Hide view switcher |
@@ -149,17 +142,22 @@ interface Resource {
 
 ```typescript
 interface CalendarTheme {
+  preset?: 'calm' | 'vivid' | 'editorial'; // default 'calm'
   colors?: {
     primary?: string;
+    primaryForeground?: string;
     secondary?: string;
     background?: string;
     foreground?: string;
     border?: string;
     muted?: string;
+    mutedForeground?: string;
     accent?: string;
+    destructive?: string;
+    ring?: string;
   };
   fontFamily?: string;
-  borderRadius?: string;
+  borderRadius?: string; // base radius, the others scale from it
 }
 ```
 
@@ -268,21 +266,42 @@ Right-click an event to edit, duplicate or delete it (disabled in `readOnly`).
 
 ## Theming
 
+Three built-in themes, each in light and dark: `calm` (default, neutral), `vivid` (saturated, the closest to 1.x) and `editorial` (warm tones, serif titles).
+
 ```tsx
+<Scheduler theme="vivid" mode="system" />
+
+// Adjust a preset (a 1.x theme object keeps working: it applies on top of `calm`)
 <Scheduler
-  isDarkMode={darkMode}
+  theme={{ preset: 'editorial', colors: { primary: '#0b7285' }, borderRadius: '8px' }}
+  mode={darkMode ? 'dark' : 'light'}
   onThemeToggle={() => setDarkMode(!darkMode)}
-  theme={{
-    colors: {
-      primary: '#3b82f6',
-      background: '#ffffff',
-      foreground: '#1a1a1a',
-    },
-    fontFamily: 'Inter, sans-serif',
-    borderRadius: '12px',
-  }}
 />
 ```
+
+- `mode` is `'light'`, `'dark'` or `'system'` (follows the operating system). `isDarkMode` still works as an alias. Without either, the calendar turns dark inside a `.dark` element, as in 1.x.
+- Every colour is a CSS variable on `.ck-root`, so plain CSS can override any of them: `--ck-background`, `--ck-foreground`, `--ck-muted`, `--ck-muted-foreground`, `--ck-accent`, `--ck-border`, `--ck-primary`, `--ck-primary-foreground`, `--ck-ring`, `--ck-destructive`, `--ck-destructive-foreground`, and `--ck-radius`, `--ck-font`, `--ck-font-display`.
+
+```css
+.ck-root { --ck-primary: #0b7285; --ck-ring: #0b7285; }
+.ck-root[data-ck-mode="dark"] { --ck-primary: #66d9e8; }
+```
+
+- The themes name their fonts (Instrument Sans, Plus Jakarta Sans, Newsreader) but do not download them, so the calendar never calls a font service: load them yourself (Google Fonts, Fontsource) or the system font takes over.
+
+### Styles and Content-Security-Policy
+
+The `<Scheduler>` adds its stylesheet to the page once, as an inline `<style>` (hoisted into `<head>` on React 19). With a Content-Security-Policy that forbids inline styles, to cache the CSS as a file, or to avoid unstyled content before hydration on React 18 server rendering, turn the injection off and import the same stylesheet:
+
+```tsx
+import 'calendarkit-pro/styles.css'
+
+<Scheduler injectStyles={false} />
+```
+
+Every class is prefixed with `ck:` and the reset only applies inside `.ck-root`: the calendar never restyles your page, and works the same with Tailwind 3, Tailwind 4 or no Tailwind at all.
+
+Size or space the calendar with `className` (`className="h-[600px] rounded-xl"`): the stylesheet comes first in `<head>`, so your classes win ties. Its classes are not in a cascade layer, so on a Tailwind 4 page (utilities in `@layer utilities`) use the important modifier (`h-[600px]!`) or size a wrapper element instead.
 
 ## Resource Scheduling
 
@@ -394,10 +413,12 @@ export type {
   EventReminder,
   EventAttachment,
   ThemeColors,
+  ThemePreset,
+  ColorMode,
 } from 'calendarkit-pro';
 
-// Utilities
-export { cn } from 'calendarkit-pro';
+// Stylesheet, for `injectStyles={false}`
+import 'calendarkit-pro/styles.css';
 ```
 
 ## Browser Support

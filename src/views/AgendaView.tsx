@@ -1,13 +1,12 @@
 import React, { useMemo } from 'react';
 import { format, isSameDay, addDays, startOfDay, differenceInMinutes, Locale } from 'date-fns';
 import { CalendarEvent, CalendarTranslations } from '../types';
-import { cn } from '../utils';
+import { cx } from '../utils';
 import { eventsByStartDay } from '../core/events';
 import { timeFormats, uses24HourClock } from '../core/format';
 import { displayToday, toDisplay } from '../core/timezone';
 import { AgendaEmptyState } from '../components/EmptyState';
-import { motion } from 'framer-motion';
-import { Clock, Users, Paperclip, Bell } from 'lucide-react';
+import { Clock, Users, Paperclip, Bell } from '../components/icons';
 
 interface AgendaViewProps {
   currentDate: Date;
@@ -70,65 +69,46 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
     return groups;
   }, [currentDate, events, timezone]);
 
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.05
-      }
-    }
-  };
-
-  const item = {
-    hidden: { opacity: 0, x: -20 },
-    show: { opacity: 1, x: 0 }
-  };
 
   return (
-    <div className="flex flex-col h-full bg-background overflow-y-auto">
+    <div className="ck:flex ck:flex-col ck:h-full ck:bg-background ck:overflow-y-auto">
       {groupedEvents.length === 0 ? (
         <AgendaEmptyState onCreateEvent={onCreateEvent} translations={translations} />
       ) : (
-        <motion.div
-          className="max-w-3xl mx-auto w-full pb-10 px-4 md:px-6"
-          variants={container}
-          initial="hidden"
-          animate="show"
-        >
-            {groupedEvents.map((group) => (
-                <motion.div
+        <div className="ck:max-w-3xl ck:mx-auto ck:w-full ck:pb-10 ck:px-4 ck:md:px-6">
+            {groupedEvents.map((group, index) => (
+                <div
                   key={group.date.toISOString()}
-                  className="relative"
-                  variants={item}
+                  className="ck:relative ck:animate-slide-in"
+                  style={{ animationDelay: `${index * 50}ms` }}
                 >
                     {/* Date Header */}
-                    <div className="sticky top-0 bg-background/95 backdrop-blur-md py-4 z-10 border-b border-border/50">
-                      <div className="flex items-center gap-4">
+                    <div className="ck:sticky ck:top-0 ck:bg-background/95 ck:backdrop-blur-md ck:py-4 ck:z-10 ck:border-b ck:border-border/50">
+                      <div className="ck:flex ck:items-center ck:gap-4">
                         {/* Date box */}
-                        <div className={cn(
-                          "flex flex-col items-center justify-center w-16 h-16 rounded-2xl transition-all",
+                        <div className={cx(
+                          "ck:flex ck:flex-col ck:items-center ck:justify-center ck:w-16 ck:h-16 ck:rounded-2xl ck:transition-all",
                           isSameDay(group.date, today)
-                            ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
-                            : "bg-muted/50 text-foreground"
+                            ? "ck:bg-primary ck:text-primary-foreground ck:shadow-lg ck:shadow-primary/30"
+                            : "ck:bg-muted/50 ck:text-foreground"
                         )}>
-                          <span className="text-2xl font-bold leading-none">
+                          <span className="ck:text-2xl ck:font-bold ck:leading-none">
                             {format(group.date, 'd')}
                           </span>
-                          <span className="text-xs font-medium uppercase tracking-wide opacity-80">
+                          <span className="ck:text-xs ck:font-medium ck:uppercase ck:tracking-wide ck:opacity-80">
                             {format(group.date, 'MMM', { locale })}
                           </span>
                         </div>
 
                         {/* Day info */}
-                        <div className="flex flex-col">
-                          <span className={cn(
-                            "text-lg font-semibold",
-                            isSameDay(group.date, today) && "text-primary"
+                        <div className="ck:flex ck:flex-col">
+                          <span className={cx(
+                            "ck:text-lg ck:font-semibold",
+                            isSameDay(group.date, today) && "ck:text-primary"
                           )}>
                             {getDateLabel(group.date, today, locale, translations)}
                           </span>
-                          <span className="text-sm text-muted-foreground">
+                          <span className="ck:text-sm ck:text-muted-foreground">
                             {group.events.length}{' '}
                             {group.events.length !== 1
                               ? (translations?.eventPlural || 'events')
@@ -139,47 +119,45 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                     </div>
 
                     {/* Events List */}
-                    <div className="py-4 space-y-3">
+                    <div className="ck:py-4 ck:space-y-3">
                         {group.events.map((event) => (
-                            <motion.div
+                            <div
                                 key={event.id}
                                 onClick={() => onEventClick?.(event)}
                                 onContextMenu={onEventContextMenu ? (e) => onEventContextMenu(event, e) : undefined}
-                                className={cn(
-                                  "group relative flex gap-4 p-4 rounded-2xl border border-border/40",
-                                  "hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5",
-                                  "transition-all duration-200 cursor-pointer",
-                                  "bg-gradient-to-br from-card via-card to-card/80"
+                                className={cx(
+                                  "ck:group ck:relative ck:flex ck:gap-4 ck:p-4 ck:rounded-2xl ck:border ck:border-border/40",
+                                  "ck:hover:border-primary/40 ck:hover:shadow-lg ck:hover:shadow-primary/5",
+                                  "ck:transition-all ck:duration-200 ck:cursor-pointer ck:hover:scale-[1.01] ck:hover:-translate-y-0.5",
+                                  "ck:bg-linear-to-br ck:from-card ck:via-card ck:to-card/80"
                                 )}
-                                whileHover={{ scale: 1.01, y: -2 }}
-                                transition={{ duration: 0.2 }}
                             >
                                 {/* Left accent bar */}
                                 <div
-                                  className="absolute left-0 top-3 bottom-3 w-1 rounded-full"
-                                  style={{ backgroundColor: event.color || 'var(--primary)' }}
+                                  className="ck:absolute ck:left-0 ck:top-3 ck:bottom-3 ck:w-1 ck:rounded-full"
+                                  style={{ backgroundColor: event.color || 'var(--ck-primary)' }}
                                 />
 
                                 {/* Time Column */}
-                                <div className="flex flex-col items-center min-w-[70px] pl-2">
+                                <div className="ck:flex ck:flex-col ck:items-center ck:min-w-[70px] ck:pl-2">
                                     {event.allDay ? (
-                                        <div className="flex flex-col items-center">
-                                          <span className="text-xs font-semibold text-muted-foreground bg-muted/80 px-2.5 py-1 rounded-full">
+                                        <div className="ck:flex ck:flex-col ck:items-center">
+                                          <span className="ck:text-xs ck:font-semibold ck:text-muted-foreground ck:bg-muted/80 ck:px-2.5 ck:py-1 ck:rounded-full">
                                             {translations?.allDay || 'All Day'}
                                           </span>
                                         </div>
                                     ) : (
-                                        <div className="flex flex-col items-center">
-                                          <span className="text-base font-semibold text-foreground">
+                                        <div className="ck:flex ck:flex-col ck:items-center">
+                                          <span className="ck:text-base ck:font-semibold ck:text-foreground">
                                             {format(toDisplay(event.start, timezone), compactTimePattern, { locale })}
                                           </span>
                                           {!is24h && (
-                                            <span className="text-xs text-muted-foreground uppercase">
+                                            <span className="ck:text-xs ck:text-muted-foreground ck:uppercase">
                                               {format(toDisplay(event.start, timezone), 'a')}
                                             </span>
                                           )}
-                                          <div className="w-px h-3 bg-border my-1" />
-                                          <span className="text-xs text-muted-foreground/70 font-medium">
+                                          <div className="ck:w-px ck:h-3 ck:bg-border ck:my-1" />
+                                          <span className="ck:text-xs ck:text-muted-foreground/70 ck:font-medium">
                                             {formatDuration(event.start, event.end)}
                                           </span>
                                         </div>
@@ -187,36 +165,36 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                                 </div>
 
                                 {/* Event Details */}
-                                <div className="flex-1 min-w-0 space-y-2">
-                                    <div className="flex items-start justify-between gap-2">
-                                      <h4 className="text-base font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                                <div className="ck:flex-1 ck:min-w-0 ck:space-y-2">
+                                    <div className="ck:flex ck:items-start ck:justify-between ck:gap-2">
+                                      <h4 className="ck:text-base ck:font-semibold ck:text-foreground ck:group-hover:text-primary ck:transition-colors ck:line-clamp-1">
                                           {event.title}
                                       </h4>
                                       {/* Color dot */}
                                       <div
-                                        className="w-3 h-3 rounded-full shrink-0 mt-1.5"
-                                        style={{ backgroundColor: event.color || 'var(--primary)' }}
+                                        className="ck:w-3 ck:h-3 ck:rounded-full ck:shrink-0 ck:mt-1.5"
+                                        style={{ backgroundColor: event.color || 'var(--ck-primary)' }}
                                       />
                                     </div>
 
                                     {event.description && (
-                                        <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                                        <p className="ck:text-sm ck:text-muted-foreground ck:line-clamp-2 ck:leading-relaxed">
                                             {event.description}
                                         </p>
                                     )}
 
                                     {/* Meta info row */}
-                                    <div className="flex flex-wrap items-center gap-3 pt-1">
+                                    <div className="ck:flex ck:flex-wrap ck:items-center ck:gap-3 ck:pt-1">
                                       {!event.allDay && (
-                                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                          <Clock className="w-3.5 h-3.5" />
+                                        <div className="ck:flex ck:items-center ck:gap-1.5 ck:text-xs ck:text-muted-foreground">
+                                          <Clock className="ck:w-3.5 ck:h-3.5" />
                                           <span>{format(toDisplay(event.start, timezone), timePattern, { locale })} - {format(toDisplay(event.end, timezone), timePattern, { locale })}</span>
                                         </div>
                                       )}
 
                                       {event.guests && event.guests.length > 0 && (
-                                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                          <Users className="w-3.5 h-3.5" />
+                                        <div className="ck:flex ck:items-center ck:gap-1.5 ck:text-xs ck:text-muted-foreground">
+                                          <Users className="ck:w-3.5 ck:h-3.5" />
                                           <span>
                                             {event.guests.length}{' '}
                                             {event.guests.length !== 1
@@ -227,15 +205,15 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                                       )}
 
                                       {event.attachments && event.attachments.length > 0 && (
-                                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                          <Paperclip className="w-3.5 h-3.5" />
+                                        <div className="ck:flex ck:items-center ck:gap-1.5 ck:text-xs ck:text-muted-foreground">
+                                          <Paperclip className="ck:w-3.5 ck:h-3.5" />
                                           <span>{event.attachments.length}</span>
                                         </div>
                                       )}
 
                                       {event.reminders && event.reminders.length > 0 && (
-                                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                          <Bell className="w-3.5 h-3.5" />
+                                        <div className="ck:flex ck:items-center ck:gap-1.5 ck:text-xs ck:text-muted-foreground">
+                                          <Bell className="ck:w-3.5 ck:h-3.5" />
                                           <span>{event.reminders.length}</span>
                                         </div>
                                       )}
@@ -243,17 +221,17 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                                 </div>
 
                                 {/* Hover arrow indicator */}
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <svg className="w-5 h-5 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <div className="ck:absolute ck:right-4 ck:top-1/2 ck:-translate-y-1/2 ck:opacity-0 ck:group-hover:opacity-100 ck:transition-opacity">
+                                  <svg className="ck:w-5 ck:h-5 ck:text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <path d="M9 18l6-6-6-6" />
                                   </svg>
                                 </div>
-                            </motion.div>
+                            </div>
                         ))}
                     </div>
-                </motion.div>
+                </div>
             ))}
-        </motion.div>
+        </div>
       )}
     </div>
   );

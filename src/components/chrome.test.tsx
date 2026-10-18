@@ -31,7 +31,7 @@ describe('Sidebar', () => {
     )
     expect(container.querySelector('style')).toBeNull()
     const holder = screen.getByRole('checkbox', { name: 'X' }).parentElement as HTMLElement
-    expect(holder.style.getPropertyValue('--cal-color')).toBe('hsl(var(--primary))')
+    expect(holder.style.getPropertyValue('--cal-color')).toBe('var(--ck-primary)')
   })
 })
 

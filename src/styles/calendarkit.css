@@ -1,0 +1,80 @@
+/* CalendarKit stylesheet: Tailwind v4 compiled by the library itself (`npm run css`), every utility
+   prefixed with `ck:` so it never collides with the host's classes. Unlayered on purpose: a host's
+   unlayered reset (Tailwind v3 preflight, normalize.css) would beat any cascade layer of ours. */
+@import "tailwindcss/theme.css" prefix(ck);
+@import "./reset.css";
+@import "./themes.css";
+@import "tailwindcss/utilities.css" source(none);
+
+@source "../components";
+@source "../views";
+@source "../index.tsx";
+
+/* `ck:dark:` follows the mode of the calendar root: `mode="dark"`, `mode="system"` on a dark system,
+   or no mode inside a `.dark` ancestor (the 1.x convention). */
+@custom-variant dark {
+  &:where([data-ck-mode="dark"], [data-ck-mode="dark"] *, .dark .ck-root:not([data-ck-mode]), .dark .ck-root:not([data-ck-mode]) *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where([data-ck-mode="system"], [data-ck-mode="system"] *) {
+      @slot;
+    }
+  }
+}
+
+/* Entrance animations (no exit animations: a closed element leaves at once). */
+@theme {
+  --animate-fade-in: ck-fade-in 150ms ease-out both;
+  --animate-pop-in: ck-pop-in 150ms ease-out both;
+  --animate-rise-in: ck-rise-in 300ms ease-out both;
+  --animate-slide-in: ck-slide-in 300ms ease-out both;
+  --animate-view-in: ck-view-in 250ms cubic-bezier(0.25, 0.1, 0.25, 1) both;
+
+  @keyframes ck-fade-in {
+    from { opacity: 0; }
+  }
+  @keyframes ck-pop-in {
+    from { opacity: 0; transform: translateY(-5px) scale(0.95); }
+  }
+  @keyframes ck-rise-in {
+    from { opacity: 0; transform: translateY(10px); }
+  }
+  @keyframes ck-slide-in {
+    from { opacity: 0; transform: translateX(-20px); }
+  }
+  @keyframes ck-view-in {
+    from { opacity: 0; transform: translateY(15px) scale(0.98); }
+  }
+}
+
+@theme inline {
+  --color-background: var(--ck-background);
+  --color-foreground: var(--ck-foreground);
+  --color-card: var(--ck-background);
+  --color-card-foreground: var(--ck-foreground);
+  --color-popover: var(--ck-background);
+  --color-popover-foreground: var(--ck-foreground);
+  --color-primary: var(--ck-primary);
+  --color-primary-foreground: var(--ck-primary-foreground);
+  --color-secondary: var(--ck-secondary, var(--ck-muted));
+  --color-secondary-foreground: var(--ck-foreground);
+  --color-muted: var(--ck-muted);
+  --color-muted-foreground: var(--ck-muted-foreground);
+  --color-accent: var(--ck-accent);
+  --color-accent-foreground: var(--ck-foreground);
+  --color-destructive: var(--ck-destructive);
+  --color-destructive-foreground: var(--ck-destructive-foreground);
+  --color-border: var(--ck-border);
+  --color-input: var(--ck-border);
+  --color-ring: var(--ck-ring);
+  --radius-xs: calc(var(--ck-radius) * 0.3);
+  --radius-sm: calc(var(--ck-radius) * 0.5);
+  --radius-md: calc(var(--ck-radius) * 0.75);
+  --radius-lg: var(--ck-radius);
+  --radius-xl: calc(var(--ck-radius) * 1.25);
+  --radius-2xl: calc(var(--ck-radius) * 1.5);
+  --radius-3xl: calc(var(--ck-radius) * 2);
+  --font-sans: var(--ck-font);
+  --font-display: var(--ck-font-display);
+}

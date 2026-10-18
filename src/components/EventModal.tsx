@@ -2,14 +2,13 @@ import React, { useState, useEffect, useInsertionEffect, useRef } from 'react';
 import { Modal } from './ui/Modal';
 import { CalendarEvent, CalendarTranslations, EventType, EventAttachment, EventReminder } from '../types';
 import { addDays, differenceInCalendarDays, format, differenceInMinutes, Locale, startOfDay } from 'date-fns';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
     Clock, MapPin, AlignLeft, Trash2, X, Edit2,
     Users, Paperclip, File, Calendar, ChevronDown, Check, Download,
     Bell, BellRing, Plus, Repeat, Tag,
     ExternalLink
-  } from 'lucide-react';
-import { cn } from '../utils';
+  } from './icons';
+import { cx } from '../utils';
 import { interpolate, timeFormats } from '../core/format';
 import { dayEventSpan, isDayEvent } from '../core/allDay';
 
@@ -316,20 +315,20 @@ export const EventModal: React.FC<EventModalProps> = ({
   const renderAttachment = (att: EventAttachment) => {
     const content = (
       <>
-        <div className="p-2 bg-primary/10 rounded-lg">
-          <File className="w-4 h-4 text-primary" />
+        <div className="ck:p-2 ck:bg-primary/10 ck:rounded-lg">
+          <File className="ck:w-4 ck:h-4 ck:text-primary" />
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground truncate">{att.name}</p>
-          <p className="text-xs text-muted-foreground">{att.size}</p>
+        <div className="ck:flex-1 ck:min-w-0">
+          <p className="ck:text-sm ck:font-medium ck:text-foreground ck:truncate">{att.name}</p>
+          <p className="ck:text-xs ck:text-muted-foreground">{att.size}</p>
         </div>
-        {att.url && <Download className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />}
+        {att.url && <Download className="ck:w-4 ck:h-4 ck:text-muted-foreground ck:opacity-0 ck:group-hover:opacity-100 ck:transition-opacity" />}
       </>
     );
     const className = "flex items-center gap-3 p-3 rounded-xl border border-border/30 bg-muted/20 transition-all group";
     // U6: only real attachment URLs are downloadable (no generated placeholder file).
     return att.url && isSafeUrl(att.url) ? (
-      <a key={att.id} href={att.url} target="_blank" rel="noopener noreferrer" download={att.name} className={cn(className, "hover:bg-muted/40 cursor-pointer")}>
+      <a key={att.id} href={att.url} target="_blank" rel="noopener noreferrer" download={att.name} className={cx(className, "ck:hover:bg-muted/40 ck:cursor-pointer")}>
         {content}
       </a>
     ) : (
@@ -339,76 +338,76 @@ export const EventModal: React.FC<EventModalProps> = ({
 
   // ========== VIEW MODE ==========
   const renderViewMode = () => (
-    <div className="flex flex-col bg-background overflow-hidden w-full max-h-[90vh]">
+    <div className="ck:flex ck:flex-col ck:bg-background ck:overflow-hidden ck:w-full ck:max-h-[90vh]">
       {/* Hero Header with Color */}
       <div
-        className="relative px-6 pt-6 pb-8"
+        className="ck:relative ck:px-6 ck:pt-6 ck:pb-8"
         style={{
           background: `linear-gradient(135deg, ${event?.color || '#3b82f6'}15 0%, transparent 100%)`
         }}
       >
         {/* Top Actions Bar */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
+        <div className="ck:flex ck:items-center ck:justify-between ck:mb-6">
+          <div className="ck:flex ck:items-center ck:gap-2">
             <div
-              className="w-3 h-3 rounded-full"
+              className="ck:w-3 ck:h-3 ck:rounded-full"
               style={{ backgroundColor: event?.color || '#3b82f6' }}
             />
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            <span className="ck:text-xs ck:font-medium ck:text-muted-foreground ck:uppercase ck:tracking-wider">
               {calendars?.find(c => c.id === event?.calendarId)?.label || t.event}
             </span>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="ck:flex ck:items-center ck:gap-1">
             <button
               onClick={() => setMode('edit')}
-              className="p-2 hover:bg-background/80 rounded-lg transition-all text-muted-foreground hover:text-foreground"
+              className="ck:p-2 ck:hover:bg-background/80 ck:rounded-lg ck:transition-all ck:text-muted-foreground ck:hover:text-foreground"
               title={t.edit}
               aria-label={t.edit}
             >
-              <Edit2 className="w-4 h-4" />
+              <Edit2 className="ck:w-4 ck:h-4" />
             </button>
             <button
               onClick={handleDelete}
-              className="p-2 hover:bg-destructive/10 rounded-lg transition-all text-muted-foreground hover:text-destructive"
+              className="ck:p-2 ck:hover:bg-destructive/10 ck:rounded-lg ck:transition-all ck:text-muted-foreground ck:hover:text-destructive"
               title={t.delete}
               aria-label={t.delete}
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="ck:w-4 ck:h-4" />
             </button>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-background/80 rounded-lg transition-all text-muted-foreground hover:text-foreground"
+              className="ck:p-2 ck:hover:bg-background/80 ck:rounded-lg ck:transition-all ck:text-muted-foreground ck:hover:text-foreground"
               title={t.close}
               aria-label={t.close}
             >
-              <X className="w-4 h-4" />
+              <X className="ck:w-4 ck:h-4" />
             </button>
           </div>
         </div>
 
         {/* Title */}
-        <h1 className="text-2xl font-bold text-foreground mb-3 leading-tight">
+        <h1 className="ck:text-2xl ck:font-bold ck:text-foreground ck:mb-3 ck:leading-tight">
           {event?.title || t.noTitle}
         </h1>
 
         {/* Date & Time */}
-        <div className="flex items-center gap-3 text-sm">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-background/60 backdrop-blur-sm rounded-lg border border-border/30">
-            <Calendar className="w-4 h-4 text-muted-foreground" />
-            <span className="font-medium">
+        <div className="ck:flex ck:items-center ck:gap-3 ck:text-sm">
+          <div className="ck:flex ck:items-center ck:gap-2 ck:px-3 ck:py-1.5 ck:bg-background/60 ck:backdrop-blur-xs ck:rounded-lg ck:border ck:border-border/30">
+            <Calendar className="ck:w-4 ck:h-4 ck:text-muted-foreground" />
+            <span className="ck:font-medium">
               {viewSpan && viewSpan.lastDay > viewSpan.firstDay
                 ? `${format(viewSpan.firstDay, 'EEE d MMM', { locale })} – ${format(viewSpan.lastDay, 'EEE d MMM', { locale })}`
                 : event?.start && format(new Date(event.start), 'EEE, MMM d', { locale })}
             </span>
           </div>
           {event?.allDay ? (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-lg border border-primary/20">
-              <span className="font-medium text-primary">{t.allDay}</span>
+            <div className="ck:flex ck:items-center ck:gap-2 ck:px-3 ck:py-1.5 ck:bg-primary/10 ck:rounded-lg ck:border ck:border-primary/20">
+              <span className="ck:font-medium ck:text-primary">{t.allDay}</span>
             </div>
           ) : (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-background/60 backdrop-blur-sm rounded-lg border border-border/30">
-            <Clock className="w-4 h-4 text-muted-foreground" />
-            <span className="font-medium">
+          <div className="ck:flex ck:items-center ck:gap-2 ck:px-3 ck:py-1.5 ck:bg-background/60 ck:backdrop-blur-xs ck:rounded-lg ck:border ck:border-border/30">
+            <Clock className="ck:w-4 ck:h-4 ck:text-muted-foreground" />
+            <span className="ck:font-medium">
               {event?.start && format(new Date(event.start), timeFormat, { locale })}{' – '}{event?.end && format(new Date(event.end), timeFormat, { locale })}
             </span>
           </div>
@@ -417,124 +416,102 @@ export const EventModal: React.FC<EventModalProps> = ({
       </div>
 
       {/* Content */}
-      <div className="px-6 pb-6 space-y-4 overflow-y-auto flex-1">
+      <div className="ck:px-6 ck:pb-6 ck:space-y-4 ck:overflow-y-auto ck:flex-1">
         {/* Location: U4, a real link to a maps search */}
         {event?.location && (
-          <motion.a
+          <a
             href={mapsUrl(event.location)}
             target="_blank"
             rel="noopener noreferrer"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-start gap-3 p-4 rounded-2xl bg-muted/30 border border-border/30 group hover:bg-muted/50 transition-all cursor-pointer"
+            className="ck:animate-rise-in ck:flex ck:items-start ck:gap-3 ck:p-4 ck:rounded-2xl ck:bg-muted/30 ck:border ck:border-border/30 ck:group ck:hover:bg-muted/50 ck:transition-all ck:cursor-pointer"
           >
-            <div className="p-2 bg-primary/10 rounded-xl">
-              <MapPin className="w-5 h-5 text-primary" />
+            <div className="ck:p-2 ck:bg-primary/10 ck:rounded-xl">
+              <MapPin className="ck:w-5 ck:h-5 ck:text-primary" />
             </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-foreground">{event.location}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{t.openInMaps}</p>
+            <div className="ck:flex-1">
+              <p className="ck:text-sm ck:font-medium ck:text-foreground">{event.location}</p>
+              <p className="ck:text-xs ck:text-muted-foreground ck:mt-0.5">{t.openInMaps}</p>
             </div>
-            <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-          </motion.a>
+            <ExternalLink className="ck:w-4 ck:h-4 ck:text-muted-foreground ck:opacity-0 ck:group-hover:opacity-100 ck:transition-opacity" />
+          </a>
         )}
 
         {/* Guests */}
         {event?.guests && event.guests.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="space-y-3"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-foreground">
+          <div className="ck:animate-rise-in ck:space-y-3" style={{ animationDelay: '50ms' }}>
+            <div className="ck:flex ck:items-center ck:justify-between">
+              <div className="ck:flex ck:items-center ck:gap-2">
+                <Users className="ck:w-4 ck:h-4 ck:text-muted-foreground" />
+                <span className="ck:text-sm ck:font-medium ck:text-foreground">
                   {event.guests.length} {event.guests.length > 1 ? t.guests : t.guestSingular}
                 </span>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="ck:flex ck:flex-wrap ck:gap-2">
               {event.guests.map((email) => (
                 <div
                   key={email}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/30 border border-border/30"
+                  className="ck:flex ck:items-center ck:gap-2 ck:px-3 ck:py-2 ck:rounded-xl ck:bg-muted/30 ck:border ck:border-border/30"
                 >
                   <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold text-white"
+                    className="ck:w-8 ck:h-8 ck:rounded-full ck:flex ck:items-center ck:justify-center ck:text-sm ck:font-semibold ck:text-white"
                     style={{ backgroundColor: `hsl(${avatarHue(email)}, 70%, 50%)` }}
                   >
                     {email[0].toUpperCase()}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground">{email.split('@')[0]}</p>
-                    <p className="text-xs text-muted-foreground truncate">{email}</p>
+                  <div className="ck:flex-1 ck:min-w-0">
+                    <p className="ck:text-sm ck:font-medium ck:text-foreground">{email.split('@')[0]}</p>
+                    <p className="ck:text-xs ck:text-muted-foreground ck:truncate">{email}</p>
                   </div>
                 </div>
               ))}
             </div>
-          </motion.div>
+          </div>
         )}
 
         {/* Reminders */}
         {event?.reminders && event.reminders.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="flex items-center gap-3"
-          >
-            <div className="p-2 bg-amber-500/10 rounded-xl">
-              <Bell className="w-4 h-4 text-amber-500" />
+          <div className="ck:animate-rise-in ck:flex ck:items-center ck:gap-3" style={{ animationDelay: '100ms' }}>
+            <div className="ck:p-2 ck:bg-amber-500/10 ck:rounded-xl">
+              <Bell className="ck:w-4 ck:h-4 ck:text-amber-500" />
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="ck:flex ck:flex-wrap ck:gap-2">
               {event.reminders.map(reminder => (
                 <span
                   key={reminder.id}
-                  className="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                  className="ck:text-xs ck:font-medium ck:px-2.5 ck:py-1 ck:rounded-full ck:bg-amber-500/10 ck:text-amber-600 ck:dark:text-amber-400"
                 >
                   {reminder.label || reminderLabel(reminder.time, t)}
                 </span>
               ))}
             </div>
-          </motion.div>
+          </div>
         )}
 
         {/* Description */}
         {event?.description && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="space-y-2"
-          >
-            <div className="flex items-center gap-2">
-              <AlignLeft className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">{t.notesLabel}</span>
+          <div className="ck:animate-rise-in ck:space-y-2" style={{ animationDelay: '150ms' }}>
+            <div className="ck:flex ck:items-center ck:gap-2">
+              <AlignLeft className="ck:w-4 ck:h-4 ck:text-muted-foreground" />
+              <span className="ck:text-sm ck:font-medium ck:text-foreground">{t.notesLabel}</span>
             </div>
-            <div className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed pl-6 p-3 rounded-xl bg-muted/20 border border-border/30">
+            <div className="ck:text-sm ck:text-foreground/80 ck:whitespace-pre-wrap ck:leading-relaxed ck:pl-6 ck:p-3 ck:rounded-xl ck:bg-muted/20 ck:border ck:border-border/30">
               {event.description}
             </div>
-          </motion.div>
+          </div>
         )}
 
         {/* Attachments */}
         {event?.attachments && event.attachments.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="space-y-2"
-          >
-            <div className="flex items-center gap-2">
-              <Paperclip className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">{t.attachments}</span>
+          <div className="ck:animate-rise-in ck:space-y-2" style={{ animationDelay: '200ms' }}>
+            <div className="ck:flex ck:items-center ck:gap-2">
+              <Paperclip className="ck:w-4 ck:h-4 ck:text-muted-foreground" />
+              <span className="ck:text-sm ck:font-medium ck:text-foreground">{t.attachments}</span>
             </div>
-            <div className="grid gap-2">
+            <div className="ck:grid ck:gap-2">
               {event.attachments.map(renderAttachment)}
             </div>
-          </motion.div>
+          </div>
         )}
       </div>
     </div>
@@ -542,25 +519,25 @@ export const EventModal: React.FC<EventModalProps> = ({
 
   // ========== EDIT/CREATE MODE ==========
   const renderEditMode = () => (
-    <form onSubmit={handleSubmit} className="flex flex-col bg-background overflow-hidden w-full max-h-[85vh]">
+    <form onSubmit={handleSubmit} className="ck:flex ck:flex-col ck:bg-background ck:overflow-hidden ck:w-full ck:max-h-[85vh]">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-border/50 shrink-0">
-        <div className="flex items-center gap-3">
+      <div className="ck:flex ck:items-center ck:justify-between ck:px-5 ck:py-4 ck:border-b ck:border-border/50 ck:shrink-0">
+        <div className="ck:flex ck:items-center ck:gap-3">
           <button
             type="button"
             onClick={() => setIsColorPickerOpen(!isColorPickerOpen)}
-            className="relative p-1"
+            className="ck:relative ck:p-1"
             aria-label={t.eventColor}
           >
             <div
-              className="w-5 h-5 rounded-full cursor-pointer hover:scale-110 transition-transform"
+              className="ck:w-5 ck:h-5 ck:rounded-full ck:cursor-pointer ck:hover:scale-110 ck:transition-transform"
               style={{
                 backgroundColor: formData.color,
-                boxShadow: `0 0 0 2px var(--background), 0 0 0 4px ${formData.color}60`
+                boxShadow: `0 0 0 2px var(--ck-background), 0 0 0 4px ${formData.color}60`
               }}
             />
             {isColorPickerOpen && (
-              <div className="absolute top-full left-0 mt-2 p-2 bg-background border border-border rounded-xl shadow-xl z-50 flex flex-wrap gap-1.5 w-[180px]">
+              <div className="ck:absolute ck:top-full ck:left-0 ck:mt-2 ck:p-2 ck:bg-background ck:border ck:border-border ck:rounded-xl ck:shadow-xl ck:z-50 ck:flex ck:flex-wrap ck:gap-1.5 ck:w-[180px]">
                 {COLOR_PALETTE.map(color => (
                   <button
                     key={color}
@@ -570,9 +547,9 @@ export const EventModal: React.FC<EventModalProps> = ({
                       setFormData(prev => ({ ...prev, color }));
                       setIsColorPickerOpen(false);
                     }}
-                    className={cn(
-                      "w-7 h-7 rounded-full transition-all hover:scale-110",
-                      formData.color === color && "ring-2 ring-offset-2 ring-offset-background ring-current"
+                    className={cx(
+                      "ck:w-7 ck:h-7 ck:rounded-full ck:transition-all ck:hover:scale-110",
+                      formData.color === color && "ck:ring-2 ck:ring-offset-2 ck:ring-offset-background ck:ring-current"
                     )}
                     style={{ backgroundColor: color, color: color }}
                   />
@@ -580,30 +557,30 @@ export const EventModal: React.FC<EventModalProps> = ({
               </div>
             )}
           </button>
-          <h2 className="text-lg font-semibold text-foreground">
+          <h2 className="ck:text-lg ck:font-semibold ck:text-foreground">
             {mode === 'edit' ? t.editEvent : t.newEvent}
           </h2>
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="p-2 hover:bg-accent rounded-xl transition-all text-muted-foreground hover:text-foreground"
+          className="ck:p-2 ck:hover:bg-accent ck:rounded-xl ck:transition-all ck:text-muted-foreground ck:hover:text-foreground"
           aria-label={t.close}
         >
-          <X className="w-4 h-4" />
+          <X className="ck:w-4 ck:h-4" />
         </button>
       </div>
 
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="px-5 py-4 space-y-5">
+      <div className="ck:flex-1 ck:overflow-y-auto">
+        <div className="ck:px-5 ck:py-4 ck:space-y-5">
           {/* Title */}
           <div>
             <input
               type="text"
               required
               autoFocus
-              className="w-full text-xl font-semibold border-0 border-b-2 border-transparent focus:border-primary bg-transparent px-0 py-2 placeholder-muted-foreground/50 transition-all text-foreground focus:outline-none"
+              className="ck:w-full ck:text-xl ck:font-semibold ck:border-0 ck:border-b-2 ck:border-transparent ck:focus:border-primary ck:bg-transparent ck:px-0 ck:py-2 ck:placeholder-muted-foreground/50 ck:transition-all ck:text-foreground ck:focus:outline-hidden"
               value={formData.title}
               onChange={e => setFormData({ ...formData, title: e.target.value })}
               placeholder={t.title}
@@ -612,50 +589,50 @@ export const EventModal: React.FC<EventModalProps> = ({
           </div>
 
           {/* All-day toggle (ported from PR #1) */}
-          <div className="flex items-center justify-between px-1">
-            <span id="calendarkit-all-day-label" className="text-sm font-medium text-foreground">{t.allDay}</span>
+          <div className="ck:flex ck:items-center ck:justify-between ck:px-1">
+            <span id="calendarkit-all-day-label" className="ck:text-sm ck:font-medium ck:text-foreground">{t.allDay}</span>
             <button
               type="button"
               role="switch"
               aria-checked={!!formData.allDay}
               aria-labelledby="calendarkit-all-day-label"
               onClick={handleAllDayToggle}
-              className={cn(
-                "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors cursor-pointer",
-                formData.allDay ? "bg-primary" : "bg-muted"
+              className={cx(
+                "ck:relative ck:inline-flex ck:h-6 ck:w-11 ck:shrink-0 ck:rounded-full ck:border-2 ck:border-transparent ck:transition-colors ck:cursor-pointer",
+                formData.allDay ? "ck:bg-primary" : "ck:bg-muted"
               )}
             >
               <span
-                className={cn(
-                  "pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow transition-transform",
-                  formData.allDay ? "translate-x-5" : "translate-x-0"
+                className={cx(
+                  "ck:pointer-events-none ck:inline-block ck:h-5 ck:w-5 ck:rounded-full ck:bg-background ck:shadow-sm ck:transition-transform",
+                  formData.allDay ? "ck:translate-x-5" : "ck:translate-x-0"
                 )}
               />
             </button>
           </div>
 
           {/* Date & Time Row */}
-          <div className="flex items-center gap-3 p-4 rounded-2xl bg-muted/20 border border-border/30">
-            <div className="p-2 bg-primary/10 rounded-xl shrink-0">
-              <Clock className="w-5 h-5 text-primary" />
+          <div className="ck:flex ck:items-center ck:gap-3 ck:p-4 ck:rounded-2xl ck:bg-muted/20 ck:border ck:border-border/30">
+            <div className="ck:p-2 ck:bg-primary/10 ck:rounded-xl ck:shrink-0">
+              <Clock className="ck:w-5 ck:h-5 ck:text-primary" />
             </div>
-            <div className="flex-1 grid grid-cols-2 gap-3">
+            <div className="ck:flex-1 ck:grid ck:grid-cols-2 ck:gap-3">
               <div>
-                <label htmlFor="calendarkit-event-start" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">{t.start}</label>
+                <label htmlFor="calendarkit-event-start" className="ck:text-[10px] ck:font-semibold ck:text-muted-foreground ck:uppercase ck:tracking-wider ck:mb-1 ck:block">{t.start}</label>
                 <input
                   id="calendarkit-event-start"
                   type={allDaySpan ? "date" : "datetime-local"}
-                  className="w-full bg-background border border-border/50 rounded-xl px-3 py-2 text-sm font-medium text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  className="ck:w-full ck:bg-background ck:border ck:border-border/50 ck:rounded-xl ck:px-3 ck:py-2 ck:text-sm ck:font-medium ck:text-foreground ck:focus:border-primary ck:focus:ring-2 ck:focus:ring-primary/20 ck:transition-all"
                   value={allDaySpan ? format(allDaySpan.firstDay, 'yyyy-MM-dd') : formatDateForInput(formData.start)}
                   onChange={e => handleDateChange('start', e.target.value)}
                 />
               </div>
               <div>
-                <label htmlFor="calendarkit-event-end" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">{t.end}</label>
+                <label htmlFor="calendarkit-event-end" className="ck:text-[10px] ck:font-semibold ck:text-muted-foreground ck:uppercase ck:tracking-wider ck:mb-1 ck:block">{t.end}</label>
                 <input
                   id="calendarkit-event-end"
                   type={allDaySpan ? "date" : "datetime-local"}
-                  className="w-full bg-background border border-border/50 rounded-xl px-3 py-2 text-sm font-medium text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  className="ck:w-full ck:bg-background ck:border ck:border-border/50 ck:rounded-xl ck:px-3 ck:py-2 ck:text-sm ck:font-medium ck:text-foreground ck:focus:border-primary ck:focus:ring-2 ck:focus:ring-primary/20 ck:transition-all"
                   value={allDaySpan ? format(allDaySpan.lastDay, 'yyyy-MM-dd') : formatDateForInput(formData.end)}
                   onChange={e => handleDateChange('end', e.target.value)}
                 />
@@ -665,39 +642,39 @@ export const EventModal: React.FC<EventModalProps> = ({
 
           {/* Duration Badge */}
           {getDurationText() && (
-            <div className="flex justify-center">
-              <span className="text-xs font-medium px-3 py-1 rounded-full bg-primary/10 text-primary">
+            <div className="ck:flex ck:justify-center">
+              <span className="ck:text-xs ck:font-medium ck:px-3 ck:py-1 ck:rounded-full ck:bg-primary/10 ck:text-primary">
                 {getDurationText()}
               </span>
             </div>
           )}
 
           {/* Reminders */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Bell className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-foreground">{t.reminders}</span>
+          <div className="ck:space-y-2">
+            <div className="ck:flex ck:items-center ck:justify-between">
+              <div className="ck:flex ck:items-center ck:gap-2">
+                <Bell className="ck:w-4 ck:h-4 ck:text-muted-foreground" />
+                <span className="ck:text-sm ck:font-medium ck:text-foreground">{t.reminders}</span>
               </div>
-              <div className="relative">
+              <div className="ck:relative">
                 <button
                   type="button"
                   onClick={() => setIsReminderDropdownOpen(!isReminderDropdownOpen)}
-                  className="flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+                  className="ck:flex ck:items-center ck:gap-1 ck:text-xs ck:font-medium ck:text-primary ck:hover:text-primary/80 ck:transition-colors"
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="ck:w-3.5 ck:h-3.5" />
                   {t.add}
                 </button>
                 {isReminderDropdownOpen && (
                   <>
-                    <div className="fixed inset-0 z-40" onClick={() => setIsReminderDropdownOpen(false)} />
-                    <div className="absolute right-0 top-full mt-1 w-48 bg-background border border-border rounded-xl shadow-xl z-50 py-1 max-h-60 overflow-y-auto">
+                    <div className="ck:fixed ck:inset-0 ck:z-40" onClick={() => setIsReminderDropdownOpen(false)} />
+                    <div className="ck:absolute ck:right-0 ck:top-full ck:mt-1 ck:w-48 ck:bg-background ck:border ck:border-border ck:rounded-xl ck:shadow-xl ck:z-50 ck:py-1 ck:max-h-60 ck:overflow-y-auto">
                       {REMINDER_OPTIONS.map(minutes => (
                         <button
                           key={minutes}
                           type="button"
                           onClick={() => addReminder(minutes)}
-                          className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
+                          className="ck:w-full ck:px-3 ck:py-2 ck:text-left ck:text-sm ck:hover:bg-accent ck:transition-colors"
                         >
                           {reminderLabel(minutes, t)}
                         </button>
@@ -708,23 +685,23 @@ export const EventModal: React.FC<EventModalProps> = ({
               </div>
             </div>
             {formData.reminders && formData.reminders.length > 0 && (
-              <div className="flex flex-wrap gap-2">
+              <div className="ck:flex ck:flex-wrap ck:gap-2">
                 {formData.reminders.map(reminder => (
                   <div
                     key={reminder.id}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20"
+                    className="ck:flex ck:items-center ck:gap-2 ck:px-3 ck:py-1.5 ck:rounded-full ck:bg-amber-500/10 ck:border ck:border-amber-500/20"
                   >
-                    <BellRing className="w-3.5 h-3.5 text-amber-500" />
-                    <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                    <BellRing className="ck:w-3.5 ck:h-3.5 ck:text-amber-500" />
+                    <span className="ck:text-xs ck:font-medium ck:text-amber-600 ck:dark:text-amber-400">
                       {reminder.label || reminderLabel(reminder.time, t)}
                     </span>
                     <button
                       type="button"
                       onClick={() => removeReminder(reminder.id)}
-                      className="p-0.5 hover:bg-amber-500/20 rounded-full transition-colors"
+                      className="ck:p-0.5 ck:hover:bg-amber-500/20 ck:rounded-full ck:transition-colors"
                       aria-label={t.removeReminder}
                     >
-                      <X className="w-3 h-3 text-amber-500" />
+                      <X className="ck:w-3 ck:h-3 ck:text-amber-500" />
                     </button>
                   </div>
                 ))}
@@ -733,10 +710,10 @@ export const EventModal: React.FC<EventModalProps> = ({
           </div>
 
           {/* Guests: U2, free email input instead of a fake suggestion list */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-muted-foreground" />
-              <label htmlFor="calendarkit-event-guest" className="text-sm font-medium text-foreground">{t.guests}</label>
+          <div className="ck:space-y-2">
+            <div className="ck:flex ck:items-center ck:gap-2">
+              <Users className="ck:w-4 ck:h-4 ck:text-muted-foreground" />
+              <label htmlFor="calendarkit-event-guest" className="ck:text-sm ck:font-medium ck:text-foreground">{t.guests}</label>
             </div>
             <input
               id="calendarkit-event-guest"
@@ -758,34 +735,34 @@ export const EventModal: React.FC<EventModalProps> = ({
               onBlur={() => guestInput.trim() && addGuests(guestInput)}
               placeholder={t.addGuestPlaceholder}
               aria-invalid={guestError}
-              className={cn(
-                "w-full px-4 py-3 bg-muted/20 border rounded-xl text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-all",
-                guestError ? "border-destructive" : "border-border/30"
+              className={cx(
+                "ck:w-full ck:px-4 ck:py-3 ck:bg-muted/20 ck:border ck:rounded-xl ck:text-sm ck:text-foreground ck:placeholder-muted-foreground ck:focus:outline-hidden ck:focus:border-primary ck:transition-all",
+                guestError ? "ck:border-destructive" : "ck:border-border/30"
               )}
             />
-            {guestError && <p role="alert" className="text-xs text-destructive">{t.invalidEmail}</p>}
+            {guestError && <p role="alert" className="ck:text-xs ck:text-destructive">{t.invalidEmail}</p>}
 
             {guests.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
+              <div className="ck:flex ck:flex-wrap ck:gap-2 ck:mt-2">
                 {guests.map(email => (
                   <div
                     key={email}
-                    className="flex items-center gap-2 pl-1 pr-2 py-1 bg-muted/30 border border-border/30 rounded-full"
+                    className="ck:flex ck:items-center ck:gap-2 ck:pl-1 ck:pr-2 ck:py-1 ck:bg-muted/30 ck:border ck:border-border/30 ck:rounded-full"
                   >
                     <div
-                      className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold text-white"
+                      className="ck:w-6 ck:h-6 ck:rounded-full ck:flex ck:items-center ck:justify-center ck:text-xs ck:font-semibold ck:text-white"
                       style={{ backgroundColor: `hsl(${avatarHue(email)}, 70%, 50%)` }}
                     >
                       {email[0].toUpperCase()}
                     </div>
-                    <span className="text-xs font-medium text-foreground">{email}</span>
+                    <span className="ck:text-xs ck:font-medium ck:text-foreground">{email}</span>
                     <button
                       type="button"
                       onClick={() => removeGuest(email)}
-                      className="p-0.5 hover:bg-destructive/10 rounded-full transition-colors"
+                      className="ck:p-0.5 ck:hover:bg-destructive/10 ck:rounded-full ck:transition-colors"
                       aria-label={interpolate(t.removeGuest, { email })}
                     >
-                      <X className="w-3 h-3 text-muted-foreground" />
+                      <X className="ck:w-3 ck:h-3 ck:text-muted-foreground" />
                     </button>
                   </div>
                 ))}
@@ -794,11 +771,11 @@ export const EventModal: React.FC<EventModalProps> = ({
           </div>
 
           {/* Location */}
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/20 border border-border/30">
-            <MapPin className="w-5 h-5 text-muted-foreground shrink-0" />
+          <div className="ck:flex ck:items-center ck:gap-3 ck:p-3 ck:rounded-xl ck:bg-muted/20 ck:border ck:border-border/30">
+            <MapPin className="ck:w-5 ck:h-5 ck:text-muted-foreground ck:shrink-0" />
             <input
               type="text"
-              className="flex-1 bg-transparent text-sm text-foreground placeholder-muted-foreground focus:outline-none"
+              className="ck:flex-1 ck:bg-transparent ck:text-sm ck:text-foreground ck:placeholder-muted-foreground ck:focus:outline-hidden"
               placeholder={t.addLocation}
               aria-label={t.addLocation}
               value={formData.location || ''}
@@ -807,13 +784,13 @@ export const EventModal: React.FC<EventModalProps> = ({
           </div>
 
           {/* Description */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <AlignLeft className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">{t.notesLabel}</span>
+          <div className="ck:space-y-2">
+            <div className="ck:flex ck:items-center ck:gap-2">
+              <AlignLeft className="ck:w-4 ck:h-4 ck:text-muted-foreground" />
+              <span className="ck:text-sm ck:font-medium ck:text-foreground">{t.notesLabel}</span>
             </div>
             <textarea
-              className="w-full bg-muted/20 border border-border/30 rounded-xl px-4 py-3 text-sm min-h-[100px] resize-none text-foreground placeholder-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+              className="ck:w-full ck:bg-muted/20 ck:border ck:border-border/30 ck:rounded-xl ck:px-4 ck:py-3 ck:text-sm ck:min-h-[100px] ck:resize-none ck:text-foreground ck:placeholder-muted-foreground ck:focus:border-primary ck:focus:ring-2 ck:focus:ring-primary/20 ck:transition-all"
               placeholder={t.addNotes}
               aria-label={t.notesLabel}
               value={formData.description || ''}
@@ -822,10 +799,10 @@ export const EventModal: React.FC<EventModalProps> = ({
           </div>
 
           {/* Recurrence */}
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/20 border border-border/30">
-            <Repeat className="w-5 h-5 text-muted-foreground shrink-0" />
+          <div className="ck:flex ck:items-center ck:gap-3 ck:p-3 ck:rounded-xl ck:bg-muted/20 ck:border ck:border-border/30">
+            <Repeat className="ck:w-5 ck:h-5 ck:text-muted-foreground ck:shrink-0" />
             <select
-              className="flex-1 bg-transparent text-sm text-foreground focus:outline-none cursor-pointer"
+              className="ck:flex-1 ck:bg-transparent ck:text-sm ck:text-foreground ck:focus:outline-hidden ck:cursor-pointer"
               aria-label={t.repeat}
               value={formData.recurrence?.freq || ''}
               onChange={e => {
@@ -852,34 +829,34 @@ export const EventModal: React.FC<EventModalProps> = ({
 
           {/* Calendar Selector (only when calendars are provided) */}
           {calendars && calendars.length > 0 && (
-          <div className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-border/30">
-            <div className="flex items-center gap-2">
-              <Tag className="w-5 h-5 text-muted-foreground" />
-              <span className="text-sm text-foreground">{t.calendar}</span>
+          <div className="ck:flex ck:items-center ck:justify-between ck:p-3 ck:rounded-xl ck:bg-muted/20 ck:border ck:border-border/30">
+            <div className="ck:flex ck:items-center ck:gap-2">
+              <Tag className="ck:w-5 ck:h-5 ck:text-muted-foreground" />
+              <span className="ck:text-sm ck:text-foreground">{t.calendar}</span>
             </div>
-            <div className="relative">
+            <div className="ck:relative">
               <button
                 type="button"
                 onClick={() => setIsCalendarDropdownOpen(!isCalendarDropdownOpen)}
-                className="flex items-center gap-2 px-3 py-1.5 bg-background border border-border/50 rounded-lg text-sm hover:bg-accent/50 transition-all"
+                className="ck:flex ck:items-center ck:gap-2 ck:px-3 ck:py-1.5 ck:bg-background ck:border ck:border-border/50 ck:rounded-lg ck:text-sm ck:hover:bg-accent/50 ck:transition-all"
               >
                 <div
-                  className="w-3 h-3 rounded-full"
+                  className="ck:w-3 ck:h-3 ck:rounded-full"
                   style={{ backgroundColor: calendars.find(c => c.id === formData.calendarId)?.color || '#3b82f6' }}
                 />
-                <span className="font-medium">{calendars.find(c => c.id === formData.calendarId)?.label || t.select}</span>
-                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="ck:font-medium">{calendars.find(c => c.id === formData.calendarId)?.label || t.select}</span>
+                <ChevronDown className="ck:w-3.5 ck:h-3.5 ck:text-muted-foreground" />
               </button>
 
               {isCalendarDropdownOpen && (
                 <>
-                  <div className="fixed inset-0 z-40" onClick={() => setIsCalendarDropdownOpen(false)} />
-                  <div className="absolute right-0 bottom-full mb-2 w-48 bg-background border border-border rounded-xl shadow-xl z-50 py-1">
+                  <div className="ck:fixed ck:inset-0 ck:z-40" onClick={() => setIsCalendarDropdownOpen(false)} />
+                  <div className="ck:absolute ck:right-0 ck:bottom-full ck:mb-2 ck:w-48 ck:bg-background ck:border ck:border-border ck:rounded-xl ck:shadow-xl ck:z-50 ck:py-1">
                     {calendars.map(cal => (
                       <button
                         key={cal.id}
                         type="button"
-                        className="w-full flex items-center gap-3 px-3 py-2 hover:bg-accent transition-colors text-left"
+                        className="ck:w-full ck:flex ck:items-center ck:gap-3 ck:px-3 ck:py-2 ck:hover:bg-accent ck:transition-colors ck:text-left"
                         onClick={() => {
                           setFormData({
                             ...formData,
@@ -889,9 +866,9 @@ export const EventModal: React.FC<EventModalProps> = ({
                           setIsCalendarDropdownOpen(false);
                         }}
                       >
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cal.color }} />
-                        <span className="flex-1 text-sm">{cal.label}</span>
-                        {formData.calendarId === cal.id && <Check className="w-4 h-4 text-primary" />}
+                        <div className="ck:w-3 ck:h-3 ck:rounded-full" style={{ backgroundColor: cal.color }} />
+                        <span className="ck:flex-1 ck:text-sm">{cal.label}</span>
+                        {formData.calendarId === cal.id && <Check className="ck:w-4 ck:h-4 ck:text-primary" />}
                       </button>
                     ))}
                   </div>
@@ -904,29 +881,29 @@ export const EventModal: React.FC<EventModalProps> = ({
       </div>
 
       {/* Footer */}
-      <div className="px-5 py-4 border-t border-border/50 flex items-center justify-between bg-muted/10 shrink-0">
+      <div className="ck:px-5 ck:py-4 ck:border-t ck:border-border/50 ck:flex ck:items-center ck:justify-between ck:bg-muted/10 ck:shrink-0">
         {mode === 'edit' && (
           <button
             type="button"
             onClick={handleDelete}
-            className="flex items-center gap-2 px-4 py-2 text-destructive hover:bg-destructive/10 rounded-xl transition-all text-sm font-medium"
+            className="ck:flex ck:items-center ck:gap-2 ck:px-4 ck:py-2 ck:text-destructive ck:hover:bg-destructive/10 ck:rounded-xl ck:transition-all ck:text-sm ck:font-medium"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="ck:w-4 ck:h-4" />
             {t.delete}
           </button>
         )}
         {mode === 'create' && <div />}
-        <div className="flex items-center gap-2">
+        <div className="ck:flex ck:items-center ck:gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 text-muted-foreground hover:text-foreground font-medium text-sm rounded-xl transition-all hover:bg-accent"
+            className="ck:px-4 ck:py-2.5 ck:text-muted-foreground ck:hover:text-foreground ck:font-medium ck:text-sm ck:rounded-xl ck:transition-all ck:hover:bg-accent"
           >
             {t.cancel}
           </button>
           <button
             type="submit"
-            className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm rounded-xl shadow-md transition-all hover:shadow-lg hover:shadow-primary/20 active:scale-95"
+            className="ck:px-6 ck:py-2.5 ck:bg-primary ck:hover:bg-primary/90 ck:text-primary-foreground ck:font-semibold ck:text-sm ck:rounded-xl ck:shadow-md ck:transition-all ck:hover:shadow-lg ck:hover:shadow-primary/20 ck:active:scale-95"
           >
             {mode === 'edit' ? t.saveChanges : t.createEvent}
           </button>
@@ -936,30 +913,16 @@ export const EventModal: React.FC<EventModalProps> = ({
   );
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} hideHeader className="p-0 overflow-hidden max-w-lg rounded-2xl shadow-2xl">
-      <AnimatePresence mode="wait">
-        {mode === 'view' && event ? (
-          <motion.div
-            key="view"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-          >
-            {renderViewMode()}
-          </motion.div>
-        ) : (
-          <motion.div
-            key="edit"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-          >
-            {renderEditMode()}
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <Modal isOpen={isOpen} onClose={onClose} hideHeader className="ck:p-0 ck:overflow-hidden ck:max-w-lg">
+      {mode === 'view' && event ? (
+        <div key="view" className="ck:animate-fade-in">
+          {renderViewMode()}
+        </div>
+      ) : (
+        <div key="edit" className="ck:animate-fade-in">
+          {renderEditMode()}
+        </div>
+      )}
     </Modal>
   );
 };

@@ -1,13 +1,18 @@
 [
   {
-    "name": "ESM bundle",
+    "name": "ESM bundle (includes the injected stylesheet)",
     "path": "dist/index.mjs",
-    "limit": "35 kB"
+    "limit": "42 kB"
   },
   {
-    "name": "CJS bundle",
+    "name": "CJS bundle (includes the injected stylesheet)",
     "path": "dist/index.js",
-    "limit": "35 kB"
+    "limit": "42 kB"
+  },
+  {
+    "name": "Stylesheet (calendarkit-pro/styles.css)",
+    "path": "dist/styles.css",
+    "limit": "9 kB"
   },
   {
     "name": "Core (calendarkit-pro/core, ESM)",

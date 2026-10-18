@@ -10,7 +10,7 @@ afterEach(() => {
 })
 
 const scrollTopOf = (container: HTMLElement) =>
-  (container.querySelector('.overflow-y-auto') as HTMLElement).scrollTop
+  (container.querySelector('.ck\\:overflow-y-auto') as HTMLElement).scrollTop
 
 test('week view scrolls to 4 hours before now on mount (60px/hour)', () => {
   vi.useFakeTimers({ toFake: ['Date'] })

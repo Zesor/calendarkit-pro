@@ -58,18 +58,18 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-background overflow-hidden">
+    <div className="ck:flex ck:flex-col ck:h-full ck:bg-background ck:overflow-hidden">
       {/* Header: Hours */}
-      <div className="flex border-b border-border bg-muted/20">
-        <div className="w-48 shrink-0 border-r border-border p-4 font-semibold text-sm bg-background sticky left-0 z-20">
+      <div className="ck:flex ck:border-b ck:border-border ck:bg-muted/20">
+        <div className="ck:w-48 ck:shrink-0 ck:border-r ck:border-border ck:p-4 ck:font-semibold ck:text-sm ck:bg-background ck:sticky ck:left-0 ck:z-20">
           {translations?.resource || 'Resources'}
         </div>
-        <div className="flex overflow-hidden">
-             <div className="flex relative" style={{ width: hours.length * hourWidth }}>
+        <div className="ck:flex ck:overflow-hidden">
+             <div className="ck:flex ck:relative" style={{ width: hours.length * hourWidth }}>
                 {hours.map(hour => (
                     <div 
                         key={hour} 
-                        className="border-r border-border/50 text-xs text-muted-foreground p-2 font-medium shrink-0"
+                        className="ck:border-r ck:border-border/50 ck:text-xs ck:text-muted-foreground ck:p-2 ck:font-medium ck:shrink-0"
                         style={{ width: hourWidth }}
                     >
                         {format(new Date().setHours(hour, 0, 0, 0), timeFormat, { locale })}
@@ -80,8 +80,8 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
       </div>
 
       {/* Body: Resources & Events */}
-      <div className="flex-1 overflow-auto relative" ref={containerRef}>
-         <div className="min-w-fit">
+      <div className="ck:flex-1 ck:overflow-auto ck:relative" ref={containerRef}>
+         <div className="ck:min-w-fit">
             {resources.map(resource => {
                 const resourceEvents = events.filter(e => 
                     e.resourceId === resource.id && 
@@ -89,29 +89,29 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
                 );
 
                 return (
-                    <div key={resource.id} className="flex border-b border-border min-h-[100px]">
+                    <div key={resource.id} className="ck:flex ck:border-b ck:border-border ck:min-h-[100px]">
                         {/* Resource Label Column */}
-                        <div className="w-48 shrink-0 border-r border-border p-4 bg-background sticky left-0 z-10 flex items-center gap-3">
+                        <div className="ck:w-48 ck:shrink-0 ck:border-r ck:border-border ck:p-4 ck:bg-background ck:sticky ck:left-0 ck:z-10 ck:flex ck:items-center ck:gap-3">
                             {resource.avatar ? (
-                                <img src={resource.avatar} alt={resource.label} className="w-8 h-8 rounded-full object-cover" />
+                                <img src={resource.avatar} alt={resource.label} className="ck:w-8 ck:h-8 ck:rounded-full ck:object-cover" />
                             ) : (
-                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                                <div className="ck:w-8 ck:h-8 ck:rounded-full ck:bg-primary/10 ck:flex ck:items-center ck:justify-center ck:text-xs ck:font-bold ck:text-primary">
                                     {resource.label.substring(0, 2).toUpperCase()}
                                 </div>
                             )}
-                            <div className="flex flex-col">
-                                <span className="text-sm font-medium">{resource.label}</span>
-                                <span className="text-xs text-muted-foreground">{interpolate(translations?.idLabel || 'ID: {id}', { id: resource.id })}</span>
+                            <div className="ck:flex ck:flex-col">
+                                <span className="ck:text-sm ck:font-medium">{resource.label}</span>
+                                <span className="ck:text-xs ck:text-muted-foreground">{interpolate(translations?.idLabel || 'ID: {id}', { id: resource.id })}</span>
                             </div>
                         </div>
 
                         {/* Timeline Row */}
-                        <div className="relative flex" style={{ width: hours.length * hourWidth }}>
+                        <div className="ck:relative ck:flex" style={{ width: hours.length * hourWidth }}>
                             {/* Grid Lines */}
                             {hours.map(hour => (
                                 <div 
                                     key={hour}
-                                    className="flex h-full shrink-0"
+                                    className="ck:flex ck:h-full ck:shrink-0"
                                     style={{ width: hourWidth }}
                                 >
                                     {[0, 15, 30, 45].map(minute => {
@@ -125,7 +125,7 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
                                                 id={slotId}
                                                 date={slotDate}
                                                 resourceId={resource.id}
-                                                className="h-full flex-1 border-r border-border/10 last:border-border/30 hover:bg-accent/10 transition-colors"
+                                                className="ck:h-full ck:flex-1 ck:border-r ck:border-border/10 ck:last:border-border/30 ck:transition-colors"
                                                 onSlotClick={onTimeSlotClick}
                                             />
                                         );
@@ -143,15 +143,15 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
                                         onEventClick?.(event);
                                     }}
                                     onContextMenu={onEventContextMenu ? (e) => onEventContextMenu(event, e) : undefined}
-                                    className="absolute top-2 bottom-2 rounded-md px-2 py-1 text-xs font-medium border shadow-sm cursor-pointer overflow-hidden hover:brightness-95 transition-all z-10"
+                                    className="ck:absolute ck:top-2 ck:bottom-2 ck:rounded-md ck:px-2 ck:py-1 ck:text-xs ck:font-medium ck:border ck:shadow-xs ck:cursor-pointer ck:overflow-hidden ck:hover:brightness-95 ck:transition-all ck:z-10"
                                     style={{
                                         ...getEventStyle(event),
-                                        backgroundColor: event.color || resource.color || 'var(--primary)',
+                                        backgroundColor: event.color || resource.color || 'var(--ck-primary)',
                                         borderColor: 'rgba(0,0,0,0.1)',
-                                        color: '#fff'
+                                        color: event.color || resource.color ? '#fff' : 'var(--ck-primary-foreground)'
                                     }}
                                 >
-                                    <div className="truncate">{event.title}</div>
+                                    <div className="ck:truncate">{event.title}</div>
                                 </DraggableEvent>
                             ))}
                         </div>

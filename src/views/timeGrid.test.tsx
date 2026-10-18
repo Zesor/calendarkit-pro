@@ -17,7 +17,7 @@ const freeze = (date: Date) => {
   vi.setSystemTime(date)
 }
 
-const scrollTopOf = (container: HTMLElement) => (container.querySelector('.overflow-y-auto') as HTMLElement).scrollTop
+const scrollTopOf = (container: HTMLElement) => (container.querySelector('.ck\\:overflow-y-auto') as HTMLElement).scrollTop
 
 describe('time grids', () => {
   test('T3: the week view scrolls relative to the current time in the display zone', () => {
@@ -81,7 +81,7 @@ describe('time grids', () => {
         <ResourceView currentDate={new Date(2026, 9, 15)} events={[]} resources={[{ id: 'room-a', label: 'Room A' }]} onTimeSlotClick={onTimeSlotClick} />
       </DndContext>,
     )
-    fireEvent.click(container.querySelectorAll('.cursor-pointer')[36]) // 09:00 = 9 hours × 4 quarters
+    fireEvent.click(container.querySelectorAll('.ck\\:cursor-pointer')[36]) // 09:00 = 9 hours × 4 quarters
     expect(onTimeSlotClick).toHaveBeenCalledWith(new Date(2026, 9, 15, 9, 0), 'room-a')
   })
 })

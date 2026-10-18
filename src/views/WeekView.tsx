@@ -1,7 +1,7 @@
 import React from 'react';
 import { addDays, format, differenceInMinutes, isSameDay, Locale } from 'date-fns';
 import { CalendarEvent, CalendarTranslations } from '../types';
-import { cn, isEventDragDisabled } from '../utils';
+import { cx, isEventDragDisabled } from '../utils';
 import { DaySegment, segmentsByDisplayDay } from '../core/events';
 import { partitionDayEvents } from '../core/allDay';
 import { AllDayRow } from '../components/AllDayRow';
@@ -93,33 +93,33 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
   const formats = timeFormats(locale);
 
   return (
-    <div className="flex flex-col h-full bg-background border-[0.5px] border-border/50 rounded-2xl overflow-hidden min-w-[800px] md:min-w-0 shadow-sm">
+    <div className="ck:flex ck:flex-col ck:h-full ck:bg-background ck:border-[0.5px] ck:border-border/50 ck:rounded-2xl ck:overflow-hidden ck:min-w-[800px] ck:md:min-w-0 ck:shadow-xs">
       {/* Scrollable Container - includes header for proper alignment.
           No scrollbar-gutter here: the scrollbar is hidden (scrollbar-hide),
           so reserving its space just leaves a blank strip after the last
           day column on classic-scrollbar platforms. */}
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto scrollbar-hide relative bg-background scroll-smooth"
+        className="ck:flex-1 ck:overflow-y-auto ck:relative ck:bg-background ck:scroll-smooth"
       >
         {/* Header + all-day row - sticky inside scroll container */}
-        <div className="sticky top-0 z-20">
-        <div className="flex border-b-[0.5px] border-border/50 bg-gradient-to-r from-muted/20 via-background to-muted/20 backdrop-blur-sm">
-          <div className="flex-none p-3 text-center text-xs font-semibold text-muted-foreground w-16 flex items-center justify-center border-r-[0.5px] border-border/30 bg-muted/10">
-            <div className="flex flex-col items-center justify-center leading-tight">
+        <div className="ck:sticky ck:top-0 ck:z-20">
+        <div className="ck:flex ck:border-b-[0.5px] ck:border-border/50 ck:bg-linear-to-r ck:from-muted/20 ck:via-background ck:to-muted/20 ck:backdrop-blur-xs">
+          <div className="ck:flex-none ck:p-3 ck:text-center ck:text-xs ck:font-semibold ck:text-muted-foreground ck:w-16 ck:flex ck:items-center ck:justify-center ck:border-r-[0.5px] ck:border-border/30 ck:bg-muted/10">
+            <div className="ck:flex ck:flex-col ck:items-center ck:justify-center ck:leading-tight">
               <span>{format(zonedNow, 'HH:mm')}</span>
-              <span className="text-[10px] opacity-75">({zoneLabel})</span>
+              <span className="ck:text-[10px] ck:opacity-75">({zoneLabel})</span>
             </div>
           </div>
-          <div className="flex-1 grid grid-cols-7">
+          <div className="ck:flex-1 ck:grid ck:grid-cols-7">
               {weekDays.map((day, index) => (
-              <div key={day.toISOString()} className={cn("py-3 px-2 text-center", index > 0 && "border-l-[0.5px] border-border/30")}>
-                  <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">{format(day, 'EEE', { locale })}</div>
-                  <div className={cn(
-                    "w-9 h-9 flex items-center justify-center rounded-xl mx-auto text-sm font-semibold transition-all duration-200",
+              <div key={day.toISOString()} className={cx("ck:py-3 ck:px-2 ck:text-center", index > 0 && "ck:border-l-[0.5px] ck:border-border/30")}>
+                  <div className="ck:text-[10px] ck:font-semibold ck:text-muted-foreground ck:uppercase ck:tracking-wider ck:mb-1.5">{format(day, 'EEE', { locale })}</div>
+                  <div className={cx(
+                    "ck:w-9 ck:h-9 ck:flex ck:items-center ck:justify-center ck:rounded-xl ck:mx-auto ck:text-sm ck:font-semibold ck:transition-all ck:duration-200",
                     isSameDay(day, today)
-                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-110"
-                      : "text-foreground hover:bg-accent/80"
+                      ? "ck:bg-primary ck:text-primary-foreground ck:shadow-lg ck:shadow-primary/30 ck:scale-110"
+                      : "ck:text-foreground ck:hover:bg-accent/80"
                   )}>
                     {format(day, 'd', { locale })}
                   </div>
@@ -134,7 +134,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
           locale={locale}
           translations={translations}
           readonly={readonly}
-          gutterClassName="w-16"
+          gutterClassName="ck:w-16"
           onEventClick={onEventClick}
           onEventContextMenu={onEventContextMenu}
           onDayEventResize={onDayEventResize}
@@ -144,18 +144,18 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
 
         {/* Grid Content */}
         <div
-          className="flex min-w-full relative"
+          className="ck:flex ck:min-w-full ck:relative"
           style={{ height: HOURS.length * HOUR_HEIGHT }}
         >
           {/* Time Labels Column */}
-          <div className="flex-none w-16 border-r-[0.5px] border-border/30 relative bg-muted/5">
+          <div className="ck:flex-none ck:w-16 ck:border-r-[0.5px] ck:border-border/30 ck:relative ck:bg-muted/5">
             {HOURS.map((hour) => (
                  <div
                    key={hour}
-                   className="relative w-full text-[11px] text-muted-foreground/80 text-right pr-3 font-medium tabular-nums box-border"
+                   className="ck:relative ck:w-full ck:text-[11px] ck:text-muted-foreground/80 ck:text-right ck:pr-3 ck:font-medium ck:tabular-nums ck:box-border"
                    style={{ height: HOUR_HEIGHT }}
                  >
-                   <span className="block -translate-y-1/2">
+                   <span className="ck:block ck:-translate-y-1/2">
                     {hour !== 0 && format(slotDate(currentDate, hour, 0), formats.hour, { locale })}
                    </span>
                  </div>
@@ -164,10 +164,10 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
             {/* Current Time Label (Left Axis), positioned in the grid so no header offset is needed */}
             {showsToday && (
               <div
-                className="absolute left-0 w-full pointer-events-none z-30 flex justify-end pr-2"
+                className="ck:absolute ck:left-0 ck:w-full ck:pointer-events-none ck:z-30 ck:flex ck:justify-end ck:pr-2"
                 style={{ top: `${nowTop}px` }}
               >
-                <span className="text-[10px] font-bold text-primary-foreground bg-primary px-1.5 py-0.5 rounded-md shadow-md -translate-y-1/2 backdrop-blur-none">
+                <span className="ck:text-[10px] ck:font-bold ck:text-primary-foreground ck:bg-primary ck:px-1.5 ck:py-0.5 ck:rounded-md ck:shadow-md ck:-translate-y-1/2 ck:backdrop-blur-none">
                   {format(zonedNow, formats.compact, { locale })}
                 </span>
               </div>
@@ -175,18 +175,18 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
           </div>
 
           {/* Days Columns */}
-          <div className="flex-1 grid grid-cols-7 relative">
+          <div className="ck:flex-1 ck:grid ck:grid-cols-7 ck:relative">
             {weekDays.map((day, dayIndex) => {
                 const dayKey = format(day, 'yyyy-MM-dd');
                 const positioned = layoutDayEvents(segmentsByDay.get(dayKey) ?? NO_SEGMENTS);
 
                 return (
-                <div key={dayKey} className={cn("relative h-full", dayIndex > 0 && "border-l-[0.5px] border-border/30")}>
+                <div key={dayKey} className={cx("ck:relative ck:h-full", dayIndex > 0 && "ck:border-l-[0.5px] ck:border-border/30")}>
                     {/* Grid Rows (Droppable Cells) */}
                     {HOURS.map((hour) => (
                         <div
                             key={hour}
-                            className="w-full border-b-[0.5px] border-dashed border-border/20 box-border relative hover:bg-accent/5 transition-colors"
+                            className="ck:w-full ck:border-b-[0.5px] ck:border-dashed ck:border-border/20 ck:box-border ck:relative ck:hover:bg-accent/5 ck:transition-colors"
                             style={{ height: HOUR_HEIGHT }}
                         >
                             {/* 4 x 15-minute intervals */}
@@ -197,7 +197,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
                                         key={minute}
                                         id={cellDate.toISOString()}
                                         date={cellDate}
-                                        className="w-full absolute left-0 right-0 z-0 transition-colors"
+                                        className="ck:w-full ck:absolute ck:left-0 ck:right-0 ck:z-0 ck:transition-colors"
                                         style={{
                                             height: '25%',
                                             top: `${(minute / 60) * 100}%`
@@ -233,7 +233,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
                                 dragId={`${event.id}@${dayKey}`}
                                 grabOffsetMs={start.getTime() - zonedEventStart.getTime()}
                                 event={event}
-                                className={`absolute z-10 transition-all ${readonly ? "cursor-default" : ""}`}
+                                className={`ck:absolute ck:z-10 ck:transition-all ${readonly ? "ck:cursor-default" : ""}`}
                                 style={{
                                     top: `${top}px`,
                                     height: `${Math.max(height, 20)}px`,
@@ -248,25 +248,25 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
                                     event={event}
                                     hourHeight={HOUR_HEIGHT}
                                     onResize={onEventResize}
-                                    className="h-full"
+                                    className="ck:h-full"
                                     style={{ height: '100%' }}
                                 >
                                     <div
-                                        className={cn(
-                                            "rounded-md border shadow-sm transition-all hover:shadow-md group overflow-hidden relative",
-                                            "glass",
-                                            readonly || isEventDragDisabled(event) ? "cursor-default" : "cursor-grab active:cursor-grabbing",
-                                            !event.color && "border-primary/20 bg-primary/10",
-                                            isShortEvent ? "px-1 flex items-center justify-center" : "p-2",
+                                        className={cx(
+                                            "ck:rounded-md ck:border ck:shadow-xs ck:transition-all ck:hover:shadow-md ck:group ck:overflow-hidden ck:relative",
+                                            "",
+                                            readonly || isEventDragDisabled(event) ? "ck:cursor-default" : "ck:cursor-grab ck:active:cursor-grabbing",
+                                            !event.color && "ck:border-primary/20 ck:bg-primary/10",
+                                            isShortEvent ? "ck:px-1 ck:flex ck:items-center ck:justify-center" : "ck:p-2",
                                             // Add active border for overlapped events to distinguish them
-                                            columns > 1 && "border-l-4 border-l-primary/50"
+                                            columns > 1 && "ck:border-l-4 ck:border-l-primary/50"
                                         )}
                                         style={{
                                             height: '100%',
                                             backgroundColor: event.color ? `${event.color}15` : undefined,
                                             borderColor: event.color ? `${event.color}40` : undefined,
                                             borderLeftWidth: '3px',
-                                            borderLeftColor: event.color || 'var(--primary)'
+                                            borderLeftColor: event.color || 'var(--ck-primary)'
                                         }}
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -275,19 +275,19 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
                                         onContextMenu={onEventContextMenu ? (e) => onEventContextMenu(event, e) : undefined}
                                         title={columns > 1 ? `${event.title} (${column + 1}/${columns})` : undefined}
                                     >
-                                        <div className="flex flex-col h-full overflow-hidden w-full">
-                                            <div className={cn("font-semibold truncate text-foreground/90 leading-tight",
-                                                isShortEvent ? "text-xs text-center" : "text-xs"
+                                        <div className="ck:flex ck:flex-col ck:h-full ck:overflow-hidden ck:w-full">
+                                            <div className={cx("ck:font-semibold ck:truncate ck:text-foreground/90",
+                                                isShortEvent ? "ck:text-xs ck:text-center" : "ck:text-xs"
                                             )}>
                                                 {event.title}
                                             </div>
                                             {!isShortEvent && (
                                                 <>
-                                                    <div className="text-[10px] text-muted-foreground truncate mt-0.5 font-medium leading-tight">
+                                                    <div className="ck:text-[10px] ck:text-muted-foreground ck:truncate ck:mt-0.5 ck:font-medium ck:leading-tight">
                                                         {format(zonedEventStart, formats.time, { locale })} - {format(zonedEventEnd, formats.time, { locale })}
                                                     </div>
                                                     {event.description && height > 50 && (
-                                                        <div className="text-[10px] text-muted-foreground/80 truncate mt-1 leading-tight opacity-80">
+                                                        <div className="ck:text-[10px] ck:text-muted-foreground/80 ck:truncate ck:mt-1 ck:leading-tight ck:opacity-80">
                                                             {event.description}
                                                         </div>
                                                     )}
@@ -295,7 +295,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
                                             )}
                                             {/* Overlap Badge */}
                                             {columns > 1 && !isShortEvent && (
-                                                <div className="absolute top-1 right-1 bg-background/80 backdrop-blur-sm rounded-full w-4 h-4 flex items-center justify-center text-[9px] font-bold text-muted-foreground border border-border shadow-sm">
+                                                <div className="ck:absolute ck:top-1 ck:right-1 ck:bg-background/80 ck:backdrop-blur-xs ck:rounded-full ck:w-4 ck:h-4 ck:flex ck:items-center ck:justify-center ck:text-[9px] ck:font-bold ck:text-muted-foreground ck:border ck:border-border ck:shadow-xs">
                                                     {columns}
                                                 </div>
                                             )}
@@ -309,11 +309,11 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
                     {/* Current Time Indicator */}
                     {isSameDay(day, today) && (
                     <div
-                        className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
+                        className="ck:absolute ck:left-0 ck:right-0 ck:z-20 ck:pointer-events-none ck:flex ck:items-center"
                         style={{ top: `${nowTop}px` }}
                     >
-                        <div className="h-[2px] w-full bg-gradient-to-r from-primary via-primary to-primary/50" />
-                        <div className="absolute -left-1.5 w-3 h-3 bg-primary rounded-full shadow-lg shadow-primary/40 ring-2 ring-background animate-pulse" />
+                        <div className="ck:h-[2px] ck:w-full ck:bg-linear-to-r ck:from-primary ck:via-primary ck:to-primary/50" />
+                        <div className="ck:absolute ck:-left-1.5 ck:w-3 ck:h-3 ck:bg-primary ck:rounded-full ck:shadow-lg ck:shadow-primary/40 ck:ring-2 ck:ring-background ck:animate-pulse" />
                     </div>
                     )}
                 </div>

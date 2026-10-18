@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { format, isSameDay, isSameMonth, Locale } from 'date-fns';
 import { CalendarEvent, CalendarTranslations } from '../types';
 import { interpolate } from '../core/format';
-import { cn } from '../utils';
+import { cx } from '../utils';
 import { eventsByStartDay } from '../core/events';
 import { layoutDayRow, partitionDayEvents } from '../core/allDay';
 import { AllDayBar } from '../components/AllDayBar';
@@ -34,10 +34,10 @@ interface EventItemProps {
 const EventItem = React.memo(({ event, onEventClick, onEventContextMenu }: EventItemProps) => (
     <DraggableEvent event={event}>
         <div
-            className={cn(
-              "text-xs px-2.5 py-1.5 rounded-lg truncate cursor-pointer shadow-sm transition-all duration-200",
-              "hover:shadow-md hover:scale-[1.02] hover:z-10",
-              !event.color && "bg-primary/10 text-primary hover:bg-primary/15 border-[0.5px] border-primary/20"
+            className={cx(
+              "ck:text-xs ck:px-2.5 ck:py-1.5 ck:rounded-lg ck:truncate ck:cursor-pointer ck:shadow-xs ck:transition-all ck:duration-200",
+              "ck:hover:shadow-md ck:hover:scale-[1.02] ck:hover:z-10",
+              !event.color && "ck:bg-primary/10 ck:text-primary ck:hover:bg-primary/15 ck:border-[0.5px] ck:border-primary/20"
             )}
             style={event.color ? {
               backgroundColor: `${event.color}20`,
@@ -50,7 +50,7 @@ const EventItem = React.memo(({ event, onEventClick, onEventContextMenu }: Event
             }}
             onContextMenu={onEventContextMenu ? (e) => onEventContextMenu(event, e) : undefined}
         >
-            <span className="font-medium">{event.title}</span>
+            <span className="ck:font-medium">{event.title}</span>
         </div>
     </DraggableEvent>
 ));
@@ -103,14 +103,14 @@ export const MonthView: React.FC<MonthViewProps> = ({
   const today = displayToday(timezone);
 
   return (
-    <div className="flex flex-col h-full bg-background border-[0.5px] scrollbar-hide border-border/50 rounded-2xl overflow-hidden min-w-[800px] md:min-w-0 shadow-sm">
-      <div className="overflow-y-auto flex-1 relative">
+    <div className="ck:flex ck:flex-col ck:h-full ck:bg-background ck:border-[0.5px] ck:border-border/50 ck:rounded-2xl ck:overflow-hidden ck:min-w-[800px] ck:md:min-w-0 ck:shadow-xs">
+      <div className="ck:overflow-y-auto ck:flex-1 ck:relative">
         {/* Sticky Header */}
-        <div className="grid grid-cols-7 border-b-[0.5px] border-border/50 bg-gradient-to-r from-muted/30 via-muted/40 to-muted/30 sticky top-0 z-20 backdrop-blur-sm">
+        <div className="ck:grid ck:grid-cols-7 ck:border-b-[0.5px] ck:border-border/50 ck:bg-linear-to-r ck:from-muted/30 ck:via-muted/40 ck:to-muted/30 ck:sticky ck:top-0 ck:z-20 ck:backdrop-blur-xs">
           {weekDays.map((day) => (
             <div
               key={day.toISOString()}
-              className="py-3 text-center text-xs font-semibold text-muted-foreground border-r-[0.5px] border-border/30 last:border-r-0 uppercase tracking-wider"
+              className="ck:py-3 ck:text-center ck:text-xs ck:font-semibold ck:text-muted-foreground ck:border-r-[0.5px] ck:border-border/30 ck:last:border-r-0 ck:uppercase ck:tracking-wider"
             >
               {format(day, 'EEE', { locale })}
             </div>
@@ -121,7 +121,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
           const visibleLanes = Math.min(laneCount, MAX_LANES);
 
           return (
-          <div key={week[0].toISOString()} className="relative grid grid-cols-7" style={{ height: ROW_HEIGHT }}>
+          <div key={week[0].toISOString()} className="ck:relative ck:grid ck:grid-cols-7" style={{ height: ROW_HEIGHT }}>
             {week.map((day, column) => {
               const dayKey = format(day, 'yyyy-MM-dd');
               const dayTimed = eventsByDay.get(dayKey) || [];
@@ -139,33 +139,37 @@ export const MonthView: React.FC<MonthViewProps> = ({
                   key={cellId}
                   id={cellId}
                   date={day}
-                  className={cn(
-                    "h-full p-2 border-b-[0.5px] border-r-[0.5px] border-border/30 last:border-r-0 relative transition-all duration-200 hover:bg-accent/5 flex flex-col gap-1.5 overflow-hidden group",
-                    !isCurrentMonth && "bg-muted/5 text-muted-foreground/60",
-                    isSameDay(day, today) && "bg-primary/5 ring-1 ring-inset ring-primary/20"
+                  className={cx(
+                    "ck:h-full ck:p-2 ck:border-b-[0.5px] ck:border-r-[0.5px] ck:border-border/30 ck:last:border-r-0 ck:relative ck:transition-all ck:duration-200 ck:flex ck:flex-col ck:gap-1.5 ck:overflow-hidden ck:group",
+                    !isCurrentMonth && "ck:text-muted-foreground/60"
                   )}
+                  idleClassName={
+                    isSameDay(day, today)
+                      ? "ck:bg-primary/5 ck:ring-1 ck:ring-inset ck:ring-primary/20"
+                      : !isCurrentMonth ? "ck:bg-muted/5" : undefined
+                  }
                   onClick={() => onDateClick?.(day)}
                 >
-                  <div className="flex justify-between items-start">
-                    <div className={cn(
-                      "text-sm font-semibold w-7 h-7 flex items-center justify-center rounded-full transition-all duration-200",
+                  <div className="ck:flex ck:justify-between ck:items-start">
+                    <div className={cx(
+                      "ck:text-sm ck:font-semibold ck:w-7 ck:h-7 ck:flex ck:items-center ck:justify-center ck:rounded-full ck:transition-all ck:duration-200",
                       isSameDay(day, today)
-                        ? "bg-primary text-primary-foreground shadow-md shadow-primary/30"
-                        : "group-hover:bg-accent"
+                        ? "ck:bg-primary ck:text-primary-foreground ck:shadow-md ck:shadow-primary/30"
+                        : "ck:group-hover:bg-accent"
                     )}>
                       {format(day, 'd', { locale })}
                     </div>
                     {total > 0 && (
-                      <div className="text-[10px] font-medium text-muted-foreground/60 bg-muted/50 px-1.5 py-0.5 rounded-full">
+                      <div className="ck:text-[10px] ck:font-medium ck:text-muted-foreground/60 ck:bg-muted/50 ck:px-1.5 ck:py-0.5 ck:rounded-full">
                         {total}
                       </div>
                     )}
                   </div>
 
                   {/* Room for the all-day bars drawn across the week */}
-                  {visibleLanes > 0 && <div className="shrink-0" style={{ height: visibleLanes * LANE_HEIGHT - 6 }} />}
+                  {visibleLanes > 0 && <div className="ck:shrink-0" style={{ height: visibleLanes * LANE_HEIGHT - 6 }} />}
 
-                  <div className="flex-1 flex flex-col gap-1 scrollbar-hide overflow-y-auto overflow-x-hidden">
+                  <div className="ck:flex-1 ck:flex ck:flex-col ck:gap-1 ck:overflow-y-auto ck:overflow-x-hidden">
                     {dayTimed.slice(0, shown).map(event => (
                        <EventItem key={`${event.id}-${dayKey}`} event={event} onEventClick={onEventClick} onEventContextMenu={onEventContextMenu} />
                     ))}
@@ -173,7 +177,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
                         // "+N more" counts hidden bars and hidden timed events, and opens the day.
                         <button
                             type="button"
-                            className="shrink-0 text-[10px] leading-4 text-primary font-semibold text-center py-0.5 px-2 rounded-md bg-primary/5 hover:bg-primary/10 cursor-pointer transition-colors"
+                            className="ck:shrink-0 ck:text-[10px] ck:leading-4 ck:text-primary ck:font-semibold ck:text-center ck:py-0.5 ck:px-2 ck:rounded-md ck:bg-primary/5 ck:hover:bg-primary/10 ck:cursor-pointer ck:transition-colors"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onDateClick?.(day);
@@ -188,9 +192,9 @@ export const MonthView: React.FC<MonthViewProps> = ({
             })}
 
             {/* All-day bars spanning the week */}
-            <div className="absolute inset-x-0 pointer-events-none" style={{ top: BARS_TOP, height: visibleLanes * LANE_HEIGHT }}>
+            <div className="ck:absolute ck:inset-x-0 ck:pointer-events-none" style={{ top: BARS_TOP, height: visibleLanes * LANE_HEIGHT }}>
               {segments.filter((s) => s.lane < MAX_LANES).map((segment) => (
-                <div key={`${segment.event.id}-${week[0].toISOString()}`} className="pointer-events-auto">
+                <div key={`${segment.event.id}-${week[0].toISOString()}`} className="ck:pointer-events-auto">
                   <AllDayBar
                     segment={segment}
                     rowDays={week}

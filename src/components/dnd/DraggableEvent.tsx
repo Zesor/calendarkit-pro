@@ -2,7 +2,7 @@ import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { CalendarEvent } from '../../types';
-import { cn, isEventDragDisabled } from '../../utils';
+import { cx, isEventDragDisabled } from '../../utils';
 
 interface DraggableEventProps extends React.HTMLAttributes<HTMLDivElement> {
   event: CalendarEvent;
@@ -36,7 +36,7 @@ const DraggableEventImpl: React.FC<DraggableEventProps> = ({ event, dragId, grab
       {...listeners}
       {...attributes}
       {...props}
-      className={cn(!dragDisabled && "touch-none", className)}
+      className={cx(!dragDisabled && "ck:touch-none", className)}
     >
       {children}
     </div>

@@ -37,10 +37,10 @@ describe('AllDayRow', () => {
   test('clicking an empty day creates an all-day event on that day (not in readOnly)', () => {
     const onSlotClick = vi.fn()
     const { container, rerender } = renderRow([], { onSlotClick })
-    fireEvent.click(container.querySelectorAll('[data-all-day-row] .cursor-pointer')[2])
+    fireEvent.click(container.querySelectorAll('[data-all-day-row] .ck\\:cursor-pointer')[2])
     expect(onSlotClick).toHaveBeenCalledWith(new Date(2026, 9, 14))
     rerender(<DndContext><AllDayRow days={week} dayEvents={[]} gutterClassName="w-16" translations={fr} readonly onSlotClick={onSlotClick} /></DndContext>)
-    expect(container.querySelectorAll('[data-all-day-row] .cursor-pointer')).toHaveLength(0)
+    expect(container.querySelectorAll('[data-all-day-row] .ck\\:cursor-pointer')).toHaveLength(0)
   })
 
   test('bars continuing across the row show chevrons; the resize handle is only on the last segment', () => {

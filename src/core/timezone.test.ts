@@ -15,6 +15,20 @@ describe('timezone', () => {
     expect(fromDisplay(wall, 'Asia/Tokyo').toISOString()).toBe(instant.toISOString())
   })
 
+  test('DST in the display zone: both sides of a switch, a skipped hour and a repeated hour', () => {
+    const ny = 'America/New_York'
+    const clock = (d: Date) => [d.getHours(), d.getMinutes()]
+    // Clocks go forward at 2:00 on March 8, 2026 (EST → EDT) and back at 2:00 on November 1 (EDT → EST).
+    expect(clock(toDisplay(new Date('2026-03-08T06:59:00Z'), ny))).toEqual([1, 59])
+    expect(clock(toDisplay(new Date('2026-03-08T07:00:00Z'), ny))).toEqual([3, 0])
+    expect(fromDisplay(new Date(2026, 2, 8, 3, 30), ny).toISOString()).toBe('2026-03-08T07:30:00.000Z')
+    // 2:30 never shows on March 8: it moves forward by the gap, to 3:30 EDT (like `new Date()` and Temporal).
+    expect(fromDisplay(new Date(2026, 2, 8, 2, 30), ny).toISOString()).toBe('2026-03-08T07:30:00.000Z')
+    // 1:30 shows twice on November 1: the earlier one (EDT).
+    expect(fromDisplay(new Date(2026, 10, 1, 1, 30), ny).toISOString()).toBe('2026-11-01T05:30:00.000Z')
+    expect(fromDisplay(new Date(2026, 10, 1, 2, 30), ny).toISOString()).toBe('2026-11-01T07:30:00.000Z')
+  })
+
   test('without a zone, display is local time', () => {
     const instant = new Date(2026, 9, 17, 9, 15)
     expect(toDisplay(instant)).toEqual(instant)

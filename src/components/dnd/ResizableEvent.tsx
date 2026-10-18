@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { CalendarEvent } from '../../types';
-import { cn, isEventResizeDisabled } from '../../utils';
+import { cx, isEventResizeDisabled } from '../../utils';
 import { computeResizeEnd } from '../../core/dnd';
 
 interface ResizableEventProps {
@@ -96,7 +96,7 @@ export const ResizableEvent: React.FC<ResizableEventProps> = ({
   return (
     <div
       ref={containerRef}
-      className={cn("relative group", className)}
+      className={cx("ck:relative ck:group", className)}
       style={{
         ...style,
         height: resizeHeight !== null ? `${resizeHeight}px` : style?.height,
@@ -106,25 +106,25 @@ export const ResizableEvent: React.FC<ResizableEventProps> = ({
 
       {/* Resize Handle */}
       <div
-        className={cn(
-          resizeLocked ? "cursor-default" : "cursor-ns-resize group-hover:opacity-100",
-          "absolute bottom-0 left-0 right-0 h-3 z-20 flex items-center justify-center",
-          "opacity-0 transition-opacity",
-          isResizing && "opacity-100"
+        className={cx(
+          resizeLocked ? "ck:cursor-default" : "ck:cursor-ns-resize ck:group-hover:opacity-100",
+          "ck:absolute ck:bottom-0 ck:left-0 ck:right-0 ck:h-3 ck:z-20 ck:flex ck:items-center ck:justify-center",
+          "ck:transition-opacity",
+          isResizing ? "ck:opacity-100" : "ck:opacity-0"
         )}
         onPointerDown={resizeLocked ? undefined : handlePointerDown}
         onMouseDown={resizeLocked ? undefined : handleResizeStart}
         onTouchStart={resizeLocked ? undefined : handleResizeStart}
       >
-        <div className={cn(
-          "w-8 h-1 rounded-full transition-all",
-          isResizing ? "bg-primary" : "bg-muted-foreground/30 group-hover:bg-primary/50"
+        <div className={cx(
+          "ck:w-8 ck:h-1 ck:rounded-full ck:transition-all",
+          isResizing ? "ck:bg-primary" : "ck:bg-muted-foreground/30 ck:group-hover:bg-primary/50"
         )} />
       </div>
 
       {/* Visual feedback during resize */}
       {isResizing && (
-        <div className="absolute inset-0 border-2 border-primary border-dashed rounded-md pointer-events-none bg-primary/5" />
+        <div className="ck:absolute ck:inset-0 ck:border-2 ck:border-primary ck:border-dashed ck:rounded-md ck:pointer-events-none ck:bg-primary/5" />
       )}
     </div>
   );
