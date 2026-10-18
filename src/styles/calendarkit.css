@@ -10,8 +10,18 @@
 @source "../views";
 @source "../index.tsx";
 
-/* `ck:dark:` follows the resolved mode of the nearest calendar root. */
-@custom-variant dark (&:where([data-ck-mode="dark"], [data-ck-mode="dark"] *, .dark :not([data-ck-mode]) *));
+/* `ck:dark:` follows the mode of the calendar root: `mode="dark"`, `mode="system"` on a dark system,
+   or no mode inside a `.dark` ancestor (the 1.x convention). */
+@custom-variant dark {
+  &:where([data-ck-mode="dark"], [data-ck-mode="dark"] *, .dark .ck-root:not([data-ck-mode]), .dark .ck-root:not([data-ck-mode]) *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where([data-ck-mode="system"], [data-ck-mode="system"] *) {
+      @slot;
+    }
+  }
+}
 
 /* Entrance animations (no exit animations: a closed element leaves at once). */
 @theme {

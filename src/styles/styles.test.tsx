@@ -39,4 +39,31 @@ describe('compiled stylesheet', () => {
     expect(outside).toEqual([])
     expect(css).toContain('--ck-styles:1')
   })
+
+  test('ck:dark: follows the mode of the calendar root, not any .dark ancestor', () => {
+    // Every rule of one dark-mode class, with the media query it sits in (if any).
+    const rules: Array<{ selector: string; media: string }> = []
+    postcss.parse(css).walkRules((rule) => {
+      if (!rule.selector.startsWith('.ck\\:dark\\:text-amber-400')) return
+      const parent = rule.parent as postcss.AtRule
+      rules.push({ selector: rule.selector, media: parent.type === 'atrule' ? parent.params : '' })
+    })
+    document.body.innerHTML = `
+      <div class="dark"><main><div class="ck-root" data-ck-mode="light"><div><span id="light-in-dark"></span></div></div></main></div>
+      <div class="dark"><main><div class="ck-root"><span id="no-mode-in-dark"></span></div></main></div>
+      <div class="ck-root" data-ck-mode="dark"><span id="dark"></span></div>
+      <div class="ck-root" data-ck-mode="system"><span id="system"></span></div>
+      <div class="ck-root"><span id="no-mode"></span></div>`
+    const activeIn = (id: string) => {
+      const el = document.getElementById(id)!
+      el.className = 'ck:dark:text-amber-400'
+      return rules.filter((r) => el.matches(r.selector)).map((r) => r.media || 'always')
+    }
+    expect(activeIn('light-in-dark')).toEqual([])
+    expect(activeIn('no-mode')).toEqual([])
+    expect(activeIn('no-mode-in-dark')).toEqual(['always'])
+    expect(activeIn('dark')).toEqual(['always'])
+    expect(activeIn('system')).toEqual(['(prefers-color-scheme:dark)'])
+    document.body.innerHTML = ''
+  })
 })
