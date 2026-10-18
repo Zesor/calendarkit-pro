@@ -175,3 +175,36 @@ describe('review fixes: drafts, undo, occurrences', () => {
     expect(next[0].recurrence?.exdates).toEqual([new Date(2026, 9, 12, 9)])
   })
 })
+
+describe('saveEvent (custom forms, 1.x modal)', () => {
+  test('saves the edited event with every form field, merged into the stored one', () => {
+    const onEventUpdate = vi.fn()
+    const cal = createCalendar({ events: [lunch], onEventUpdate, now })
+    cal.openEvent('lu')
+    cal.saveEvent({ title: 'Team lunch', description: 'Bring the slides', color: '#047857' })
+    expect(onEventUpdate).toHaveBeenCalledWith({ ...lunch, title: 'Team lunch', description: 'Bring the slides', color: '#047857' })
+    expect(cal.getState().dialog).toBeNull()
+  })
+
+  test('saving an occurrence shifts its series', () => {
+    const onEventUpdate = vi.fn()
+    const cal = createCalendar({ events: [standup], onEventUpdate, now })
+    cal.openEditor(occurrence(cal, 12).id)
+    cal.saveEvent({ start: new Date(2026, 9, 12, 10), end: new Date(2026, 9, 12, 10, 30), description: 'moved' })
+    expect(onEventUpdate.mock.calls[0][0]).toMatchObject({ id: 'su', start: new Date(2026, 9, 5, 10), description: 'moved' })
+  })
+
+  test('without an edited event it creates one, keeping the resource of the clicked slot', () => {
+    const onEventCreate = vi.fn()
+    const cal = createCalendar({ events: [], onEventCreate, createId: ids(), now })
+    cal.openSlot(new Date(2026, 9, 15, 14), { resourceId: 'room-b', editor: true })
+    cal.saveEvent({ title: 'Demo', start: new Date(2026, 9, 15, 14), end: new Date(2026, 9, 15, 15) })
+    expect(onEventCreate).toHaveBeenCalledWith({ id: 'new-1', title: 'Demo', start: new Date(2026, 9, 15, 14), end: new Date(2026, 9, 15, 15), resourceId: 'room-b' })
+  })
+
+  test('readOnly ignores it', () => {
+    const onEventCreate = vi.fn()
+    createCalendar({ events: [], onEventCreate, readOnly: true, now }).saveEvent({ title: 'x', start: lunch.start, end: lunch.end })
+    expect(onEventCreate).not.toHaveBeenCalled()
+  })
+})

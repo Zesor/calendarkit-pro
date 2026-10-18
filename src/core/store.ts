@@ -112,6 +112,11 @@ export interface CalendarStore {
   closeDialog(): void
   toggleCalendar(calendarId: string): void
   saveDraft(): void
+  /**
+   * Saves the event of the open dialog with the fields of a custom form (`renderEventForm`, the
+   * 1.x modal). Dates are used as given. Without an event being edited, creates a new one.
+   */
+  saveEvent(data: Partial<CalendarEvent>): void
   create(event: Partial<CalendarEvent> & Pick<CalendarEvent, 'title' | 'start' | 'end'>): void
   update(event: CalendarEvent): void
   move(eventId: string, target: MoveTarget): void
@@ -337,6 +342,26 @@ export function createCalendar(initial: CalendarOptions = {}): CalendarStore {
         return store.update(shiftSeries(edited, event, fields.start, fields.end, edited.allDay ? undefined : options.timezone))
       }
       store.update({ ...event, ...fields })
+    },
+    saveEvent(data) {
+      if (options.readOnly) return
+      const eventId = dialog?.kind === 'event' || dialog?.kind === 'editor' ? dialog.eventId : undefined
+      if (eventId === undefined) {
+        const draft = dialog?.kind === 'quick' || dialog?.kind === 'editor' ? dialog.draft : undefined
+        const resourceId = data.resourceId ?? draft?.resourceId
+        return store.create({ ...data, ...(resourceId !== undefined ? { resourceId } : {}) } as CalendarEvent)
+      }
+      const event = find(eventId)
+      if (!event) return
+      if (event.originalEventId) {
+        // R5: saving one occurrence updates the series, shifted by the same delta.
+        const master = masterOf(event, store.getState().events)
+        if (!master) return
+        const edited = { ...master, ...stripOccurrenceFields({ ...event, ...data } as CalendarEvent), id: master.id, start: master.start, end: master.end }
+        return store.update(shiftSeries(edited, event, data.start ?? event.start, data.end ?? event.end, edited.allDay ? undefined : options.timezone))
+      }
+      const raw = source().find((e) => e.id === event.id) ?? event
+      store.update({ ...raw, ...data, id: event.id } as CalendarEvent)
     },
     create(fields) {
       if (options.readOnly) return
