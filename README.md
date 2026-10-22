@@ -255,6 +255,8 @@ const placeSearch = photonPlaces({ lang: 'en' }); // once, outside the component
 <Scheduler placeSearch={placeSearch} />
 ```
 
+`lang` is one of `en`, `de`, `fr`, `it`. The public Photon server has a fair-use policy: for heavy traffic, run your own and pass its URL as `endpoint`.
+
 A chosen place is saved as `event.place` (`{ name, address, lat, lon }`) with its text in `location`, and the event card links to Maps and to directions. A video link is kept as typed. Any provider fits: `placeSearch` is `(query, { signal }) => Promise<Place[]>`.
 
 ## Customizing

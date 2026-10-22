@@ -31,6 +31,8 @@ describe('the full form as a card', () => {
     act(() => screen.getByRole('button', { name: 'More options' }).click())
     expect(editor().style.left).toBe('412px')
     expect(editor().style.top).toBe('260px')
+    // No taller than the room below its top: Save stays in the window, the form scrolls inside.
+    expect(editor().style.maxHeight).toBe(`${window.innerHeight - 260 - 8}px`)
     // Nothing laid over the whole calendar dims or blurs it.
     expect([...container.querySelectorAll('[class*="inset-0"]')].some((el) => /bg-black|backdrop-blur/.test(el.className))).toBe(false)
   })
@@ -77,5 +79,16 @@ describe('the full form in the calendar\'s time zone', () => {
     fireEvent.change(screen.getByPlaceholderText('Add title'), { target: { value: 'Call' } })
     fireEvent.submit(screen.getByPlaceholderText('Add title').closest('form')!)
     expect(onEventCreate.mock.calls[0][0].start.toISOString()).toBe('2026-10-15T05:00:00.000Z')
+  })
+
+  test('saving without changes keeps the instant, even in the hour repeated when clocks go back', () => {
+    // 01:30 for the second time on 1 November 2026 in New York (EST, after the clocks went back).
+    const late: CalendarEvent = { id: 'l', title: 'Night', start: new Date('2026-11-01T06:30:00Z'), end: new Date('2026-11-01T07:00:00Z') }
+    const onEventUpdate = vi.fn()
+    render(<Scheduler view="day" date={new Date('2026-11-01T06:30:00Z')} timezone="America/New_York" events={[late]} onEventUpdate={onEventUpdate} />)
+    act(() => screen.getAllByText('Night')[0].click())
+    act(() => within(screen.getByRole('dialog', { name: 'Night' })).getByRole('button', { name: 'Edit' }).click())
+    fireEvent.submit(screen.getByPlaceholderText('Add title').closest('form')!)
+    expect(onEventUpdate.mock.calls[0][0].start.toISOString()).toBe('2026-11-01T06:30:00.000Z')
   })
 })

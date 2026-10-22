@@ -179,7 +179,8 @@ describe('EventModal layout (spec §8.5): labelled rows, and a footer that stays
   test('the editor is a card named by its heading, no taller than the window, with the footer outside the scrolling body', () => {
     openCreate()
     const dialog = screen.getByRole('dialog', { name: 'New Event' })
-    expect(dialog.style.maxHeight).toBe(`${window.innerHeight - 16}px`)
+    // Centred near the top (no anchor here): no taller than the room below that top.
+    expect(dialog.style.maxHeight).toBe(`${window.innerHeight - 80 - 8}px`)
     const body = screen.getByLabelText('Add title').closest('.ck\\:overflow-y-auto')!
     expect(body.contains(screen.getByRole('button', { name: 'Create Event' }))).toBe(false)
   })

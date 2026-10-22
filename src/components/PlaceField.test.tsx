@@ -50,6 +50,30 @@ describe('place search in the form', () => {
     expect(onSave.mock.calls[0][0]).toMatchObject({ location: 'Somewhere', place: undefined })
   })
 
+  test('only the latest text\'s suggestions show, even from a provider that ignores the abort signal', async () => {
+    let resolveOld: (places: Place[]) => void = () => {}
+    const search = vi.fn<PlaceSearch>()
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveOld = resolve }))
+      .mockResolvedValueOnce([{ ...flore, name: 'Flore Café', address: 'Lyon' }])
+    open(search)
+    fireEvent.change(location(), { target: { value: 'Flor' } })
+    await vi.waitFor(() => expect(search).toHaveBeenCalledTimes(1))
+    fireEvent.change(location(), { target: { value: 'Flore Lyon' } })
+    expect(await screen.findByRole('option', { name: /Flore Café/ })).toBeTruthy()
+    act(() => resolveOld([flore]))
+    await new Promise((r) => setTimeout(r, 0))
+    expect(screen.queryByRole('option', { name: /Café de Flore/ })).toBeNull()
+  })
+
+  test('while new text is being searched, the previous suggestions are gone (Enter cannot pick a stale one)', async () => {
+    open(vi.fn<PlaceSearch>().mockResolvedValue([flore]))
+    fireEvent.change(location(), { target: { value: 'Flore' } })
+    await screen.findByRole('option', { name: /Café de Flore/ })
+    fireEvent.change(location(), { target: { value: 'Flore Paris' } })
+    expect(screen.queryByRole('option', { name: /Café de Flore/ })).toBeNull()
+    expect(screen.getByText('Searching…')).toBeTruthy()
+  })
+
   test('a video link is kept as typed and never sent to the provider', async () => {
     const search = vi.fn<PlaceSearch>().mockResolvedValue([flore])
     open(search)

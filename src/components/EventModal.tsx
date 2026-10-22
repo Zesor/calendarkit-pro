@@ -642,6 +642,8 @@ export const EventModal: React.FC<EventModalProps> = ({
   );
 
   if (!isOpen) return null;
+  // No taller than the room below its top: the form scrolls inside, Save stays in the window.
+  const at = place ?? { left: Math.max(MARGIN, (window.innerWidth - WIDTH) / 2), top: 80 };
   return (
     <>
       <div data-ck-backdrop className="ck:fixed ck:inset-0 ck:z-40" onClick={requestClose} />
@@ -651,7 +653,7 @@ export const EventModal: React.FC<EventModalProps> = ({
         aria-modal="true"
         aria-labelledby={`${id}-heading`}
         className={cx("ck:fixed ck:z-50 ck:flex ck:flex-col ck:overflow-hidden ck:rounded-2xl ck:border ck:border-border ck:bg-background ck:shadow-[0_24px_56px_-20px_rgb(0_0_0/0.4),0_2px_8px_-2px_rgb(0_0_0/0.12)] ck:animate-pop-in", classNames.dialog)}
-        style={{ ...(place ?? { left: Math.max(MARGIN, (window.innerWidth - WIDTH) / 2), top: 80 }), width: WIDTH, maxWidth: `calc(100vw - ${2 * MARGIN}px)`, maxHeight: window.innerHeight - 2 * MARGIN }}
+        style={{ ...at, width: WIDTH, maxWidth: `calc(100vw - ${2 * MARGIN}px)`, maxHeight: window.innerHeight - at.top - MARGIN }}
       >
         {renderEditMode()}
       </div>

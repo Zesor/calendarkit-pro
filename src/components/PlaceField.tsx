@@ -40,6 +40,8 @@ export const PlaceField: React.FC<PlaceFieldProps> = ({ id, value, place, search
       setStatus('searching');
       search(query, { signal: controller.signal }).then(
         (found) => {
+          // A provider that ignores `signal` may still answer an old query.
+          if (controller.signal.aborted) return;
           // The same place twice (a provider's duplicates) is listed once.
           const seen = new Set<string>();
           setResults(found.filter((p) => !seen.has(placeLabel(p)) && seen.add(placeLabel(p))));
@@ -84,7 +86,9 @@ export const PlaceField: React.FC<PlaceFieldProps> = ({ id, value, place, search
           onChange={(e) => {
             typed.current = e.target.value;
             setOpen(true);
-            if (e.target.value.trim().length < MIN_LENGTH) setStatus('idle');
+            // Until the new answer, no old suggestion stays to be picked.
+            setStatus(e.target.value.trim().length < MIN_LENGTH || isLink(e.target.value) ? 'idle' : 'searching');
+            setActive(-1);
             onChange(e.target.value);
           }}
           onBlur={() => setOpen(false)}

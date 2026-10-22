@@ -299,8 +299,15 @@ export const Scheduler: React.FC<CalendarProps> = ({
     () => (selectedEvent && !selectedEvent.allDay ? { ...selectedEvent, start: toDisplay(selectedEvent.start, timezone), end: toDisplay(selectedEvent.end, timezone) } : selectedEvent),
     [selectedEvent, timezone],
   );
+  // An unchanged time keeps its instant (the hour repeated when clocks go back has two).
+  const backToInstant = (wall: Date | undefined, shown: Date | undefined, instant: Date | undefined) =>
+    wall && shown && instant && wall.getTime() === shown.getTime() ? instant : wall && fromDisplay(wall, timezone);
   const handleEditorSave = useStableCallback((data: Partial<CalendarEvent>) => handleModalSave(
-    data.allDay ? data : { ...data, start: data.start && fromDisplay(data.start, timezone), end: data.end && fromDisplay(data.end, timezone) },
+    data.allDay ? data : {
+      ...data,
+      start: backToInstant(data.start, editorEvent?.start, selectedEvent?.start),
+      end: backToInstant(data.end, editorEvent?.end, selectedEvent?.end),
+    },
   ));
 
   // "Create" works like a click in the grid (spec §8.5): the quick card at the next free hour, today
