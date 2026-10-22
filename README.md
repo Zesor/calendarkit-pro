@@ -111,6 +111,7 @@ Or let the calendar keep the list itself (uncontrolled), and save it when it cha
 | `hideViewSwitcher` | `boolean` | Hide view switcher |
 | `renderEventForm` | `(props) => ReactNode` | Custom event form (same as `components.EventEditor`) |
 | `classNames` | `CalendarClassNames` | Extra classes for `root`, `toolbar`, `sidebar`, `event`, `slot`, `allDayBar`, `dialog` (see [Customizing](#customizing)) |
+| `layout` | `'classic'` \| `'focus'` \| `'flow'` | How the calendar is laid out (default `'classic'`, see [Layouts](#layouts)) |
 | `placeSearch` | `(query, { signal }) => Promise<Place[]>` | Place suggestions in the form's Location field, off by default (see [Places](#places)) |
 | `components` | `CalendarComponents` | Your own `EventContent`, `EventEditor`, `Toolbar`, `Sidebar`, `EmptyState` (see [Customizing](#customizing)) |
 
@@ -232,6 +233,18 @@ const events = [
 - The week and day views show them in a collapsible row above the grid (2 lanes, then "+N more"). The month view draws continuous bars (up to 3 lanes per week); its "+N more" counts the hidden bars and events of the day.
 - Drag a bar to move it by whole days, or stretch its right edge to change its last day. `onEventDrop` / `onEventResize` then `onEventUpdate` fire as for timed events; `draggable: false`, `resizable: false` and `readOnly` apply.
 - Click an empty day of the all-day row to create an all-day event. The event form has an All Day switch and shows the last day included.
+
+## Layouts
+
+```tsx
+<Scheduler layout="focus" />
+```
+
+- `classic` (default): header, side panel, a card beside each event you click.
+- `focus`: the grid takes the whole calendar, under a floating toolbar (period, Today, previous / next, views, Create). A click on an event edits it in a panel docked beside the grid.
+- `flow`: the week's days as a strip (dots show how busy each day is) and the chosen day as a feed of cards: events in order, free slots with **Book** (an hour at their start), the current time, and a floating **Create**. The full form opens as a sheet from the bottom.
+
+A custom `components.Toolbar` replaces the Focus toolbar too; `renderEventForm` keeps your form in every layout.
 
 ## Creating and undoing
 

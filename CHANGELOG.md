@@ -1,6 +1,14 @@
 # Pro-Scheduler Changelog
 
-## Unreleased
+## 2.0.0-alpha.9
+
+Pre-release on the `next` dist-tag (`latest` stays on 1.4.x).
+
+### Added
+- `layout="focus"`: the grid takes the whole calendar, under a floating toolbar (period, Today, previous / next, views, Create); a click on an event edits it in a side panel docked beside the grid. `layout="flow"`: the week's days as a strip (dots for how busy each day is), the day as a feed of cards in order with free slots to book (an hour at their start) and the current time, a floating Create; the full form opens as a bottom sheet. `layout="classic"` stays the default. New type `CalendarLayout`.
+
+### Changed
+- Scheduler budget: 56 kB brotli (was 52 kB).
 
 ### Fixed
 - Week view: the current-time line and its badge were drawn over the day header when the grid was scrolled past them; the header now stays above everything that scrolls and is opaque.
