@@ -11,6 +11,7 @@ import { EventModal } from './components/EventModal';
 import { MoreEventsDialog } from './components/MoreEventsDialog';
 import { QuickCreate } from './components/QuickCreate';
 import { EventPopover } from './components/EventPopover';
+import { Box } from './components/placement';
 import { UndoToast } from './components/UndoToast';
 import { MonthViewSkeleton, WeekViewSkeleton, DayViewSkeleton, AgendaViewSkeleton } from './components/Skeleton';
 import { EventContextMenu, useEventContextMenu } from './components/ContextMenu';
@@ -55,6 +56,12 @@ export type {
 } from './types';
 
 const NO_CLASSES: CalendarClassNames = {};
+
+/** What a press landed on: the event's box when it has one (the card opens beside it), else the point. */
+function pressedBox(e: React.PointerEvent): Box {
+  const box = (e.target as Element).closest?.('.ck-event, [data-ck-event]')?.getBoundingClientRect();
+  return box && box.width > 0 ? box : { left: e.clientX, right: e.clientX, top: e.clientY, bottom: e.clientY };
+}
 const NO_COMPONENTS: CalendarComponents = {};
 
 // Drag ghost: 15px snap (15 minutes at 60px per hour), kept inside the window.
@@ -151,9 +158,9 @@ export const Scheduler: React.FC<CalendarProps> = ({
   // parent (a refetch) do not reset what the user is typing, and the last event stays available
   // after the form closes (exit animations, a save that comes after onClose).
   const lastOpened = useRef<{ id?: string; event: CalendarEvent | null }>({ event: null });
-  // Where the last pointer press was: the event card opens next to it, and keeps that place while open.
-  const pointer = useRef<{ x: number; y: number } | null>(null);
-  const anchor = useRef<{ dialog: unknown; at: { x: number; y: number } | null }>({ dialog: null, at: null });
+  // What the last press landed on: the event card opens beside it, and keeps that place while open.
+  const pointer = useRef<Box | null>(null);
+  const anchor = useRef<{ dialog: unknown; at: Box | null }>({ dialog: null, at: null });
   if (dialog?.kind === 'event' && anchor.current.dialog !== dialog) anchor.current = { dialog, at: pointer.current };
   const rootRef = useRef<HTMLDivElement>(null);
   useMissingStylesWarning(rootRef, injectStyles);
@@ -279,7 +286,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
     >
       <div
         ref={rootRef}
-        onPointerDownCapture={(e) => { pointer.current = { x: e.clientX, y: e.clientY }; }}
+        onPointerDownCapture={(e) => { pointer.current = pressedBox(e); }}
         className={cx("ck-root ck:flex ck:flex-col ck:h-full ck:bg-background ck:text-foreground ck:relative", className, classNames.root)}
         style={getThemeStyles(theme)}
         data-ck-theme={themePreset(theme)}

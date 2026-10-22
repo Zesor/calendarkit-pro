@@ -1,5 +1,16 @@
 # Pro-Scheduler Changelog
 
+## 2.0.0-alpha.6
+
+Pre-release on the `next` dist-tag (`latest` stays on 1.4.x).
+
+### Changed
+- The event card opens beside the event instead of over it (below or above an event too wide to sit beside, next to the pointer when the event cannot be measured), stays inside the window, and lists the date, times and length, location, guests, reminders, calendar, attachments and description on icon-led rows.
+- The quick card opens beside the new event drawn in the grid; the words it understood are highlighted.
+- The full form is redesigned: one labelled row per part (When, Calendar, Location, Guests, Reminders, Description), reminders as removable chips with "Add reminder", a native calendar menu with its colour, and a footer that stays in view (the calendar's height and the window's). Closing with changes asks in that footer.
+- Dialogs are announced as dialogs (`role="dialog"`, named by their heading).
+- Reminders are labelled from their minutes in the calendar's language, in the form as in the event card: a `label` stored on a reminder is no longer displayed.
+
 ## 2.0.0-alpha.5
 
 Pre-release on the `next` dist-tag (`latest` stays on 1.4.x).

@@ -166,3 +166,53 @@ describe('EventModal: no made-up defaults, and changes are never dropped without
     expect(screen.getByText('1 hr 30 min')).toBeTruthy()
   })
 })
+
+describe('EventModal layout (spec §8.5): labelled rows, and a footer that stays in view', () => {
+  test('every row has its visible label: When, Calendar, Location, Guests, Reminders, Description', () => {
+    openCreate({ calendars: [{ id: 'w', label: 'Work' }] })
+    for (const name of ['When', 'Calendar', 'Location', 'Guests', 'Reminders', 'Description']) expect(screen.getByText(name)).toBeTruthy()
+    expect(screen.getByLabelText('Location').tagName).toBe('INPUT')
+    expect(screen.getByLabelText('Description').tagName).toBe('TEXTAREA')
+    expect(screen.getByRole('combobox', { name: 'Calendar' })).toBeTruthy()
+  })
+
+  test('the editor is a dialog named by its heading, no taller than the calendar nor the window, with the footer outside the scrolling body', () => {
+    openCreate()
+    const dialog = screen.getByRole('dialog', { name: 'New Event' })
+    expect(dialog.className).toContain('ck:max-h-[min(100%,calc(100dvh-2rem))]')
+    const body = screen.getByLabelText('Add title').closest('.ck\\:overflow-y-auto')!
+    expect(body.contains(screen.getByRole('button', { name: 'Create Event' }))).toBe(false)
+  })
+
+  test('reminders are chips, each with its remove button, added from "Add reminder"', () => {
+    openCreate()
+    fireEvent.click(screen.getByRole('button', { name: 'Add reminder' }))
+    fireEvent.click(screen.getByRole('button', { name: '30 minutes before' }))
+    expect(screen.getByText('30 minutes before')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Remove reminder' }))
+    expect(screen.queryByText('30 minutes before')).toBeNull()
+  })
+
+  test('asking before discarding takes the place of the footer buttons', () => {
+    openCreate()
+    fireEvent.change(screen.getByLabelText('Add title'), { target: { value: 'Call' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(screen.getByRole('alertdialog', { name: 'Discard changes?' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Create Event' })).toBeNull()
+  })
+
+  test('an event whose calendar is not in `calendars` keeps it: shown as itself, saved unchanged', () => {
+    const onSave = vi.fn()
+    const event: CalendarEvent = { id: 'a', title: 'Review', start, end: new Date(2026, 9, 15, 10), calendarId: 'archived' }
+    render(<EventModal isOpen onClose={() => {}} onSave={onSave} event={event} calendars={[{ id: 'w', label: 'Work' }]} translations={en} />)
+    const select = screen.getByRole('combobox', { name: 'Calendar' }) as HTMLSelectElement
+    expect(select.value).toBe('archived')
+    fireEvent.submit(screen.getByLabelText('Add title').closest('form')!)
+    expect(onSave.mock.calls[0][0].calendarId).toBe('archived')
+  })
+
+  test('the calendar row shows the event\'s calendar', () => {
+    openCreate({ calendars: [{ id: 'w', label: 'Work' }, { id: 'p', label: 'Personal', color: '#16a34a' }], initialValues: { calendarId: 'p' } })
+    expect((screen.getByRole('combobox', { name: 'Calendar' }) as HTMLSelectElement).value).toBe('p')
+  })
+})
