@@ -1,6 +1,6 @@
 {
   "name": "calendarkit-pro",
-  "version": "2.0.0-alpha.4",
+  "version": "2.0.0-alpha.5",
   "description": "Professional React calendar with drag-drop, recurring events, timezone support, resource scheduling, and i18n",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

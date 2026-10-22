@@ -64,11 +64,19 @@ function MyCalendar() {
 }
 ```
 
+Or let the calendar keep the list itself (uncontrolled), and save it when it changes:
+
+```tsx
+<Scheduler defaultEvents={initialEvents} onEventsChange={(events) => save(events)} />
+```
+
 ## Props
 
 | Prop | Type | Description |
 |------|------|-------------|
-| `events` | `CalendarEvent[]` | Array of events to display |
+| `events` | `CalendarEvent[]` | Events to display (controlled: you update the list from the callbacks) |
+| `defaultEvents` | `CalendarEvent[]` | Starting events, uncontrolled: the calendar keeps the list (ignored with `events`) |
+| `onEventsChange` | `(events: CalendarEvent[]) => void` | The whole list after every change (create, edit, move, resize, duplicate, delete, undo) |
 | `view` | `ViewType` | Current view: `'month'` \| `'week'` \| `'day'` \| `'agenda'` \| `'resource'` |
 | `date` | `Date` | Currently focused date |
 | `onViewChange` | `(view: ViewType) => void` | View change callback |
@@ -95,7 +103,9 @@ function MyCalendar() {
 | `readOnly` | `boolean` | Disable editing |
 | `isLoading` | `boolean` | Show loading skeletons |
 | `hideViewSwitcher` | `boolean` | Hide view switcher |
-| `renderEventForm` | `(props) => ReactNode` | Custom event form |
+| `renderEventForm` | `(props) => ReactNode` | Custom event form (same as `components.EventEditor`) |
+| `classNames` | `CalendarClassNames` | Extra classes for `root`, `toolbar`, `sidebar`, `event`, `slot`, `allDayBar`, `dialog` (see [Customizing](#customizing)) |
+| `components` | `CalendarComponents` | Your own `EventContent`, `EventEditor`, `Toolbar`, `Sidebar`, `EmptyState` (see [Customizing](#customizing)) |
 
 ## Types
 
@@ -201,6 +211,44 @@ const events = [
 - Closing the card or the form with changes asks first ("Discard changes?").
 - New events get no colour and no reminder you did not choose: they take their calendar's colour.
 - With `renderEventForm`, a slot click opens your form as before.
+- A click on an event opens a small card next to it: its date and time, calendar, location (a link to a maps search), guests, attachments and description, with **Edit**, **Duplicate** and **Delete**. Edit opens the full form. With `renderEventForm`, a click opens your form as before.
+
+## Customizing
+
+`classNames` adds your classes next to the built-in ones:
+
+```tsx
+<Scheduler classNames={{ root: 'my-calendar', event: 'shadow-none', dialog: 'my-dialog' }} />
+```
+
+Keys: `root`, `toolbar`, `sidebar`, `event` (blocks, all-day bars, month chips, agenda and resource items), `slot` (time slots, all-day slots, month days), `allDayBar`, `dialog` (quick card, event card, form, "+N" list).
+
+`components` replaces parts with your own:
+
+```tsx
+import type { EventContentProps, ToolbarProps } from 'calendarkit-pro';
+
+const EventContent = ({ event }: EventContentProps) => <strong>{event.title}</strong>;
+const Toolbar = ({ date, onPrev, onNext, onToday }: ToolbarProps) => (
+  <header>
+    <button onClick={onPrev}>Previous</button>
+    <button onClick={onToday}>{date.toDateString()}</button>
+    <button onClick={onNext}>Next</button>
+  </header>
+);
+
+<Scheduler components={{ EventContent, Toolbar }} />
+```
+
+| Component | Props | Replaces |
+|-----------|-------|----------|
+| `EventContent` | `{ event, variant: 'block' \| 'bar' \| 'chip' }` | The inside of event blocks, all-day bars and month chips |
+| `EventEditor` | the `renderEventForm` props | The event form (`renderEventForm` still works) |
+| `Toolbar` | `{ date, view, onPrev, onNext, onToday, onViewChange, onToggleSidebar }` | The header |
+| `Sidebar` | `{ date, onDateChange, onCreate?, calendars?, onCalendarToggle? }` | The side panel |
+| `EmptyState` | `{ onCreate? }` | The empty agenda |
+
+`onCreate` is undefined in read-only mode.
 
 ## Recurring Events
 
