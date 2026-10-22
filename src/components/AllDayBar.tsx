@@ -136,6 +136,7 @@ const AllDayBarImpl: React.FC<AllDayBarProps> = ({
           classNames.allDayBar
         )}
         style={colorStyle}
+        data-ck-event-id={event.id}
       >
         {continuesBefore && <span aria-label={translations?.continuesBefore}>‹</span>}
         {EventContent ? <EventContent event={event} variant="bar" /> : <span className="ck:truncate">{event.title}</span>}

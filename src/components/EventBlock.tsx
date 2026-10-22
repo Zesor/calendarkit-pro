@@ -68,6 +68,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ event, height, width, ti
         classNames.event
       )}
       style={colorStyle}
+      data-ck-event-id={event.id}
       title={`${event.title}, ${start} – ${end}`}
       onClick={(e) => {
         e.stopPropagation();

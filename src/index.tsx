@@ -197,6 +197,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
   const hasCustomForm = !!(renderEventForm || EventEditor);
   // Classic: a click on an event opens the popover; the editor opens from its Edit (a 1.x custom form
   // still opens on the click).
+  // The new event stays drawn in the grid while its full form is open (not under a host's own form).
+  const ghostDraft = quickDraft ?? (dialog?.kind === 'editor' && dialog.eventId === undefined && !hasCustomForm ? dialog.draft : undefined);
   const popoverEvent = dialog?.kind === 'event' && !hasCustomForm ? selectedEvent : null;
   const isModalOpen = dialog !== null && dialog.kind !== 'more' && dialog.kind !== 'quick' && !popoverEvent;
   const handlers = useMemo(() => ({
@@ -428,7 +430,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                 onDayEventResize={handleDayEventResize}
                                 onAllDaySlotClick={allDaySlotClickHandler}
                                 onMoreClick={handleMoreClick}
-                                draft={quickDraft}
+                                draft={ghostDraft}
                                 highlightId={landedId}
                                 translations={t}
                                 grid={grid}
@@ -450,7 +452,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                     onDayEventResize={handleDayEventResize}
                                     onAllDaySlotClick={allDaySlotClickHandler}
                                     onMoreClick={handleMoreClick}
-                                    draft={quickDraft}
+                                    draft={ghostDraft}
                                     highlightId={landedId}
                                     grid={grid}
                                 />
