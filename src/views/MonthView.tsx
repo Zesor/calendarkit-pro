@@ -3,6 +3,7 @@ import { format, isSameDay, isSameMonth, Locale } from 'date-fns';
 import { CalendarEvent, CalendarTranslations } from '../types';
 import { interpolate } from '../core/format';
 import { cx } from '../utils';
+import { useClassNames, useComponents } from '../components/customize';
 import { eventsByStartDay } from '../core/events';
 import { layoutDayRow, partitionDayEvents } from '../core/allDay';
 import { AllDayBar } from '../components/AllDayBar';
@@ -35,10 +36,12 @@ interface EventItemProps {
 // A timed event in a month cell: its calendar colour as a dot, the title in the text colour.
 const EventItem = React.memo(({ event, onEventClick, onEventContextMenu }: EventItemProps) => {
     const colorStyle = useEventColorStyle(event);
+    const classNames = useClassNames();
+    const { EventContent } = useComponents();
     return (
     <DraggableEvent event={event}>
         <div
-            className="ck:flex ck:items-center ck:gap-1.5 ck:text-xs ck:px-1.5 ck:py-0.5 ck:rounded-md ck:cursor-pointer ck:text-foreground ck:hover:bg-muted ck:transition-colors"
+            className={cx("ck:flex ck:items-center ck:gap-1.5 ck:text-xs ck:px-1.5 ck:py-0.5 ck:rounded-md ck:cursor-pointer ck:text-foreground ck:hover:bg-muted ck:transition-colors", classNames.event)}
             title={event.title}
             onClick={(e) => {
               e.stopPropagation();
@@ -47,7 +50,7 @@ const EventItem = React.memo(({ event, onEventClick, onEventContextMenu }: Event
             onContextMenu={onEventContextMenu ? (e) => onEventContextMenu(event, e) : undefined}
         >
             <span className="ck-dot ck:w-2 ck:h-2 ck:rounded-[3px] ck:shrink-0" style={colorStyle} aria-hidden="true" />
-            <span className="ck:font-medium ck:truncate">{event.title}</span>
+            {EventContent ? <EventContent event={event} variant="chip" /> : <span className="ck:font-medium ck:truncate">{event.title}</span>}
         </div>
     </DraggableEvent>
     );

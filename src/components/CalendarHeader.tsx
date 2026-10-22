@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { ChevronLeft, ChevronRight, Menu, Moon, Sun, CalendarDays, CalendarRange, Calendar, ListTodo } from './icons';
 import { ViewType } from '../types';
 import { cx } from '../utils';
+import { useClassNames } from './customize';
 
 interface CalendarHeaderProps {
   currentDate: Date;
@@ -45,8 +46,9 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
     { key: 'agenda', icon: ListTodo },
   ] as const;
 
+  const classNames = useClassNames();
   return (
-    <div className="ck:flex ck:flex-col ck:md:flex-row ck:items-center ck:justify-between ck:px-3 ck:md:px-5 ck:py-3 ck:border-b-[0px] ck:border-border/50 ck:bg-linear-to-r ck:from-background ck:via-background ck:to-muted/20 ck:gap-3 ck:md:gap-0 ck:min-h-[64px]">
+    <div className={cx("ck:flex ck:flex-col ck:md:flex-row ck:items-center ck:justify-between ck:px-3 ck:md:px-5 ck:py-3 ck:border-b-[0px] ck:border-border/50 ck:bg-linear-to-r ck:from-background ck:via-background ck:to-muted/20 ck:gap-3 ck:md:gap-0 ck:min-h-[64px]", classNames.toolbar)}>
       {/* Left Section: Menu, Navigation, Title */}
       <div className="ck:flex ck:items-center ck:gap-2 ck:w-full ck:md:w-auto ck:justify-between ck:md:justify-start">
         <div className="ck:flex ck:items-center ck:gap-2 ck:md:gap-3">

@@ -3,6 +3,7 @@ import { Button } from './ui/button';
 import { Plus, ChevronDown, Globe } from './icons';
 import { MiniCalendar } from './MiniCalendar';
 import { cx } from '../utils';
+import { useClassNames } from './customize';
 import { format, Locale } from 'date-fns';
 import { timeZoneAbbreviation } from '../core/format';
 import { toDisplay } from '../core/timezone';
@@ -120,8 +121,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const selectedTzObj = timezones.find(t => t.value === (timezone || ''));
   const selectedTimezoneLabel = selectedTzObj ? formatTzLabel(selectedTzObj) : (translations?.localTime || 'Local Time');
 
+  const classNames = useClassNames();
   return (
-    <div className={cx("ck:flex-col ck:overflow-x-hidden ck:h-full ck:bg-linear-to-b ck:from-background ck:via-background ck:to-muted/10 ck:pt-4 ck:pb-4 ck:overflow-y-auto ck:hidden ck:lg:flex", className)}>
+    <div className={cx("ck:flex-col ck:overflow-x-hidden ck:h-full ck:bg-linear-to-b ck:from-background ck:via-background ck:to-muted/10 ck:pt-4 ck:pb-4 ck:overflow-y-auto ck:hidden ck:lg:flex", className, classNames.sidebar)}>
       {!readOnly && (
         <div className="ck:px-4 ck:mb-6">
             <Button

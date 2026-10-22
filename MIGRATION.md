@@ -34,3 +34,9 @@ export const cn = (...inputs: ClassValue[]) => twMerge(clsx(inputs))
 **Why:** spec 2.0 creates events in place (quick card, Undo toast) and never makes up values.
 
 **What changes:** a click on a free slot opens the quick card instead of the full form (with `renderEventForm`, your form still opens). New events no longer get the colour `#3b82f6` nor a "30 minutes before" reminder, and choosing a calendar no longer copies its colour into `event.color`: events without a colour take their calendar's. Pass `color` or `reminders` yourself if you relied on those defaults.
+
+## Clicking an event
+
+**Why:** spec 2.0 (Classic layout) shows an event's details in a card next to it and keeps the full form for editing.
+
+**What changes:** a click on an event opens that card (Edit, Duplicate, Delete) instead of the form's read-only view, and the form opens ready to edit. With `renderEventForm` (or `components.EventEditor`), a click still opens your form with the event, and `onEventClick` is still called first. **Edit** in the event's right-click menu now opens the form directly and no longer calls `onEventClick`. Nothing to change in your code unless you relied on that call.

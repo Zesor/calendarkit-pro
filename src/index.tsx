@@ -10,10 +10,11 @@ import { ResourceView } from './views/ResourceView';
 import { EventModal } from './components/EventModal';
 import { MoreEventsDialog } from './components/MoreEventsDialog';
 import { QuickCreate } from './components/QuickCreate';
+import { EventPopover } from './components/EventPopover';
 import { UndoToast } from './components/UndoToast';
 import { MonthViewSkeleton, WeekViewSkeleton, DayViewSkeleton, AgendaViewSkeleton } from './components/Skeleton';
 import { EventContextMenu, useEventContextMenu } from './components/ContextMenu';
-import { CalendarProps, CalendarEvent } from './types';
+import { CalendarProps, CalendarEvent, CalendarClassNames, CalendarComponents } from './types';
 import { cx } from './utils';
 import { colorMode, getThemeStyles, themePreset } from './lib/theme';
 import { resolveTranslations, timeFormats } from './core/format';
@@ -28,6 +29,7 @@ import { dragOverlaySize } from './components/dnd/dragOverlay';
 import { restrictToWindowEdges, snapToGrid } from './components/dnd/modifiers';
 import { CalendarStyles, useMissingStylesWarning } from './styles/CalendarStyles';
 import { EventColorProvider, eventColorStyle, resolveEventColor } from './components/eventColor';
+import { ClassNamesProvider, ComponentsProvider } from './components/customize';
 
 // Re-export types for consumers
 export type {
@@ -43,16 +45,25 @@ export type {
   ThemeColors,
   ThemePreset,
   ColorMode,
+  CalendarClassNames,
+  CalendarComponents,
+  EventContentProps,
+  EventEditorProps,
+  ToolbarProps,
+  SidebarProps,
+  EmptyStateProps,
 } from './types';
 
-// A stable default: a new `[]` on every render would look like new events to the engine.
-const NO_EVENTS: CalendarEvent[] = [];
+const NO_CLASSES: CalendarClassNames = {};
+const NO_COMPONENTS: CalendarComponents = {};
 
 // Drag ghost: 15px snap (15 minutes at 60px per hour), kept inside the window.
 const MODIFIERS: Modifier[] = [snapToGrid(15), restrictToWindowEdges];
 
 export const Scheduler: React.FC<CalendarProps> = ({
-  events = NO_EVENTS,
+  events,
+  defaultEvents,
+  onEventsChange,
   view: controlledView,
   onViewChange: controlledOnViewChange,
   date: controlledDate,
@@ -84,6 +95,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
   onLanguageChange,
   locale, // Date-fns locale
   injectStyles = true,
+  classNames = NO_CLASSES,
+  components = NO_COMPONENTS,
 }) => {
   const [activeDragEvent, setActiveDragEvent] = useState<CalendarEvent | null>(null);
   const [activeDayDrag, setActiveDayDrag] = useState(false);
@@ -100,6 +113,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
   // keeps only UI state (sidebar, drag ghost, context menu).
   const calendar = useCalendar({
     events,
+    defaultEvents,
+    onEventsChange,
     view: controlledView,
     onViewChange: controlledOnViewChange,
     date: controlledDate,
@@ -136,6 +151,10 @@ export const Scheduler: React.FC<CalendarProps> = ({
   // parent (a refetch) do not reset what the user is typing, and the last event stays available
   // after the form closes (exit animations, a save that comes after onClose).
   const lastOpened = useRef<{ id?: string; event: CalendarEvent | null }>({ event: null });
+  // Where the last pointer press was: the event card opens next to it, and keeps that place while open.
+  const pointer = useRef<{ x: number; y: number } | null>(null);
+  const anchor = useRef<{ dialog: unknown; at: { x: number; y: number } | null }>({ dialog: null, at: null });
+  if (dialog?.kind === 'event' && anchor.current.dialog !== dialog) anchor.current = { dialog, at: pointer.current };
   const rootRef = useRef<HTMLDivElement>(null);
   useMissingStylesWarning(rootRef, injectStyles);
   if (dialog && dialog.kind !== 'more') {
@@ -145,7 +164,6 @@ export const Scheduler: React.FC<CalendarProps> = ({
   const selectedEvent = lastOpened.current.event;
   const draft = dialog?.kind === 'quick' || dialog?.kind === 'editor' ? dialog.draft : undefined;
   const quickDraft = dialog?.kind === 'quick' ? dialog.draft : undefined;
-  const isModalOpen = dialog !== null && dialog.kind !== 'more' && dialog.kind !== 'quick';
   // In the order the grid listed them (by start time), not the order of the events prop.
   const moreEvents = useMemo(() => {
     if (dialog?.kind !== 'more') return [];
@@ -161,7 +179,12 @@ export const Scheduler: React.FC<CalendarProps> = ({
   }, [editingId, draft]);
 
   // Stable handlers (the store's actions never change identity).
-  const hasCustomForm = !!renderEventForm;
+  const { EventEditor, Toolbar, Sidebar: CustomSidebar } = components;
+  const hasCustomForm = !!(renderEventForm || EventEditor);
+  // Classic: a click on an event opens the popover; the editor opens from its Edit (a 1.x custom form
+  // still opens on the click).
+  const popoverEvent = dialog?.kind === 'event' && !hasCustomForm ? selectedEvent : null;
+  const isModalOpen = dialog !== null && dialog.kind !== 'more' && dialog.kind !== 'quick' && !popoverEvent;
   const handlers = useMemo(() => ({
     handleViewChange: calendar.setView,
     handleDateChange: (date: Date) => calendar.navigate(date),
@@ -244,6 +267,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
   const contextMenuHandler = readOnly ? undefined : openContextMenu;
 
   return (
+    <ClassNamesProvider value={classNames}>
+    <ComponentsProvider value={components}>
     <EventColorProvider value={calendars}>
     <CalendarDndContext
         calendar={calendar}
@@ -254,12 +279,24 @@ export const Scheduler: React.FC<CalendarProps> = ({
     >
       <div
         ref={rootRef}
-        className={cx("ck-root ck:flex ck:flex-col ck:h-full ck:bg-background ck:text-foreground ck:relative", className)}
+        onPointerDownCapture={(e) => { pointer.current = { x: e.clientX, y: e.clientY }; }}
+        className={cx("ck-root ck:flex ck:flex-col ck:h-full ck:bg-background ck:text-foreground ck:relative", className, classNames.root)}
         style={getThemeStyles(theme)}
         data-ck-theme={themePreset(theme)}
         data-ck-mode={colorMode(mode, isDarkMode)}
       >
         {injectStyles && <CalendarStyles />}
+        {Toolbar ? (
+          <Toolbar
+            date={currentDate}
+            view={view}
+            onPrev={handlePrev}
+            onNext={handleNext}
+            onToday={handleToday}
+            onViewChange={handleViewChange}
+            onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+          />
+        ) : (
         <CalendarHeader
           currentDate={currentDate}
           onPrev={handlePrev}
@@ -276,12 +313,22 @@ export const Scheduler: React.FC<CalendarProps> = ({
           onLanguageChange={onLanguageChange}
           locale={locale} // Pass locale
         />
+        )}
         
         <div className="ck:flex ck:flex-1 ck:overflow-hidden">
             <div
                 className="ck:hidden ck:md:block ck:overflow-hidden ck:transition-[width,opacity] ck:duration-300 ck:ease-[cubic-bezier(0.4,0,0.2,1)]"
                 style={{ width: isSidebarOpen ? 256 : 0, opacity: isSidebarOpen ? 1 : 0 }}
             >
+                {CustomSidebar ? (
+                  <CustomSidebar
+                    date={currentDate}
+                    onDateChange={handleDateChange}
+                    onCreate={readOnly ? undefined : handleCreateEvent}
+                    calendars={calendars}
+                    onCalendarToggle={onCalendarToggle}
+                  />
+                ) : (
                 <Sidebar
                     currentDate={currentDate}
                     onDateChange={handleDateChange}
@@ -296,6 +343,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                     translations={t}
                     locale={locale}
                 />
+                )}
             </div>
 
             <div className="ck:flex-1 ck:flex ck:flex-col ck:overflow-hidden ck:relative">
@@ -373,7 +421,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                     currentDate={currentDate}
                                     events={filteredEvents}
                                     onEventClick={handleEventClickInternal}
-                                    onCreateEvent={handleCreateEvent}
+                                    onCreateEvent={readOnly ? undefined : handleCreateEvent}
                                     locale={locale}
                                     translations={t}
                                     timezone={timezone}
@@ -413,8 +461,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
             </div>
         </div>
         
-        {renderEventForm ? (
-            renderEventForm({
+        {hasCustomForm ? (
+            (renderEventForm ?? ((props) => EventEditor && <EventEditor {...props} />))({
                 isOpen: isModalOpen,
                 onClose: handleModalClose,
                 event: selectedEvent,
@@ -434,9 +482,22 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 calendars={calendars}
                 eventTypes={eventTypes}
                 translations={t}
-                locale={locale}
                 initialAllDay={modalInitialAllDay}
                 initialValues={modalInitialValues}
+            />
+        )}
+
+        {popoverEvent && editingId !== undefined && (
+            <EventPopover
+                event={popoverEvent}
+                anchor={anchor.current.at}
+                timezone={timezone}
+                locale={locale}
+                translations={t}
+                onEdit={() => calendar.openEditor(editingId)}
+                onDuplicate={() => calendar.duplicate(editingId)}
+                onDelete={() => calendar.remove(editingId)}
+                onClose={handleModalClose}
             />
         )}
 
@@ -472,7 +533,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
           position={contextMenuPosition}
           onClose={closeContextMenu}
           onEdit={(event) => {
-            handleEventClickInternal(event);
+            calendar.openEditor(event.id);
             closeContextMenu();
           }}
           onDelete={() => {
@@ -534,5 +595,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
       </div>
     </CalendarDndContext>
     </EventColorProvider>
+    </ComponentsProvider>
+    </ClassNamesProvider>
   );
 };

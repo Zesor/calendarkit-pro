@@ -1,17 +1,16 @@
 import React, { useState, useEffect, useInsertionEffect, useRef } from 'react';
 import { Modal } from './ui/Modal';
-import { CalendarEvent, CalendarTranslations, EventType, EventAttachment, EventReminder } from '../types';
-import { addDays, differenceInCalendarDays, format, differenceInMinutes, Locale, startOfDay } from 'date-fns';
+import { CalendarEvent, CalendarTranslations, EventType, EventReminder } from '../types';
+import { addDays, differenceInCalendarDays, format, differenceInMinutes, startOfDay } from 'date-fns';
 import {
-    Clock, MapPin, AlignLeft, Trash2, X, Edit2,
-    Users, Paperclip, File, Calendar, ChevronDown, Check, Download,
+    Clock, MapPin, AlignLeft, Trash2, X,
+    Users, ChevronDown, Check,
     Bell, BellRing, Plus, Repeat, Tag,
-    ExternalLink
   } from './icons';
 import { cx } from '../utils';
 import { DiscardPrompt } from './DiscardPrompt';
-import { interpolate, timeFormats } from '../core/format';
-import { dayEventSpan, isDayEvent } from '../core/allDay';
+import { interpolate } from '../core/format';
+import { dayEventSpan } from '../core/allDay';
 
 interface EventModalProps {
   isOpen: boolean;
@@ -23,7 +22,6 @@ interface EventModalProps {
   calendars?: { id: string; label: string; color?: string }[];
   eventTypes?: EventType[];
   translations: CalendarTranslations;
-  locale?: Locale;
   /** Opens the create form preset to an all-day event (click in the all-day row). */
   initialAllDay?: boolean;
   /** Fields of a new event already chosen (quick create's "More options"). */
@@ -76,11 +74,6 @@ export const reminderLabel = (minutes: number, t: CalendarTranslations): string 
 /** Stable avatar hue derived from the email (no fake guest list needed). */
 const avatarHue = (email: string) => [...email].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % 360, 7);
 
-const mapsUrl = (location: string) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
-
-/** Only http(s), mailto, blob and relative URLs become links (no `javascript:` and the like). */
-const isSafeUrl = (url: string) => /^(https?:|mailto:|blob:|\/|\.\/|\.\.\/|[^:]*$)/i.test(url.trim());
-
 export const EventModal: React.FC<EventModalProps> = ({
   isOpen,
   onClose,
@@ -90,11 +83,10 @@ export const EventModal: React.FC<EventModalProps> = ({
   onDelete,
   calendars,
   translations: t,
-  locale,
   initialAllDay,
   initialValues,
 }) => {
-  const [mode, setMode] = useState<'view' | 'edit' | 'create'>('create');
+  const [mode, setMode] = useState<'edit' | 'create'>('create');
   // Read through a ref so a new initialValues object (an inline prop) does not reset the form.
   const initialValuesRef = useRef(initialValues);
   useInsertionEffect(() => {
@@ -134,7 +126,7 @@ export const EventModal: React.FC<EventModalProps> = ({
       // What a dirty check compares with: the blank form, so values carried in from the quick card count as input.
       let pristine: Partial<CalendarEvent> | undefined;
       if (event) {
-        setMode('view');
+        setMode('edit');
         opened = {
           ...event,
           start: new Date(event.start),
@@ -170,7 +162,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   }, [isOpen, event, initialDate, calendars, initialAllDay]);
 
   const requestClose = () => {
-    if (mode !== 'view' && JSON.stringify(formData) !== openedAs.current) setConfirmingDiscard(true);
+    if (JSON.stringify(formData) !== openedAs.current) setConfirmingDiscard(true);
     else onClose();
   };
 
@@ -314,216 +306,6 @@ export const EventModal: React.FC<EventModalProps> = ({
     if (remainingMins === 0) return interpolate(t.durationHours, { n: hours });
     return interpolate(t.durationHoursMinutes, { h: hours, m: remainingMins });
   };
-
-  const { time: timeFormat } = timeFormats(locale);
-  // Day span shown in the read view for all-day and multi-day events.
-  const viewEvent = event && { ...event, start: new Date(event.start), end: new Date(event.end) };
-  const viewSpan = viewEvent && isDayEvent(viewEvent) ? dayEventSpan(viewEvent) : null;
-
-  const renderAttachment = (att: EventAttachment) => {
-    const content = (
-      <>
-        <div className="ck:p-2 ck:bg-primary/10 ck:rounded-lg">
-          <File className="ck:w-4 ck:h-4 ck:text-primary" />
-        </div>
-        <div className="ck:flex-1 ck:min-w-0">
-          <p className="ck:text-sm ck:font-medium ck:text-foreground ck:truncate">{att.name}</p>
-          <p className="ck:text-xs ck:text-muted-foreground">{att.size}</p>
-        </div>
-        {att.url && <Download className="ck:w-4 ck:h-4 ck:text-muted-foreground ck:opacity-0 ck:group-hover:opacity-100 ck:transition-opacity" />}
-      </>
-    );
-    const className = "flex items-center gap-3 p-3 rounded-xl border border-border/30 bg-muted/20 transition-all group";
-    // U6: only real attachment URLs are downloadable (no generated placeholder file).
-    return att.url && isSafeUrl(att.url) ? (
-      <a key={att.id} href={att.url} target="_blank" rel="noopener noreferrer" download={att.name} className={cx(className, "ck:hover:bg-muted/40 ck:cursor-pointer")}>
-        {content}
-      </a>
-    ) : (
-      <div key={att.id} className={className}>{content}</div>
-    );
-  };
-
-  // ========== VIEW MODE ==========
-  const renderViewMode = () => (
-    <div className="ck:flex ck:flex-col ck:bg-background ck:overflow-hidden ck:w-full ck:max-h-[90vh]">
-      {/* Hero Header with Color */}
-      <div
-        className="ck:relative ck:px-6 ck:pt-6 ck:pb-8"
-        style={{
-          background: `linear-gradient(135deg, ${event?.color || '#3b82f6'}15 0%, transparent 100%)`
-        }}
-      >
-        {/* Top Actions Bar */}
-        <div className="ck:flex ck:items-center ck:justify-between ck:mb-6">
-          <div className="ck:flex ck:items-center ck:gap-2">
-            <div
-              className="ck:w-3 ck:h-3 ck:rounded-full"
-              style={{ backgroundColor: event?.color || '#3b82f6' }}
-            />
-            <span className="ck:text-xs ck:font-medium ck:text-muted-foreground ck:uppercase ck:tracking-wider">
-              {calendars?.find(c => c.id === event?.calendarId)?.label || t.event}
-            </span>
-          </div>
-          <div className="ck:flex ck:items-center ck:gap-1">
-            <button
-              onClick={() => setMode('edit')}
-              className="ck:p-2 ck:hover:bg-background/80 ck:rounded-lg ck:transition-all ck:text-muted-foreground ck:hover:text-foreground"
-              title={t.edit}
-              aria-label={t.edit}
-            >
-              <Edit2 className="ck:w-4 ck:h-4" />
-            </button>
-            <button
-              onClick={handleDelete}
-              className="ck:p-2 ck:hover:bg-destructive/10 ck:rounded-lg ck:transition-all ck:text-muted-foreground ck:hover:text-destructive"
-              title={t.delete}
-              aria-label={t.delete}
-            >
-              <Trash2 className="ck:w-4 ck:h-4" />
-            </button>
-            <button
-              onClick={onClose}
-              className="ck:p-2 ck:hover:bg-background/80 ck:rounded-lg ck:transition-all ck:text-muted-foreground ck:hover:text-foreground"
-              title={t.close}
-              aria-label={t.close}
-            >
-              <X className="ck:w-4 ck:h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Title */}
-        <h1 className="ck:text-2xl ck:font-bold ck:text-foreground ck:mb-3 ck:leading-tight">
-          {event?.title || t.noTitle}
-        </h1>
-
-        {/* Date & Time */}
-        <div className="ck:flex ck:items-center ck:gap-3 ck:text-sm">
-          <div className="ck:flex ck:items-center ck:gap-2 ck:px-3 ck:py-1.5 ck:bg-background/60 ck:backdrop-blur-xs ck:rounded-lg ck:border ck:border-border/30">
-            <Calendar className="ck:w-4 ck:h-4 ck:text-muted-foreground" />
-            <span className="ck:font-medium">
-              {viewSpan && viewSpan.lastDay > viewSpan.firstDay
-                ? `${format(viewSpan.firstDay, 'EEE d MMM', { locale })} – ${format(viewSpan.lastDay, 'EEE d MMM', { locale })}`
-                : event?.start && format(new Date(event.start), 'EEE, MMM d', { locale })}
-            </span>
-          </div>
-          {event?.allDay ? (
-            <div className="ck:flex ck:items-center ck:gap-2 ck:px-3 ck:py-1.5 ck:bg-primary/10 ck:rounded-lg ck:border ck:border-primary/20">
-              <span className="ck:font-medium ck:text-primary">{t.allDay}</span>
-            </div>
-          ) : (
-          <div className="ck:flex ck:items-center ck:gap-2 ck:px-3 ck:py-1.5 ck:bg-background/60 ck:backdrop-blur-xs ck:rounded-lg ck:border ck:border-border/30">
-            <Clock className="ck:w-4 ck:h-4 ck:text-muted-foreground" />
-            <span className="ck:font-medium">
-              {event?.start && format(new Date(event.start), timeFormat, { locale })}{' – '}{event?.end && format(new Date(event.end), timeFormat, { locale })}
-            </span>
-          </div>
-          )}
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="ck:px-6 ck:pb-6 ck:space-y-4 ck:overflow-y-auto ck:flex-1">
-        {/* Location: U4, a real link to a maps search */}
-        {event?.location && (
-          <a
-            href={mapsUrl(event.location)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ck:animate-rise-in ck:flex ck:items-start ck:gap-3 ck:p-4 ck:rounded-2xl ck:bg-muted/30 ck:border ck:border-border/30 ck:group ck:hover:bg-muted/50 ck:transition-all ck:cursor-pointer"
-          >
-            <div className="ck:p-2 ck:bg-primary/10 ck:rounded-xl">
-              <MapPin className="ck:w-5 ck:h-5 ck:text-primary" />
-            </div>
-            <div className="ck:flex-1">
-              <p className="ck:text-sm ck:font-medium ck:text-foreground">{event.location}</p>
-              <p className="ck:text-xs ck:text-muted-foreground ck:mt-0.5">{t.openInMaps}</p>
-            </div>
-            <ExternalLink className="ck:w-4 ck:h-4 ck:text-muted-foreground ck:opacity-0 ck:group-hover:opacity-100 ck:transition-opacity" />
-          </a>
-        )}
-
-        {/* Guests */}
-        {event?.guests && event.guests.length > 0 && (
-          <div className="ck:animate-rise-in ck:space-y-3" style={{ animationDelay: '50ms' }}>
-            <div className="ck:flex ck:items-center ck:justify-between">
-              <div className="ck:flex ck:items-center ck:gap-2">
-                <Users className="ck:w-4 ck:h-4 ck:text-muted-foreground" />
-                <span className="ck:text-sm ck:font-medium ck:text-foreground">
-                  {event.guests.length} {event.guests.length > 1 ? t.guests : t.guestSingular}
-                </span>
-              </div>
-            </div>
-            <div className="ck:flex ck:flex-wrap ck:gap-2">
-              {event.guests.map((email) => (
-                <div
-                  key={email}
-                  className="ck:flex ck:items-center ck:gap-2 ck:px-3 ck:py-2 ck:rounded-xl ck:bg-muted/30 ck:border ck:border-border/30"
-                >
-                  <div
-                    className="ck:w-8 ck:h-8 ck:rounded-full ck:flex ck:items-center ck:justify-center ck:text-sm ck:font-semibold ck:text-white"
-                    style={{ backgroundColor: `hsl(${avatarHue(email)}, 70%, 50%)` }}
-                  >
-                    {email[0].toUpperCase()}
-                  </div>
-                  <div className="ck:flex-1 ck:min-w-0">
-                    <p className="ck:text-sm ck:font-medium ck:text-foreground">{email.split('@')[0]}</p>
-                    <p className="ck:text-xs ck:text-muted-foreground ck:truncate">{email}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Reminders */}
-        {event?.reminders && event.reminders.length > 0 && (
-          <div className="ck:animate-rise-in ck:flex ck:items-center ck:gap-3" style={{ animationDelay: '100ms' }}>
-            <div className="ck:p-2 ck:bg-warning/10 ck:rounded-xl">
-              <Bell className="ck:w-4 ck:h-4 ck:text-warning" />
-            </div>
-            <div className="ck:flex ck:flex-wrap ck:gap-2">
-              {event.reminders.map(reminder => (
-                <span
-                  key={reminder.id}
-                  className="ck:text-xs ck:font-medium ck:px-2.5 ck:py-1 ck:rounded-full ck:bg-warning/10 ck:text-warning"
-                >
-                  {reminder.label || reminderLabel(reminder.time, t)}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Description */}
-        {event?.description && (
-          <div className="ck:animate-rise-in ck:space-y-2" style={{ animationDelay: '150ms' }}>
-            <div className="ck:flex ck:items-center ck:gap-2">
-              <AlignLeft className="ck:w-4 ck:h-4 ck:text-muted-foreground" />
-              <span className="ck:text-sm ck:font-medium ck:text-foreground">{t.notesLabel}</span>
-            </div>
-            <div className="ck:text-sm ck:text-foreground/80 ck:whitespace-pre-wrap ck:leading-relaxed ck:pl-6 ck:p-3 ck:rounded-xl ck:bg-muted/20 ck:border ck:border-border/30">
-              {event.description}
-            </div>
-          </div>
-        )}
-
-        {/* Attachments */}
-        {event?.attachments && event.attachments.length > 0 && (
-          <div className="ck:animate-rise-in ck:space-y-2" style={{ animationDelay: '200ms' }}>
-            <div className="ck:flex ck:items-center ck:gap-2">
-              <Paperclip className="ck:w-4 ck:h-4 ck:text-muted-foreground" />
-              <span className="ck:text-sm ck:font-medium ck:text-foreground">{t.attachments}</span>
-            </div>
-            <div className="ck:grid ck:gap-2">
-              {event.attachments.map(renderAttachment)}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
 
   // ========== EDIT/CREATE MODE ==========
   const renderEditMode = () => (
@@ -924,15 +706,9 @@ export const EventModal: React.FC<EventModalProps> = ({
 
   return (
     <Modal isOpen={isOpen} onClose={requestClose} hideHeader className="ck:p-0 ck:overflow-hidden ck:max-w-lg">
-      {mode === 'view' && event ? (
-        <div key="view" className="ck:animate-fade-in">
-          {renderViewMode()}
-        </div>
-      ) : (
-        <div key="edit" className="ck:animate-fade-in">
-          {renderEditMode()}
-        </div>
-      )}
+      <div className="ck:animate-fade-in">
+        {renderEditMode()}
+      </div>
     </Modal>
   );
 };

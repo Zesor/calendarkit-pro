@@ -1,5 +1,18 @@
 # Pro-Scheduler Changelog
 
+## 2.0.0-alpha.5
+
+Pre-release on the `next` dist-tag (`latest` stays on 1.4.x).
+
+### Added
+- Uncontrolled mode: `defaultEvents` and `onEventsChange`. The calendar keeps the list itself; `onEventsChange` receives the whole list after every change (also in controlled mode). The event just created is outlined in this mode too.
+- `classNames` for `root`, `toolbar`, `sidebar`, `event`, `slot`, `allDayBar` and `dialog`.
+- `components`: your own `EventContent`, `EventEditor` (equivalent to `renderEventForm`), `Toolbar`, `Sidebar` and `EmptyState`, with exported prop types.
+- A click on an event opens a card next to it (date and time, calendar, location, guests, reminders, attachments, description) with Edit, Duplicate and Delete. It stays inside the window and keeps its place while open.
+
+### Changed
+- The form no longer has a read-only view: it opens from the card's Edit (or the event menu's Edit) ready to edit.
+
 ## 2.0.0-alpha.4
 
 Pre-release on the `next` dist-tag (`latest` stays on 1.4.x).

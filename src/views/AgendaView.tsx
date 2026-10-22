@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { format, isSameDay, addDays, startOfDay, differenceInMinutes, Locale } from 'date-fns';
 import { CalendarEvent, CalendarTranslations } from '../types';
 import { cx } from '../utils';
+import { useClassNames, useComponents } from '../components/customize';
 import { eventsByStartDay } from '../core/events';
 import { timeFormats, uses24HourClock } from '../core/format';
 import { displayToday, toDisplay } from '../core/timezone';
@@ -50,6 +51,8 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
   timezone,
   onEventContextMenu,
 }) => {
+  const classNames = useClassNames();
+  const { EmptyState } = useComponents();
   // Times follow the locale's clock convention (e.g. 24h for pt-BR/fr); the
   // historical 12h format stays the default without a locale.
   const is24h = uses24HourClock(locale);
@@ -75,7 +78,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
   return (
     <div className="ck:flex ck:flex-col ck:h-full ck:bg-background ck:overflow-y-auto">
       {groupedEvents.length === 0 ? (
-        <AgendaEmptyState onCreateEvent={onCreateEvent} translations={translations} />
+        EmptyState ? <EmptyState onCreate={onCreateEvent} /> : <AgendaEmptyState onCreateEvent={onCreateEvent} translations={translations} />
       ) : (
         <div className="ck:max-w-3xl ck:mx-auto ck:w-full ck:pb-10 ck:px-4 ck:md:px-6">
             {groupedEvents.map((group, index) => (
@@ -131,7 +134,8 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                                   "ck:group ck:relative ck:flex ck:gap-4 ck:p-4 ck:rounded-2xl ck:border ck:border-border/40",
                                   "ck:hover:border-primary/40 ck:hover:shadow-lg ck:hover:shadow-primary/5",
                                   "ck:transition-all ck:duration-200 ck:cursor-pointer ck:hover:scale-[1.01] ck:hover:-translate-y-0.5",
-                                  "ck:bg-linear-to-br ck:from-card ck:via-card ck:to-card/80"
+                                  "ck:bg-linear-to-br ck:from-card ck:via-card ck:to-card/80",
+                                  classNames.event
                                 )}
                             >
                                 {/* Time Column */}

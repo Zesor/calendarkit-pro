@@ -6,6 +6,8 @@ import { isSameDisplayDay, toDisplay } from '../core/timezone';
 import { DraggableEvent } from '../components/dnd/DraggableEvent';
 import { DroppableCell } from '../components/dnd/DroppableCell';
 import { eventColorStyle, resolveEventColor, useCalendars } from '../components/eventColor';
+import { useClassNames } from '../components/customize';
+import { cx } from '../utils';
 
 interface ResourceViewProps {
   currentDate: Date;
@@ -32,6 +34,7 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const calendars = useCalendars();
+  const classNames = useClassNames();
   
   // Define timeline: 8am to 8pm for example (or full 24h)
   // Let's do 24h for flexibility, but maybe scroll to 8am
@@ -145,7 +148,7 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
                                         onEventClick?.(event);
                                     }}
                                     onContextMenu={onEventContextMenu ? (e) => onEventContextMenu(event, e) : undefined}
-                                    className="ck-event ck:absolute ck:top-2 ck:bottom-2 ck:rounded-md ck:px-2 ck:py-1 ck:text-xs ck:font-semibold ck:cursor-pointer ck:overflow-hidden ck:hover:brightness-95 ck:transition-all ck:z-10"
+                                    className={cx("ck-event ck:absolute ck:top-2 ck:bottom-2 ck:rounded-md ck:px-2 ck:py-1 ck:text-xs ck:font-semibold ck:cursor-pointer ck:overflow-hidden ck:hover:brightness-95 ck:transition-all ck:z-10", classNames.event)}
                                     style={{
                                         ...getEventStyle(event),
                                         ...eventColorStyle(resolveEventColor(event, calendars, resource.color)),

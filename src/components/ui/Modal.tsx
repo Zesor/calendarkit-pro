@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { X } from '../icons';
 import { cx } from '../../utils';
+import { useClassNames } from '../customize';
 import { Button } from './button';
 
 interface ModalProps {
@@ -24,6 +25,7 @@ export const Modal: React.FC<ModalProps> = ({
   closeLabel = 'Close',
 }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const classNames = useClassNames();
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -54,7 +56,8 @@ export const Modal: React.FC<ModalProps> = ({
       <div
         className={cx(
           "ck:relative ck:bg-background ck:rounded-2xl ck:shadow-2xl ck:w-full ck:flex ck:flex-col ck:max-h-[70vh] ck:sm:max-h-[80vh] ck:duration-300 ck:border ck:border-border/50",
-          className
+          className,
+          classNames.dialog
         )}
       >
         {!hideHeader && (
