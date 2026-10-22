@@ -1,5 +1,16 @@
 # Pro-Scheduler Changelog
 
+## 2.0.0-alpha.7
+
+Pre-release on the `next` dist-tag (`latest` stays on 1.4.x).
+
+### Added
+- Configurable time grid for the week, day and resource views: `dayStartHour` and `dayEndHour` (events are cut at those hours), `slotDuration` (5 to 60 minutes; clicks, drops, resizes and drag selection snap to it), `reverseTimeAxis` (the latest hours on top, issue #2), `workingHours` (time outside it is shaded) and `scrollToHour` (where the grid opens). New exported type `WorkingHours`.
+- Drag over free time with a mouse or a pen to create an event over that range: the quick card opens with it.
+
+### Changed
+- Scheduler budget: 48 kB brotli (was 46 kB).
+
 ## 2.0.0-alpha.6
 
 Pre-release on the `next` dist-tag (`latest` stays on 1.4.x).

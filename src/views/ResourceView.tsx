@@ -8,6 +8,7 @@ import { DroppableCell } from '../components/dnd/DroppableCell';
 import { eventColorStyle, resolveEventColor, useCalendars } from '../components/eventColor';
 import { useClassNames } from '../components/customize';
 import { cx } from '../utils';
+import { DEFAULT_GRID, gridHours, gridSlots, slotDate, type TimeGrid } from './grid';
 
 interface ResourceViewProps {
   currentDate: Date;
@@ -19,6 +20,8 @@ interface ResourceViewProps {
   timezone?: string;
   translations?: Partial<CalendarTranslations>;
   onEventContextMenu?: (event: CalendarEvent, e: React.MouseEvent) => void;
+  /** Visible hours and slots (`dayStartHour`, `dayEndHour`…). */
+  grid?: TimeGrid;
 }
 
 export const ResourceView: React.FC<ResourceViewProps> = ({
@@ -30,35 +33,27 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
   locale,
   timezone,
   translations,
-  onEventContextMenu
+  onEventContextMenu,
+  grid = DEFAULT_GRID,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const calendars = useCalendars();
   const classNames = useClassNames();
   
-  // Define timeline: 8am to 8pm for example (or full 24h)
-  // Let's do 24h for flexibility, but maybe scroll to 8am
-  const hours = Array.from({ length: 24 }, (_, i) => i);
+  const hours = gridHours(grid);
   const hourWidth = 100; // px per hour
 
   const timeFormat = timeFormats(locale).hour;
 
-  // Positions use display (wall-clock) times so the timeline matches the chosen zone (T1).
+  // Positions use display (wall-clock) times so the timeline matches the chosen zone (T1), cut at
+  // the visible hours.
   const getEventStyle = (event: CalendarEvent) => {
-    const start = toDisplay(event.start, timezone);
-    const end = toDisplay(event.end, timezone);
-    const dayStart = startOfDay(currentDate);
-    
-    // Calculate minutes from start of day
-    const startMinutes = differenceInMinutes(start, dayStart);
-    const durationMinutes = differenceInMinutes(end, start);
-    
-    const left = (startMinutes / 60) * hourWidth;
-    const width = (durationMinutes / 60) * hourWidth;
-    
+    const dayStart = slotDate(startOfDay(currentDate), grid.startHour * 60);
+    const startMinutes = Math.max(differenceInMinutes(toDisplay(event.start, timezone), dayStart), 0);
+    const endMinutes = Math.min(differenceInMinutes(toDisplay(event.end, timezone), dayStart), hours.length * 60);
     return {
-      left: `${left}px`,
-      width: `${Math.max(width, 4)}px`, // Min width for visibility
+      left: `${(startMinutes / 60) * hourWidth}px`,
+      width: `${Math.max(((endMinutes - startMinutes) / 60) * hourWidth, 4)}px`, // Min width for visibility
     };
   };
 
@@ -88,9 +83,11 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
       <div className="ck:flex-1 ck:overflow-auto ck:relative" ref={containerRef}>
          <div className="ck:min-w-fit">
             {resources.map(resource => {
-                const resourceEvents = events.filter(e => 
-                    e.resourceId === resource.id && 
-                    isSameDisplayDay(e.start, currentDate, timezone)
+                const resourceEvents = events.filter(e =>
+                    e.resourceId === resource.id &&
+                    isSameDisplayDay(e.start, currentDate, timezone) &&
+                    toDisplay(e.end, timezone) > slotDate(currentDate, grid.startHour * 60) &&
+                    toDisplay(e.start, timezone) < slotDate(currentDate, grid.endHour * 60)
                 );
 
                 return (
@@ -119,16 +116,15 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
                                     className="ck:flex ck:h-full ck:shrink-0"
                                     style={{ width: hourWidth }}
                                 >
-                                    {[0, 15, 30, 45].map(minute => {
-                                        const slotDate = new Date(currentDate);
-                                        slotDate.setHours(hour, minute, 0, 0);
-                                        const slotId = `${resource.id}-${slotDate.toISOString()}`;
+                                    {gridSlots(grid).map(minute => {
+                                        const date = slotDate(currentDate, hour * 60 + minute);
+                                        const slotId = `${resource.id}-${date.toISOString()}`;
 
                                         return (
                                             <DroppableCell
                                                 key={minute}
                                                 id={slotId}
-                                                date={slotDate}
+                                                date={date}
                                                 resourceId={resource.id}
                                                 className="ck:h-full ck:flex-1 ck:border-r ck:border-border/10 ck:last:border-border/30 ck:transition-colors"
                                                 onSlotClick={onTimeSlotClick}
