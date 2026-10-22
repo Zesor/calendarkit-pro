@@ -56,7 +56,10 @@ export const QuickCreate: React.FC<QuickCreateProps> = ({ draft, events, calenda
 
   useLayoutEffect(() => {
     const el = card.current;
-    const ghost = el?.closest('.ck-root')?.querySelector('[data-ck-ghost]')?.getBoundingClientRect();
+    const ghostEl = el?.closest('.ck-root')?.querySelector('[data-ck-ghost]');
+    // Opened from "Create", the ghost may be outside the scrolled grid: bring it into view first.
+    ghostEl?.scrollIntoView?.({ block: 'nearest' });
+    const ghost = ghostEl?.getBoundingClientRect();
     const layer = el?.parentElement?.getBoundingClientRect();
     setPlace(el && ghost && layer && ghost.width > 0 ? placeBeside(ghost, { width: el.offsetWidth, height: el.offsetHeight }, layer) : null);
   }, []);

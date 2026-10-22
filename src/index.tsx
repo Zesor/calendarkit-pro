@@ -11,6 +11,7 @@ import { EventModal } from './components/EventModal';
 import { MoreEventsDialog } from './components/MoreEventsDialog';
 import { QuickCreate } from './components/QuickCreate';
 import { EventPopover } from './components/EventPopover';
+import { nextFreeSlot } from './views/nextFreeSlot';
 import { Box } from './components/placement';
 import { UndoToast } from './components/UndoToast';
 import { MonthViewSkeleton, WeekViewSkeleton, DayViewSkeleton, AgendaViewSkeleton } from './components/Skeleton';
@@ -213,7 +214,6 @@ export const Scheduler: React.FC<CalendarProps> = ({
     // A drag over free time: quick create with that range (a custom form gets its start, as for a click).
     handleTimeRangeSelect: (start: Date, end: Date) => calendar.openSlot(start, { end, editor: hasCustomForm }),
     handleAllDaySlotClick: (day: Date) => calendar.openSlot(day, { allDay: true, editor: hasCustomForm }),
-    handleCreateEvent: () => calendar.openSlot(new Date(), { editor: true }),
     handleModalSave: (data: Partial<CalendarEvent>) => calendar.saveEvent(data, { eventId: lastOpened.current.id ?? null }),
     handleModalDelete: (eventId: string) => calendar.remove(eventId),
     handleModalClose: () => calendar.closeDialog(),
@@ -225,7 +225,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
   }), [calendar, hasCustomForm]);
   const {
     handleViewChange, handleDateChange, handlePrev, handleNext, handleToday, handleDateClick, handleTimeSlotClick,
-    handleTimeRangeSelect, handleAllDaySlotClick, handleCreateEvent, handleModalSave, handleModalDelete, handleModalClose, handleEventDelete,
+    handleTimeRangeSelect, handleAllDaySlotClick, handleModalSave, handleModalDelete, handleModalClose, handleEventDelete,
     handleEventDuplicate, handleEventResize, handleDayEventResize, handleMoreClick,
   } = handlers;
   // 1.x: a click calls onEventClick, then opens the event unless readOnly.
@@ -286,6 +286,15 @@ export const Scheduler: React.FC<CalendarProps> = ({
   );
   // Drag ghost: snaps by one slot (1 px per minute at the week view's 60 px per hour), kept inside the window.
   const modifiers = useMemo<Modifier[]>(() => [snapToGrid(grid.slotMinutes), restrictToWindowEdges], [grid.slotMinutes]);
+
+  // "Create" works like a click in the grid (spec §8.5): the quick card at the next free hour, today
+  // (the week and day views go there first), or the host's form at that time.
+  const handleCreateEvent = useStableCallback(() => {
+    const timed = filteredEvents.filter((e) => !e.allDay).map((e) => ({ start: toDisplay(e.start, timezone), end: toDisplay(e.end, timezone) }));
+    const start = nextFreeSlot(toDisplay(new Date(), timezone), timed, grid.startHour, grid.endHour);
+    if (view === 'week' || view === 'day') calendar.navigate(start);
+    calendar.openSlot(start, { editor: hasCustomForm });
+  });
 
   const slotClickHandler = readOnly ? undefined : handleTimeSlotClick;
   const rangeSelectHandler = readOnly ? undefined : handleTimeRangeSelect;
