@@ -151,6 +151,7 @@ export default function Home() {
   const [date, setDate] = useState(new Date());
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [theme, setTheme] = useState<ThemePreset>("calm");
+  const [reverseTimeAxis, setReverseTimeAxis] = useState(false);
   const [language, setLanguage] = useState<"en" | "fr">("en");
   const [timezone, setTimezone] = useState("America/New_York");
 
@@ -201,6 +202,9 @@ export default function Home() {
               <option value="vivid">Vivid</option>
               <option value="editorial">Editorial</option>
             </select>
+          </label>{" "}
+          <label className="demo-theme">
+            <input type="checkbox" checked={reverseTimeAxis} onChange={(e) => setReverseTimeAxis(e.target.checked)} /> Latest hours on top
           </label>
         </div>
 
@@ -231,6 +235,8 @@ export default function Home() {
             onLanguageChange={(lang) => setLanguage(lang as "en" | "fr")}
             translations={translations[language]}
             locale={language === "fr" ? fr : enUS}
+            workingHours={{ start: 9, end: 18 }}
+            reverseTimeAxis={reverseTimeAxis}
           />
         </div>
       </div>

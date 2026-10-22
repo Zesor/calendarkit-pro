@@ -90,6 +90,12 @@ Or let the calendar keep the list itself (uncontrolled), and save it when it cha
 | `calendars` | `Calendar[]` | Multiple calendar support |
 | `resources` | `Resource[]` | Resources for resource view |
 | `eventTypes` | `EventType[]` | Pre-defined event types |
+| `dayStartHour` | `number` | First hour of the week, day and resource grids (0 to 23, default 0, see [Time grid](#time-grid)) |
+| `dayEndHour` | `number` | Hour those grids end at (1 to 24, default 24) |
+| `slotDuration` | `number` | Slot length in minutes: 5, 10, 15 (default), 20, 30 or 60 |
+| `reverseTimeAxis` | `boolean` | Week and day views: the latest hours on top |
+| `workingHours` | `WorkingHours` | Week and day views: shade the time outside `{ start, end, days? }` |
+| `scrollToHour` | `number` | Week and day views: the hour at the top when the grid opens (default: a few hours before now) |
 | `timezone` | `string` | IANA timezone (e.g., `'America/New_York'`) |
 | `onTimezoneChange` | `(tz: string) => void` | Timezone change callback |
 | `language` | `'en'` \| `'fr'` | UI language |
@@ -180,13 +186,35 @@ Full month grid. All-day and multi-day events are continuous bars across their d
 7-day view with hourly time slots and an all-day row on top. Drag events to reschedule, resize from bottom edge. Each event shows as much as its size allows: the title alone for 15 minutes, "Title · 9:00" for 30 minutes, then the title over up to three lines and the times. Overlapping events sit side by side and stretch into free columns; past 2 or 3 columns (75 px each at least), the rest collapse into a "+N" button that lists them.
 
 ### Day View
-Single day with 15-minute time slots and the all-day row, up to 4 overlapping events side by side. Ideal for detailed scheduling.
+Single day with time slots (15 minutes by default) and the all-day row, up to 4 overlapping events side by side. Ideal for detailed scheduling.
 
 ### Agenda View
 Chronological list of upcoming events for 30 days. Shows event details and metadata.
 
 ### Resource View
 Horizontal timeline for scheduling across resources (rooms, people, equipment).
+
+## Time grid
+
+The week, day and resource views share one time grid:
+
+```tsx
+<Scheduler
+  dayStartHour={7}
+  dayEndHour={20}
+  slotDuration={30}
+  workingHours={{ start: 9, end: 17.5 }} // Monday to Friday by default; `days: [1, 2, 3, 4]` (0 is Sunday)
+  scrollToHour={8}
+  reverseTimeAxis
+/>
+```
+
+- `dayStartHour` / `dayEndHour` set the hours drawn. Events that run past them are cut at the edge; events entirely outside are not drawn in the grid (they stay in the agenda and the month view).
+- `slotDuration` sets the slot length: a click, a drop, a resize and a drag selection snap to it.
+- `reverseTimeAxis` puts the latest hours on top: the day runs upward, and an event's end is its top edge (the resize handle sits there). The resource view keeps its left-to-right timeline.
+- `workingHours` shades the time outside working hours, and whole days that are not working days. Shaded time can still be clicked and dropped on.
+- `scrollToHour` is the hour at the top of the grid when it opens (on a reversed grid too).
+- Drag over free time with a mouse or a pen to create an event over that range: the quick card opens with it. On touch screens a drag scrolls, and a tap creates as before.
 
 ## All-day and Multi-day Events
 
@@ -206,7 +234,7 @@ const events = [
 
 ## Creating and undoing
 
-- A click on a free slot opens a quick card over the grid, with the new event drawn dashed in its column. The title is a sentence the calendar understands, in English or French (`language`): "Lunch with Lea tomorrow 1pm for 2h" moves the event to tomorrow 13:00–15:00 and saves it as "Lunch with Lea". Enter saves; duration chips, the calendar menu and an overlap warning sit under the title; "More options" opens the full form with what the card already has.
+- A click on a free slot, or a drag over free time, opens a quick card over the grid, with the new event drawn dashed in its column. The title is a sentence the calendar understands, in English or French (`language`): "Lunch with Lea tomorrow 1pm for 2h" moves the event to tomorrow 13:00–15:00 and saves it as "Lunch with Lea". Enter saves; duration chips, the calendar menu and an overlap warning sit under the title; "More options" opens the full form with what the card already has.
 - Every change (create, edit, move, resize, duplicate, delete) shows a toast with **Undo** for 6 seconds, so deleting asks no confirmation. The event just moved or edited is outlined briefly.
 - Closing the card or the form with changes asks first ("Discard changes?").
 - New events get no colour and no reminder you did not choose: they take their calendar's colour.
