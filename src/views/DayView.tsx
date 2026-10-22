@@ -17,6 +17,8 @@ interface DayViewProps {
   events: CalendarEvent[];
   onEventClick?: (event: CalendarEvent) => void;
   onTimeSlotClick?: (date: Date) => void;
+  /** A drag over free time (mouse or pen): the range from its first slot to the end of its last. */
+  onTimeRangeSelect?: (start: Date, end: Date) => void;
   onEventResize?: (event: CalendarEvent, newEnd: Date) => void;
   timezone?: string;
   locale?: Locale;
@@ -43,6 +45,7 @@ const DayViewImpl: React.FC<DayViewProps> = ({
   events,
   onEventClick,
   onTimeSlotClick,
+  onTimeRangeSelect,
   onEventResize,
   timezone,
   locale,
@@ -169,6 +172,7 @@ const DayViewImpl: React.FC<DayViewProps> = ({
                         locale={locale}
                         readonly={readonly}
                         onTimeSlotClick={onTimeSlotClick}
+                        onRangeSelect={onTimeRangeSelect}
                         onEventClick={onEventClick}
                         onEventContextMenu={onEventContextMenu}
                         onEventResize={onEventResize}

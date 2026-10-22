@@ -32,6 +32,8 @@ interface TimeColumnProps {
   locale?: Locale;
   readonly?: boolean;
   onTimeSlotClick?: (date: Date) => void;
+  /** A drag over free time, from the start of its first slot to the end of its last. */
+  onRangeSelect?: (start: Date, end: Date) => void;
   onEventClick?: (event: CalendarEvent) => void;
   onEventContextMenu?: (event: CalendarEvent, e: React.MouseEvent) => void;
   onEventResize?: (event: CalendarEvent, newEnd: Date) => void;
@@ -41,13 +43,57 @@ interface TimeColumnProps {
   translations?: Partial<CalendarTranslations>;
 }
 
-/** One day column of the week or day view: its slots, its events and the current-time line. */
+/**
+ * One day column of the week or day view: its slots, its events and the current-time line. With a
+ * mouse or a pen, dragging over the slots selects a range (touch keeps scrolling the grid).
+ */
 export const TimeColumn: React.FC<TimeColumnProps> = ({
-  day, dayKey, segments, grid, hourHeight, nowMinutes, className, onTimeSlotClick, ...events
+  day, dayKey, segments, grid, hourHeight, nowMinutes, className, onTimeSlotClick, onRangeSelect, ghost, ...events
 }) => {
   const visibleNow = nowMinutes !== undefined && nowMinutes >= grid.startHour * 60 && nowMinutes <= grid.endHour * 60;
+  // Minutes since midnight of the first and the current slot of a drag.
+  const [range, setRange] = React.useState<{ from: number; to: number } | null>(null);
+
+  const minuteAt = (column: HTMLElement, clientY: number) => {
+    const rect = column.getBoundingClientRect();
+    const y = grid.reverse ? rect.bottom - clientY : clientY - rect.top;
+    const minute = grid.startHour * 60 + Math.floor((y / hourHeight) * (60 / grid.slotMinutes)) * grid.slotMinutes;
+    return Math.min(Math.max(minute, grid.startHour * 60), grid.endHour * 60 - grid.slotMinutes);
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!onRangeSelect || e.button !== 0 || e.pointerType === 'touch' || (e.target as HTMLElement).closest('.ck-event, button')) return;
+    const column = e.currentTarget;
+    const from = minuteAt(column, e.clientY);
+    let to = from;
+    const move = (m: PointerEvent) => {
+      to = minuteAt(column, m.clientY);
+      setRange({ from, to });
+    };
+    const end = (u: PointerEvent) => {
+      document.removeEventListener('pointermove', move);
+      document.removeEventListener('pointerup', end);
+      document.removeEventListener('pointercancel', end);
+      setRange(null);
+      // Without a move it stays a click: the slot's own handler opens it.
+      if (u.type === 'pointerup' && to !== from) onRangeSelect(slotDate(day, Math.min(from, to)), slotDate(day, Math.max(from, to) + grid.slotMinutes));
+    };
+    document.addEventListener('pointermove', move);
+    document.addEventListener('pointerup', end);
+    document.addEventListener('pointercancel', end);
+  };
+
+  const selection = range && {
+    start: slotDate(day, Math.min(range.from, range.to)),
+    end: slotDate(day, Math.max(range.from, range.to) + grid.slotMinutes),
+    title: '',
+  };
+
   return (
-    <div className={cx('ck:relative', grid.reverse && 'ck:flex ck:flex-col-reverse', className)}>
+    <div
+      className={cx('ck:relative', grid.reverse && 'ck:flex ck:flex-col-reverse', onRangeSelect && 'ck:select-none', className)}
+      onPointerDown={handlePointerDown}
+    >
       {/* Outside working hours: drawn under the slots, which stay clickable. */}
       {offHours(grid, day).map(([from, to]) => (
         <div
@@ -79,7 +125,7 @@ export const TimeColumn: React.FC<TimeColumnProps> = ({
         </div>
       ))}
 
-      <TimeGridEvents dayKey={dayKey} segments={clipSegments(segments, day, grid)} grid={grid} hourHeight={hourHeight} {...events} />
+      <TimeGridEvents dayKey={dayKey} segments={clipSegments(segments, day, grid)} grid={grid} hourHeight={hourHeight} ghost={selection ?? ghost} {...events} />
 
       {/* Current Time Indicator */}
       {visibleNow && (

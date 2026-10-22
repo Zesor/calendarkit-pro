@@ -19,6 +19,8 @@ interface WeekViewProps {
   events: CalendarEvent[];
   onEventClick?: (event: CalendarEvent) => void;
   onTimeSlotClick?: (date: Date) => void;
+  /** A drag over free time (mouse or pen): the range from its first slot to the end of its last. */
+  onTimeRangeSelect?: (start: Date, end: Date) => void;
   onEventResize?: (event: CalendarEvent, newEnd: Date) => void;
   timezone?: string;
   locale?: Locale;
@@ -45,6 +47,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
   events,
   onEventClick,
   onTimeSlotClick,
+  onTimeRangeSelect,
   onEventResize,
   timezone,
   locale,
@@ -200,6 +203,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
                         locale={locale}
                         readonly={readonly}
                         onTimeSlotClick={onTimeSlotClick}
+                        onRangeSelect={onTimeRangeSelect}
                         onEventClick={onEventClick}
                         onEventContextMenu={onEventContextMenu}
                         onEventResize={onEventResize}

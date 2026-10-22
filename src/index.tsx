@@ -203,6 +203,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
     },
     // Quick create, or the custom form of a 1.x host (renderEventForm) as before.
     handleTimeSlotClick: (date: Date, resourceId?: string) => calendar.openSlot(date, { resourceId, editor: hasCustomForm }),
+    // A drag over free time: quick create with that range (a custom form gets its start, as for a click).
+    handleTimeRangeSelect: (start: Date, end: Date) => calendar.openSlot(start, { end, editor: hasCustomForm }),
     handleAllDaySlotClick: (day: Date) => calendar.openSlot(day, { allDay: true, editor: hasCustomForm }),
     handleCreateEvent: () => calendar.openSlot(new Date(), { editor: true }),
     handleModalSave: (data: Partial<CalendarEvent>) => calendar.saveEvent(data, { eventId: lastOpened.current.id ?? null }),
@@ -216,7 +218,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
   }), [calendar, hasCustomForm]);
   const {
     handleViewChange, handleDateChange, handlePrev, handleNext, handleToday, handleDateClick, handleTimeSlotClick,
-    handleAllDaySlotClick, handleCreateEvent, handleModalSave, handleModalDelete, handleModalClose, handleEventDelete,
+    handleTimeRangeSelect, handleAllDaySlotClick, handleCreateEvent, handleModalSave, handleModalDelete, handleModalClose, handleEventDelete,
     handleEventDuplicate, handleEventResize, handleDayEventResize, handleMoreClick,
   } = handlers;
   // 1.x: a click calls onEventClick, then opens the event unless readOnly.
@@ -279,6 +281,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
   const modifiers = useMemo<Modifier[]>(() => [snapToGrid(grid.slotMinutes), restrictToWindowEdges], [grid.slotMinutes]);
 
   const slotClickHandler = readOnly ? undefined : handleTimeSlotClick;
+  const rangeSelectHandler = readOnly ? undefined : handleTimeRangeSelect;
   const allDaySlotClickHandler = readOnly ? undefined : handleAllDaySlotClick;
   const contextMenuHandler = readOnly ? undefined : openContextMenu;
 
@@ -400,6 +403,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                 events={filteredEvents}
                                 onEventClick={handleEventClickInternal}
                                 onTimeSlotClick={slotClickHandler}
+                                onTimeRangeSelect={rangeSelectHandler}
                                 onEventResize={handleEventResize}
                                 timezone={timezone}
                                 locale={locale}
@@ -420,6 +424,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                     events={filteredEvents}
                                     onEventClick={handleEventClickInternal}
                                     onTimeSlotClick={slotClickHandler}
+                                    onTimeRangeSelect={rangeSelectHandler}
                                     onEventResize={handleEventResize}
                                     timezone={timezone}
                                     locale={locale}
