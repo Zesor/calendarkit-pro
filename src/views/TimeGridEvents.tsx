@@ -29,6 +29,8 @@ interface TimeGridEventsProps {
   onEventResize?: (event: CalendarEvent, newEnd: Date) => void;
   /** "+N": the events that did not fit in their cluster. */
   onMoreClick?: (events: CalendarEvent[]) => void;
+  /** Id of the event just created or moved, outlined briefly. */
+  highlightId?: string;
   /** The event being created in this column (quick create), drawn dashed. */
   ghost?: GhostEvent;
   translations?: Partial<CalendarTranslations>;
@@ -62,7 +64,7 @@ function horizontal(column: number, span: number, columns: number, inset: number
  * stretching right while the next column is free, and the events past `maxColumns` behind "+N".
  */
 export const TimeGridEvents: React.FC<TimeGridEventsProps> = ({
-  dayKey, segments, hourHeight, maxColumns, columnWidth, inset = 0, timezone, locale, readonly, onEventClick, onEventContextMenu, onEventResize, onMoreClick, ghost, translations,
+  dayKey, segments, hourHeight, maxColumns, columnWidth, inset = 0, timezone, locale, readonly, onEventClick, onEventContextMenu, onEventResize, onMoreClick, highlightId, ghost, translations,
 }) => {
   const { blocks, more } = layoutColumns(segments, maxColumns);
   return (
@@ -98,6 +100,7 @@ export const TimeGridEvents: React.FC<TimeGridEventsProps> = ({
               width={width}
               timezone={timezone}
               locale={locale}
+              highlight={event.id === highlightId}
               className={readonly || isEventDragDisabled(event) ? "ck:cursor-default" : "ck:cursor-grab ck:active:cursor-grabbing"}
               onClick={onEventClick}
               onContextMenu={onEventContextMenu}

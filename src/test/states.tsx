@@ -40,6 +40,11 @@ export const SCHEDULER_STATES: Array<[string, () => void]> = [
     fireEvent.change(screen.getByRole('textbox', { name: 'Add title' }), { target: { value: 'Lunch tomorrow 1pm' } })
     fireEvent.keyDown(document, { key: 'Escape' })
   }],
+  ['undo toast', () => {
+    render(<Scheduler {...props} view="week" />)
+    fireEvent.contextMenu(screen.getByText('Design review'))
+    act(() => screen.getByRole('button', { name: /Delete/ }).click())
+  }],
   ['context menu', () => {
     render(<Scheduler {...props} view="week" />)
     fireEvent.contextMenu(screen.getByText('Design review'))

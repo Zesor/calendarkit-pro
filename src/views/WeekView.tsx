@@ -27,6 +27,8 @@ interface WeekViewProps {
   onAllDaySlotClick?: (day: Date) => void;
   /** "+N" in the grid: the events of a cluster that did not fit. */
   onMoreClick?: (events: CalendarEvent[]) => void;
+  /** Id of the event just created or moved, outlined briefly. */
+  highlightId?: string;
   /** Quick create: the new event's draft, drawn in its column. */
   draft?: GhostEvent & { allDay: boolean };
   translations?: Partial<CalendarTranslations>;
@@ -57,6 +59,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
   onAllDaySlotClick,
   onMoreClick,
   draft,
+  highlightId,
   translations,
 }) => {
   // Week start follows the locale (historical Monday fallback without a locale).
@@ -227,6 +230,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
                         onEventContextMenu={onEventContextMenu}
                         onEventResize={onEventResize}
                         onMoreClick={onMoreClick}
+                        highlightId={highlightId}
                         ghost={draft && !draft.allDay && isSameDay(draft.start, day) ? draft : undefined}
                         translations={translations}
                     />

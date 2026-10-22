@@ -25,6 +25,8 @@ interface DayViewProps {
   onAllDaySlotClick?: (day: Date) => void;
   /** "+N" in the grid: the events of a cluster that did not fit. */
   onMoreClick?: (events: CalendarEvent[]) => void;
+  /** Id of the event just created or moved, outlined briefly. */
+  highlightId?: string;
   /** Quick create: the new event's draft, drawn in its column. */
   draft?: GhostEvent & { allDay: boolean };
 }
@@ -55,6 +57,7 @@ const DayViewImpl: React.FC<DayViewProps> = ({
   onAllDaySlotClick,
   onMoreClick,
   draft,
+  highlightId,
 }) => {
   // Only the day on screen gets segments, so endless events stay cheap.
   const visibleRange = React.useMemo(() => {
@@ -193,6 +196,7 @@ const DayViewImpl: React.FC<DayViewProps> = ({
                         onEventContextMenu={onEventContextMenu}
                         onEventResize={onEventResize}
                         onMoreClick={onMoreClick}
+                        highlightId={highlightId}
                         ghost={draft && !draft.allDay && isSameDay(draft.start, currentDate) ? draft : undefined}
                         translations={translations}
                      />

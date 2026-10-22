@@ -10,6 +10,7 @@ import { ResourceView } from './views/ResourceView';
 import { EventModal } from './components/EventModal';
 import { MoreEventsDialog } from './components/MoreEventsDialog';
 import { QuickCreate } from './components/QuickCreate';
+import { UndoToast } from './components/UndoToast';
 import { MonthViewSkeleton, WeekViewSkeleton, DayViewSkeleton, AgendaViewSkeleton } from './components/Skeleton';
 import { EventContextMenu, useEventContextMenu } from './components/ContextMenu';
 import { CalendarProps, CalendarEvent } from './types';
@@ -118,6 +119,15 @@ export const Scheduler: React.FC<CalendarProps> = ({
   const currentDate = useCalendarSelector(calendar, (s) => s.date);
   const expandedEvents = useCalendarSelector(calendar, (s) => s.occurrences);
   const dialog = useCalendarSelector(calendar, (s) => s.dialog);
+  const lastChange = useCalendarSelector(calendar, (s) => s.lastChange);
+  // The event just created or moved gets a brief outline (spec §8.6).
+  const [landedId, setLandedId] = useState<string>();
+  React.useEffect(() => {
+    if (!lastChange || lastChange.kind === 'delete') return setLandedId(undefined);
+    setLandedId(lastChange.eventId);
+    const timer = setTimeout(() => setLandedId(undefined), 1600);
+    return () => clearTimeout(timer);
+  }, [lastChange]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // The 1.x modal reads the dialog: an event being shown or edited, or a new event at a slot.
@@ -330,6 +340,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                 onAllDaySlotClick={allDaySlotClickHandler}
                                 onMoreClick={handleMoreClick}
                                 draft={quickDraft}
+                                highlightId={landedId}
                                 translations={t}
                                 />
                             )}
@@ -349,6 +360,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                     onAllDaySlotClick={allDaySlotClickHandler}
                                     onMoreClick={handleMoreClick}
                                     draft={quickDraft}
+                                    highlightId={landedId}
                                 />
                             )}
                             {view === 'agenda' && (
@@ -436,6 +448,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 onClose={handleModalClose}
             />
         )}
+
+        <UndoToast change={lastChange} onUndo={calendar.undo} translations={t} />
 
         <MoreEventsDialog
             events={moreEvents}
