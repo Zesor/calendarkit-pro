@@ -9,8 +9,9 @@ import { AgendaView } from './views/AgendaView';
 import { ResourceView } from './views/ResourceView';
 import { EventModal } from './components/EventModal';
 import { MoreEventsDialog } from './components/MoreEventsDialog';
-import { QuickCreate } from './components/QuickCreate';
+import { QuickCreate, QuickExtra } from './components/QuickCreate';
 import { EventPopover } from './components/EventPopover';
+import { nextFreeSlot } from './views/nextFreeSlot';
 import { Box } from './components/placement';
 import { UndoToast } from './components/UndoToast';
 import { MonthViewSkeleton, WeekViewSkeleton, DayViewSkeleton, AgendaViewSkeleton } from './components/Skeleton';
@@ -19,7 +20,7 @@ import { CalendarProps, CalendarEvent, CalendarClassNames, CalendarComponents } 
 import { cx } from './utils';
 import { colorMode, getThemeStyles, themePreset } from './lib/theme';
 import { resolveTranslations, timeFormats } from './core/format';
-import { toDisplay } from './core/timezone';
+import { fromDisplay, toDisplay } from './core/timezone';
 import { resolveWeekStartsOn } from './core/week';
 import { useCalendar, useCalendarSelector } from './react/useCalendar';
 import { CalendarDndContext } from './react/dnd';
@@ -55,7 +56,10 @@ export type {
   SidebarProps,
   EmptyStateProps,
   WorkingHours,
+  Place,
+  PlaceSearch,
 } from './types';
+export { photonPlaces } from './places';
 
 const NO_CLASSES: CalendarClassNames = {};
 
@@ -104,6 +108,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
   injectStyles = true,
   classNames = NO_CLASSES,
   components = NO_COMPONENTS,
+  placeSearch,
   dayStartHour,
   dayEndHour,
   slotDuration,
@@ -186,16 +191,20 @@ export const Scheduler: React.FC<CalendarProps> = ({
   const modalInitialDate = editingId === undefined ? draft?.start : undefined;
   const modalInitialAllDay = editingId === undefined && !!draft?.allDay;
   // "More options" from quick create: the editor opens with what the card already has.
+  // What the quick card added (guests, location, description) goes along with "More options".
+  const [quickExtra, setQuickExtra] = useState<QuickExtra>({});
   const modalInitialValues = useMemo(() => {
     if (editingId !== undefined || !draft) return undefined;
-    return { title: draft.savedTitle, end: draft.end, ...(draft.calendarId ? { calendarId: draft.calendarId } : {}) };
-  }, [editingId, draft]);
+    return { title: draft.savedTitle, end: draft.end, ...(draft.calendarId ? { calendarId: draft.calendarId } : {}), ...quickExtra };
+  }, [editingId, draft, quickExtra]);
 
   // Stable handlers (the store's actions never change identity).
   const { EventEditor, Toolbar, Sidebar: CustomSidebar } = components;
   const hasCustomForm = !!(renderEventForm || EventEditor);
   // Classic: a click on an event opens the popover; the editor opens from its Edit (a 1.x custom form
   // still opens on the click).
+  // The new event stays drawn in the grid while its full form is open (not under a host's own form).
+  const ghostDraft = quickDraft ?? (dialog?.kind === 'editor' && dialog.eventId === undefined && !hasCustomForm ? dialog.draft : undefined);
   const popoverEvent = dialog?.kind === 'event' && !hasCustomForm ? selectedEvent : null;
   const isModalOpen = dialog !== null && dialog.kind !== 'more' && dialog.kind !== 'quick' && !popoverEvent;
   const handlers = useMemo(() => ({
@@ -213,7 +222,6 @@ export const Scheduler: React.FC<CalendarProps> = ({
     // A drag over free time: quick create with that range (a custom form gets its start, as for a click).
     handleTimeRangeSelect: (start: Date, end: Date) => calendar.openSlot(start, { end, editor: hasCustomForm }),
     handleAllDaySlotClick: (day: Date) => calendar.openSlot(day, { allDay: true, editor: hasCustomForm }),
-    handleCreateEvent: () => calendar.openSlot(new Date(), { editor: true }),
     handleModalSave: (data: Partial<CalendarEvent>) => calendar.saveEvent(data, { eventId: lastOpened.current.id ?? null }),
     handleModalDelete: (eventId: string) => calendar.remove(eventId),
     handleModalClose: () => calendar.closeDialog(),
@@ -225,7 +233,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
   }), [calendar, hasCustomForm]);
   const {
     handleViewChange, handleDateChange, handlePrev, handleNext, handleToday, handleDateClick, handleTimeSlotClick,
-    handleTimeRangeSelect, handleAllDaySlotClick, handleCreateEvent, handleModalSave, handleModalDelete, handleModalClose, handleEventDelete,
+    handleTimeRangeSelect, handleAllDaySlotClick, handleModalSave, handleModalDelete, handleModalClose, handleEventDelete,
     handleEventDuplicate, handleEventResize, handleDayEventResize, handleMoreClick,
   } = handlers;
   // 1.x: a click calls onEventClick, then opens the event unless readOnly.
@@ -286,6 +294,50 @@ export const Scheduler: React.FC<CalendarProps> = ({
   );
   // Drag ghost: snaps by one slot (1 px per minute at the week view's 60 px per hour), kept inside the window.
   const modifiers = useMemo<Modifier[]>(() => [snapToGrid(grid.slotMinutes), restrictToWindowEdges], [grid.slotMinutes]);
+
+  // The built-in form edits the wall-clock times the grid shows (the display zone, like the quick
+  // card); its dates go back to instants on save. A host's own form keeps the 1.x instants.
+  const editorEvent = useMemo(
+    () => (selectedEvent && !selectedEvent.allDay ? { ...selectedEvent, start: toDisplay(selectedEvent.start, timezone), end: toDisplay(selectedEvent.end, timezone) } : selectedEvent),
+    [selectedEvent, timezone],
+  );
+  // An unchanged time keeps its instant (the hour repeated when clocks go back has two).
+  const backToInstant = (wall: Date | undefined, shown: Date | undefined, instant: Date | undefined) =>
+    wall && shown && instant && wall.getTime() === shown.getTime() ? instant : wall && fromDisplay(wall, timezone);
+  const handleEditorSave = useStableCallback((data: Partial<CalendarEvent>) => handleModalSave(
+    data.allDay ? data : {
+      ...data,
+      start: backToInstant(data.start, editorEvent?.start, selectedEvent?.start),
+      end: backToInstant(data.end, editorEvent?.end, selectedEvent?.end),
+    },
+  ));
+
+  // The quick card saves through the engine; with guests, a location or a description added, the
+  // same fields as the engine's own save (title without the understood words, wall times to instants).
+  const handleQuickSave = useStableCallback((extra: QuickExtra) => {
+    if (!quickDraft || Object.keys(extra).length === 0) return calendar.saveDraft();
+    const d = quickDraft;
+    const instant = (date: Date) => (d.allDay ? date : fromDisplay(date, timezone));
+    calendar.saveEvent({
+      title: ((d.titleEdited && d.savedTitle) || d.title).trim() || 'Untitled',
+      start: instant(d.start),
+      end: instant(d.end),
+      allDay: d.allDay || undefined,
+      calendarId: d.calendarId,
+      recurrence: d.recurrence,
+      ...extra,
+    }, { eventId: null });
+  });
+
+  // "Create" works like a click in the grid (spec §8.5): the quick card at the next free hour, today
+  // (the week and day views go there first), or the host's form at that time.
+  const handleCreateEvent = useStableCallback(() => {
+    // Events drawn in the grid only: a day or longer is a bar above it and does not push the slot.
+    const timed = filteredEvents.filter((e) => !e.allDay && e.end.getTime() - e.start.getTime() < 864e5).map((e) => ({ start: toDisplay(e.start, timezone), end: toDisplay(e.end, timezone) }));
+    const start = nextFreeSlot(toDisplay(new Date(), timezone), timed, grid.startHour, grid.endHour);
+    if (view === 'week' || view === 'day') calendar.navigate(start);
+    calendar.openSlot(start, { editor: hasCustomForm });
+  });
 
   const slotClickHandler = readOnly ? undefined : handleTimeSlotClick;
   const rangeSelectHandler = readOnly ? undefined : handleTimeRangeSelect;
@@ -419,7 +471,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                 onDayEventResize={handleDayEventResize}
                                 onAllDaySlotClick={allDaySlotClickHandler}
                                 onMoreClick={handleMoreClick}
-                                draft={quickDraft}
+                                draft={ghostDraft}
                                 highlightId={landedId}
                                 translations={t}
                                 grid={grid}
@@ -441,7 +493,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                     onDayEventResize={handleDayEventResize}
                                     onAllDaySlotClick={allDaySlotClickHandler}
                                     onMoreClick={handleMoreClick}
-                                    draft={quickDraft}
+                                    draft={ghostDraft}
                                     highlightId={landedId}
                                     grid={grid}
                                 />
@@ -506,15 +558,16 @@ export const Scheduler: React.FC<CalendarProps> = ({
             <EventModal
                 isOpen={isModalOpen}
                 onClose={handleModalClose}
-                event={selectedEvent}
+                event={editorEvent}
                 initialDate={modalInitialDate}
-                onSave={handleModalSave}
+                onSave={handleEditorSave}
                 onDelete={handleModalDelete}
                 calendars={calendars}
                 eventTypes={eventTypes}
                 translations={t}
                 initialAllDay={modalInitialAllDay}
                 initialValues={modalInitialValues}
+                placeSearch={placeSearch}
             />
         )}
 
@@ -541,8 +594,12 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 locale={locale}
                 translations={t}
                 onChange={calendar.updateDraft}
-                onSave={calendar.saveDraft}
-                onMoreOptions={() => calendar.openEditor()}
+                placeSearch={placeSearch}
+                onSave={handleQuickSave}
+                onMoreOptions={(extra) => {
+                    setQuickExtra(extra);
+                    calendar.openEditor();
+                }}
                 onClose={handleModalClose}
             />
         )}

@@ -144,6 +144,7 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
                                         onEventClick?.(event);
                                     }}
                                     onContextMenu={onEventContextMenu ? (e) => onEventContextMenu(event, e) : undefined}
+                                    data-ck-event-id={event.id}
                                     className={cx("ck-event ck:absolute ck:top-2 ck:bottom-2 ck:rounded-md ck:px-2 ck:py-1 ck:text-xs ck:font-semibold ck:cursor-pointer ck:overflow-hidden ck:hover:brightness-95 ck:transition-all ck:z-10", classNames.event)}
                                     style={{
                                         ...getEventStyle(event),

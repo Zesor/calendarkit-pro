@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useId, useInsertionEffect, useRef } from 'react';
-import { Modal } from './ui/Modal';
-import { CalendarEvent, CalendarTranslations, EventType, EventReminder } from '../types';
+import React, { useState, useEffect, useId, useInsertionEffect, useLayoutEffect, useRef } from 'react';
+import { useClassNames } from './customize';
+import { placeBeside } from './placement';
+import { CalendarEvent, CalendarTranslations, EventType, EventReminder, PlaceSearch } from '../types';
+import { PlaceField } from './PlaceField';
 import { addDays, differenceInCalendarDays, format, differenceInMinutes, startOfDay } from 'date-fns';
 import { AlignLeft, Bell, Calendar, Clock, MapPin, Plus, Trash2, Users, X } from './icons';
 import { eventColorStyle } from './eventColor';
@@ -23,6 +25,8 @@ interface EventModalProps {
   initialAllDay?: boolean;
   /** Fields of a new event already chosen (quick create's "More options"). */
   initialValues?: Partial<CalendarEvent>;
+  /** Place suggestions in the Location field (spec §8.7); plain text without. */
+  placeSearch?: PlaceSearch;
 }
 
 // Predefined reminder offsets, in minutes before the event
@@ -42,7 +46,7 @@ const COLOR_PALETTE = [
   '#6366f1', // Indigo
 ];
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** Appends emails not already present, comparing case-insensitively and keeping the first spelling. */
 const mergeGuests = (current: string[], added: string[]): string[] => {
@@ -71,6 +75,8 @@ export const reminderLabel = (minutes: number, t: CalendarTranslations): string 
 /** Stable avatar hue derived from the email (no fake guest list needed). */
 const avatarHue = (email: string) => [...email].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % 360, 7);
 
+const WIDTH = 440;
+const MARGIN = 8;
 const LABEL = "ck:flex ck:items-center ck:gap-2 ck:text-sm ck:font-semibold ck:text-muted-foreground ck:sm:min-h-10";
 const INPUT = "ck:min-h-10 ck:rounded-lg ck:border ck:border-transparent ck:bg-muted ck:px-3 ck:text-sm ck:text-foreground ck:placeholder:text-muted-foreground ck:transition-colors ck:focus:border-ring ck:focus:bg-background ck:focus:outline-hidden";
 const CHIP = "ck:inline-flex ck:items-center ck:gap-1.5 ck:min-h-8 ck:rounded-full ck:bg-muted ck:text-xs ck:font-medium ck:text-foreground";
@@ -97,6 +103,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   translations: t,
   initialAllDay,
   initialValues,
+  placeSearch,
 }) => {
   const [mode, setMode] = useState<'edit' | 'create'>('create');
   // Read through a ref so a new initialValues object (an inline prop) does not reset the form.
@@ -127,6 +134,9 @@ export const EventModal: React.FC<EventModalProps> = ({
   const [guestInput, setGuestInput] = useState('');
   const [guestError, setGuestError] = useState(false);
   const id = useId();
+  const classNames = useClassNames();
+  const card = useRef<HTMLDivElement>(null);
+  const [place, setPlace] = useState<{ left: number; top: number } | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -177,6 +187,29 @@ export const EventModal: React.FC<EventModalProps> = ({
     if (JSON.stringify(formData) !== openedAs.current) setConfirmingDiscard(true);
     else onClose();
   };
+  // A card beside what it edits (no overlay): the event's block, or the new event's ghost.
+  const editedId = event?.id;
+  useLayoutEffect(() => {
+    const el = card.current;
+    if (!isOpen || !el) return;
+    const root = el.closest('.ck-root');
+    const target = editedId === undefined
+      ? root?.querySelector('[data-ck-ghost]')
+      : [...(root?.querySelectorAll('[data-ck-event-id]') ?? [])].find((node) => node.getAttribute('data-ck-event-id') === editedId);
+    const box = target?.getBoundingClientRect();
+    const viewport = { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
+    setPlace(box && box.width > 0 ? placeBeside(box, { width: Math.min(WIDTH, window.innerWidth - 2 * MARGIN), height: el.offsetHeight }, viewport) : null);
+  }, [isOpen, editedId]);
+
+  const closeRef = useRef(requestClose);
+  closeRef.current = requestClose;
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && closeRef.current();
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isOpen]);
+
 
   const guests = formData.guests || [];
 
@@ -454,13 +487,14 @@ export const EventModal: React.FC<EventModalProps> = ({
         )}
 
         <Field icon={MapPin} label={t.locationLabel} htmlFor={`${id}-location`}>
-          <input
+          <PlaceField
             id={`${id}-location`}
-            type="text"
-            className={cx(INPUT, "ck:w-full")}
-            placeholder={t.addLocation}
             value={formData.location || ''}
-            onChange={e => setFormData({ ...formData, location: e.target.value })}
+            place={formData.place}
+            search={placeSearch}
+            className={INPUT}
+            translations={t}
+            onChange={(location, place) => setFormData(prev => ({ ...prev, location, place }))}
           />
         </Field>
 
@@ -607,9 +641,22 @@ export const EventModal: React.FC<EventModalProps> = ({
     </form>
   );
 
+  if (!isOpen) return null;
+  // No taller than the room below its top: the form scrolls inside, Save stays in the window.
+  const at = place ?? { left: Math.max(MARGIN, (window.innerWidth - WIDTH) / 2), top: 80 };
   return (
-    <Modal isOpen={isOpen} onClose={requestClose} hideHeader labelledBy={`${id}-heading`} className="ck:p-0 ck:overflow-hidden ck:max-w-[640px] ck:animate-pop-in">
-      {renderEditMode()}
-    </Modal>
+    <>
+      <div data-ck-backdrop className="ck:fixed ck:inset-0 ck:z-40" onClick={requestClose} />
+      <div
+        ref={card}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`${id}-heading`}
+        className={cx("ck:fixed ck:z-50 ck:flex ck:flex-col ck:overflow-hidden ck:rounded-2xl ck:border ck:border-border ck:bg-background ck:shadow-[0_24px_56px_-20px_rgb(0_0_0/0.4),0_2px_8px_-2px_rgb(0_0_0/0.12)] ck:animate-pop-in", classNames.dialog)}
+        style={{ ...at, width: WIDTH, maxWidth: `calc(100vw - ${2 * MARGIN}px)`, maxHeight: window.innerHeight - at.top - MARGIN }}
+      >
+        {renderEditMode()}
+      </div>
+    </>
   );
 };

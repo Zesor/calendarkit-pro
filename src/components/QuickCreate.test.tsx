@@ -1,7 +1,7 @@
 // Spec §8.5: a click on a free slot opens the quick card; the title is a sentence the engine
 // understands, Enter saves, and a typed draft is never dropped without asking.
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
-import { addDays, startOfDay } from 'date-fns'
+import { addDays, format, startOfDay } from 'date-fns'
 import React from 'react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { Scheduler } from '../index'
@@ -19,18 +19,20 @@ function openAt9(props: Partial<CalendarProps> = {}) {
   act(() => slots(view.container)[36].click())
   return view
 }
-// The quick card (the full editor is a dialog named "New Event" too): the one with the sentence field.
-const card = () => (screen.queryByPlaceholderText('Event title')?.closest('[role="dialog"]') as HTMLElement | null) ?? null
+// The quick card (the full editor is a dialog named "New Event" too): the one in the grid's layer.
+const card = () => document.querySelector<HTMLElement>('[data-ck-layer] [role="dialog"]')
 const title = () => screen.getByRole('textbox', { name: 'Add title' })
 
 describe('quick create', () => {
-  test('a slot click opens the card with the title focused and draws the new event dashed in its column', () => {
+  test('a slot click opens the card with the title focused and draws the new event in its column', () => {
     const { container } = openAt9()
     expect(card()).toBeTruthy()
     expect(document.activeElement).toBe(title())
+    expect(card()!.textContent).toContain(format(today, 'EEEE, d MMMM'))
     expect(card()!.textContent).toContain('9:00 AM – 10:00 AM')
-    const ghost = container.querySelector<HTMLElement>('.ck\\:outline-dashed')!
-    expect(ghost.textContent).toBe('New Event')
+    const ghost = container.querySelector<HTMLElement>('[data-ck-ghost]')!
+    expect(ghost.textContent).toContain('(No title)')
+    expect(ghost.textContent).toContain('9:00 AM – 10:00 AM')
     expect(ghost.style.top).toBe(`${9 * 80}px`)
   })
 
@@ -47,15 +49,75 @@ describe('quick create', () => {
     expect(card()).toBeNull()
   })
 
-  test('duration chips set the end, the calendar menu sets the calendar, an overlap is announced', () => {
+  test('the calendar menu sets the calendar, an overlap is announced', () => {
     const onEventCreate = vi.fn()
     openAt9({ onEventCreate, calendars: [{ id: 'w', label: 'Work' }] })
     expect(screen.getByText('Overlaps “Standup”').getAttribute('role')).toBe('status')
-    act(() => screen.getByRole('button', { name: '1 hr 30 min' }).click())
-    expect(screen.getByRole('button', { name: '1 hr 30 min' }).getAttribute('aria-pressed')).toBe('true')
     fireEvent.change(screen.getByRole('combobox', { name: 'Calendar' }), { target: { value: 'w' } })
     act(() => screen.getByRole('button', { name: 'Save' }).click())
-    expect(onEventCreate).toHaveBeenCalledWith(expect.objectContaining({ calendarId: 'w', end: new Date(today.getTime() + 10.5 * 3600e3) }))
+    expect(onEventCreate).toHaveBeenCalledWith(expect.objectContaining({ calendarId: 'w', end: new Date(today.getTime() + 10 * 3600e3) }))
+  })
+
+  test('the card: close, title, then one row each for when, guests, location, description and calendar, and More options and Save', () => {
+    openAt9({ calendars: [{ id: 'w', label: 'Work' }] })
+    expect(title().getAttribute('placeholder')).toBe('Add title')
+    expect(within(card()!).getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? b.textContent)).toEqual(['Close', 'Add guests', 'Add location', 'Add description', 'More options', 'Save'])
+    expect(card()!.textContent).toContain('Does not repeat')
+    expect(within(card()!).getByRole('combobox', { name: 'Calendar' })).toBeTruthy()
+  })
+
+  test('the date and the times are edited in place, and the new event follows', () => {
+    const onEventCreate = vi.fn()
+    openAt9({ onEventCreate })
+    fireEvent.change(within(card()!).getByLabelText('Date'), { target: { value: format(addDays(today, 2), 'yyyy-MM-dd') } })
+    fireEvent.change(within(card()!).getByLabelText('Start'), { target: { value: '11:00' } })
+    fireEvent.change(within(card()!).getByLabelText('End'), { target: { value: '12:30' } })
+    act(() => screen.getByRole('button', { name: 'Save' }).click())
+    expect(onEventCreate).toHaveBeenCalledWith(expect.objectContaining({ start: new Date(addDays(today, 2).getTime() + 11 * 3600e3), end: new Date(addDays(today, 2).getTime() + 12.5 * 3600e3) }))
+  })
+
+  test('guests, a location and a description are added in place and saved with the event', () => {
+    const onEventCreate = vi.fn()
+    openAt9({ onEventCreate })
+    fireEvent.change(title(), { target: { value: 'Coffee' } })
+    act(() => screen.getByRole('button', { name: 'Add guests' }).click())
+    fireEvent.change(screen.getByRole('textbox', { name: 'Guests' }), { target: { value: 'lea@example.com, bob@example.com' } })
+    act(() => screen.getByRole('button', { name: 'Add location' }).click())
+    fireEvent.change(screen.getByRole('textbox', { name: 'Location' }), { target: { value: 'Café de Flore' } })
+    act(() => screen.getByRole('button', { name: 'Add description' }).click())
+    fireEvent.change(screen.getByRole('textbox', { name: 'Description' }), { target: { value: 'Catch up' } })
+    act(() => screen.getByRole('button', { name: 'Save' }).click())
+    expect(onEventCreate).toHaveBeenCalledWith(expect.objectContaining({ title: 'Coffee', guests: ['lea@example.com', 'bob@example.com'], location: 'Café de Flore', description: 'Catch up' }))
+  })
+
+  test('each added field takes the focus, so typing goes into it', () => {
+    openAt9()
+    for (const [button, name] of [['Add guests', 'Guests'], ['Add location', 'Location'], ['Add description', 'Description']]) {
+      act(() => screen.getByRole('button', { name: button }).click())
+      expect(document.activeElement).toBe(screen.getByRole('textbox', { name }))
+    }
+  })
+
+  test('an invalid guest email is said and nothing is saved', () => {
+    const onEventCreate = vi.fn()
+    openAt9({ onEventCreate })
+    act(() => screen.getByRole('button', { name: 'Add guests' }).click())
+    fireEvent.change(screen.getByRole('textbox', { name: 'Guests' }), { target: { value: 'lea@example.com, bob' } })
+    act(() => screen.getByRole('button', { name: 'Save' }).click())
+    expect(screen.getByRole('alert').textContent).toBe('Enter a valid email address')
+    expect(onEventCreate).not.toHaveBeenCalled()
+  })
+
+  test('the close button closes an untouched card, and asks once something was typed', () => {
+    openAt9()
+    act(() => within(card()!).getByRole('button', { name: 'Close' }).click())
+    expect(card()).toBeNull()
+    cleanup()
+    openAt9()
+    act(() => screen.getByRole('button', { name: 'Add description' }).click())
+    fireEvent.change(screen.getByRole('textbox', { name: 'Description' }), { target: { value: 'Notes' } })
+    act(() => within(card()!).getByRole('button', { name: 'Close' }).click())
+    expect(screen.getByRole('alertdialog', { name: 'Discard changes?' })).toBeTruthy()
   })
 
   test('Escape closes an untouched card, and asks before dropping a typed title', () => {
@@ -77,13 +139,27 @@ describe('quick create', () => {
   test('"More options" opens the full editor with the cleaned title, the understood time and the calendar', () => {
     openAt9({ calendars: [{ id: 'w', label: 'Work' }, { id: 'p', label: 'Personal' }] })
     fireEvent.change(title(), { target: { value: 'Lunch with Lea tomorrow 1pm' } })
-    act(() => screen.getByRole('button', { name: '1 hr 30 min' }).click())
     fireEvent.change(screen.getByRole('combobox', { name: 'Calendar' }), { target: { value: 'p' } })
     act(() => screen.getByRole('button', { name: 'More options' }).click())
     expect(card()).toBeNull()
     expect((screen.getByPlaceholderText('Add title') as HTMLInputElement).value).toBe('Lunch with Lea')
-    expect(screen.getByText('1 hr 30 min')).toBeTruthy()
+    expect((within(screen.getByPlaceholderText('Add title').closest('form')!).getByLabelText('Start') as HTMLInputElement).value).toMatch(/T13:00$/)
     expect((within(screen.getByPlaceholderText('Add title').closest('form')!).getByRole('combobox', { name: 'Calendar' }) as HTMLSelectElement).value).toBe('p')
+  })
+
+  test('"More options" carries the guests, location and description into the editor', () => {
+    openAt9()
+    act(() => screen.getByRole('button', { name: 'Add guests' }).click())
+    fireEvent.change(screen.getByRole('textbox', { name: 'Guests' }), { target: { value: 'lea@example.com' } })
+    act(() => screen.getByRole('button', { name: 'Add location' }).click())
+    fireEvent.change(screen.getByRole('textbox', { name: 'Location' }), { target: { value: 'Café de Flore' } })
+    act(() => screen.getByRole('button', { name: 'Add description' }).click())
+    fireEvent.change(screen.getByRole('textbox', { name: 'Description' }), { target: { value: 'Catch up' } })
+    act(() => screen.getByRole('button', { name: 'More options' }).click())
+    const form = within(screen.getByPlaceholderText('Add title').closest('form')!)
+    expect(form.getByText('lea@example.com')).toBeTruthy()
+    expect((form.getByLabelText('Location') as HTMLInputElement).value).toBe('Café de Flore')
+    expect((form.getByLabelText('Description') as HTMLTextAreaElement).value).toBe('Catch up')
   })
 
   test('what the card carried into the editor is not dropped silently: Cancel asks first', () => {

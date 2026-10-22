@@ -176,10 +176,11 @@ describe('EventModal layout (spec §8.5): labelled rows, and a footer that stays
     expect(screen.getByRole('combobox', { name: 'Calendar' })).toBeTruthy()
   })
 
-  test('the editor is a dialog named by its heading, no taller than the calendar nor the window, with the footer outside the scrolling body', () => {
+  test('the editor is a card named by its heading, no taller than the window, with the footer outside the scrolling body', () => {
     openCreate()
     const dialog = screen.getByRole('dialog', { name: 'New Event' })
-    expect(dialog.className).toContain('ck:max-h-[min(100%,calc(100dvh-2rem))]')
+    // Centred near the top (no anchor here): no taller than the room below that top.
+    expect(dialog.style.maxHeight).toBe(`${window.innerHeight - 80 - 8}px`)
     const body = screen.getByLabelText('Add title').closest('.ck\\:overflow-y-auto')!
     expect(body.contains(screen.getByRole('button', { name: 'Create Event' }))).toBe(false)
   })

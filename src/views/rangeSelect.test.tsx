@@ -11,7 +11,7 @@ const at = (hour: number, minute = 0) => new Date(2026, 9, 15, hour, minute)
 const HOUR = 80 // day view
 const slots = (container: HTMLElement) => container.querySelectorAll<HTMLElement>('.ck\\:z-0.ck\\:cursor-pointer')
 const columnOf = (container: HTMLElement) => slots(container)[0].parentElement!.parentElement!
-const ghost = (container: HTMLElement) => container.querySelector<HTMLElement>('.ck\\:outline-dashed')
+const ghost = (container: HTMLElement) => container.querySelector<HTMLElement>('[data-ck-ghost]')
 
 // jsdom has no layout: the column's box is set by hand, 24 hours of 80 px from y = 0.
 function layout(container: HTMLElement) {

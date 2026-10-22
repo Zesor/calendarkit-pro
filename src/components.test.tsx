@@ -40,7 +40,7 @@ describe('components', () => {
   })
 
   // The side panel sits in a desktop-only column: queried by text (jsdom applies no media query).
-  test('Sidebar replaces the panel: onCreate opens the editor, calendars and onCalendarToggle pass through', () => {
+  test('Sidebar replaces the panel: onCreate opens the quick card, calendars and onCalendarToggle pass through', () => {
     const onCalendarToggle = vi.fn()
     const Sidebar = ({ onCreate, calendars, onCalendarToggle: toggle }: SidebarProps) => (
       <div>
@@ -52,14 +52,14 @@ describe('components', () => {
     act(() => screen.getByText('Hide Work').click())
     expect(onCalendarToggle).toHaveBeenCalledWith('w', false)
     act(() => screen.getByText('New').click())
-    expect(screen.getByPlaceholderText('Add title')).toBeTruthy()
+    expect(document.querySelector('[data-ck-layer] [role="dialog"]')).toBeTruthy()
   })
 
-  test('EmptyState replaces the empty agenda, and onCreate opens the editor', () => {
+  test('EmptyState replaces the empty agenda, and onCreate opens the quick card', () => {
     const EmptyState = ({ onCreate }: { onCreate?: () => void }) => <button onClick={onCreate}>Nothing yet, add one</button>
     render(<Scheduler view="agenda" date={today} events={[]} components={{ EmptyState }} />)
     act(() => screen.getByRole('button', { name: 'Nothing yet, add one' }).click())
-    expect(screen.getByPlaceholderText('Add title')).toBeTruthy()
+    expect(document.querySelector('[data-ck-layer] [role="dialog"]')).toBeTruthy()
   })
 
   test('EventEditor works like renderEventForm: a slot click opens it, and onSave creates the event', () => {

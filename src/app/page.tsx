@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Scheduler, CalendarEvent, ViewType, Resource, EventType, ThemePreset } from "@/index";
+import { Scheduler, CalendarEvent, ViewType, Resource, EventType, ThemePreset, photonPlaces } from "@/index";
 
 interface Calendar {
   id: string;
@@ -153,6 +153,8 @@ export default function Home() {
   const [theme, setTheme] = useState<ThemePreset>("calm");
   const [reverseTimeAxis, setReverseTimeAxis] = useState(false);
   const [language, setLanguage] = useState<"en" | "fr">("en");
+  // The demo turns place search on (OpenStreetMap through Photon); a host opts in the same way.
+  const placeSearch = useMemo(() => photonPlaces({ lang: language }), [language]);
   const [timezone, setTimezone] = useState("America/New_York");
 
   const [calendars, setCalendars] = useState<Calendar[]>([
@@ -224,6 +226,7 @@ export default function Home() {
             onEventCreate={handleEventCreate}
             onEventUpdate={handleEventUpdate}
             onEventDelete={handleEventDelete}
+            placeSearch={placeSearch}
             resources={demoResources}
             eventTypes={demoEventTypes}
             theme={theme}

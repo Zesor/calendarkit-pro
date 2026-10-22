@@ -19,6 +19,19 @@ export interface EventReminder {
   label?: string; // e.g., "30 minutes before"
 }
 
+/** A place chosen from `placeSearch` (spec §8.7). */
+export interface Place {
+  name: string;
+  address?: string;
+  lat: number;
+  lon: number;
+  provider?: string;
+  id?: string;
+}
+
+/** Suggests places for what is typed in the form's Location field. */
+export type PlaceSearch = (query: string, options: { signal: AbortSignal }) => Promise<Place[]>;
+
 export interface CalendarEvent {
   id: string;
   title: string;
@@ -38,6 +51,8 @@ export interface CalendarEvent {
   attachments?: EventAttachment[];
   guests?: string[]; // Array of email addresses
   reminders?: EventReminder[]; // Event reminders
+  /** The place chosen with `placeSearch`; `location` keeps its text. */
+  place?: Place;
   recurrence?: {
     freq: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
     interval?: number;
@@ -246,6 +261,11 @@ export interface CalendarProps {
   injectStyles?: boolean;
   classNames?: CalendarClassNames;
   components?: CalendarComponents;
+  /**
+   * Place suggestions in the form's Location field, e.g. `photonPlaces()`. Off by default: what is
+   * typed there goes to the provider.
+   */
+  placeSearch?: PlaceSearch;
   isDarkMode?: boolean;
   onThemeToggle?: () => void;
   hideViewSwitcher?: boolean;

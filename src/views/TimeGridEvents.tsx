@@ -1,9 +1,9 @@
 import React from 'react';
-import { differenceInMinutes, Locale } from 'date-fns';
+import { differenceInMinutes, format, Locale } from 'date-fns';
 import { CalendarEvent, CalendarTranslations } from '../types';
 import { cx, isEventDragDisabled } from '../utils';
 import { DaySegment } from '../core/events';
-import { interpolate } from '../core/format';
+import { interpolate, timeFormats } from '../core/format';
 import { layoutColumns } from '../core/overlap';
 import { toDisplay } from '../core/timezone';
 import { DraggableEvent } from '../components/dnd/DraggableEvent';
@@ -136,14 +136,15 @@ export const TimeGridEvents: React.FC<TimeGridEventsProps> = ({
       <div
         aria-hidden="true"
         data-ck-ghost
-        className="ck-event ck:absolute ck:z-20 ck:pointer-events-none ck:rounded-md ck:outline-2 ck:outline-dashed ck:outline-ring ck:-outline-offset-2 ck:px-2 ck:py-1 ck:text-xs ck:font-semibold ck:leading-tight ck:overflow-hidden"
+        className="ck:absolute ck:z-20 ck:pointer-events-none ck:rounded-md ck:bg-primary ck:text-primary-foreground ck:shadow-[0_8px_20px_-6px_rgb(0_0_0/0.4)] ck:px-2 ck:py-1 ck:text-xs ck:leading-tight ck:overflow-hidden"
         style={{
           ...gridOffset(grid, minutesOf(ghost.start), hourHeight),
           height: `${Math.max((differenceInMinutes(ghost.end, ghost.start) / 60) * hourHeight, 12)}px`,
           ...horizontal(0, 1, 1, inset),
         }}
       >
-        <span className="ck:block ck:truncate">{ghost.title || translations?.newEvent || 'New event'}</span>
+        <span className="ck:block ck:truncate ck:font-semibold">{ghost.title || translations?.noTitle || '(No title)'}</span>
+        <span className="ck:block ck:truncate ck:opacity-90 ck:tabular-nums">{format(ghost.start, timeFormats(locale).time, { locale })} – {format(ghost.end, timeFormats(locale).time, { locale })}</span>
       </div>
     )}
   </>
