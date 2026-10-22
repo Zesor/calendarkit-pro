@@ -128,6 +128,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                         {group.events.map((event) => (
                             <div
                                 key={event.id}
+                                data-ck-event
                                 onClick={() => onEventClick?.(event)}
                                 onContextMenu={onEventContextMenu ? (e) => onEventContextMenu(event, e) : undefined}
                                 className={cx(

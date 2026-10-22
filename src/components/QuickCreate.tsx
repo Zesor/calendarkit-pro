@@ -3,6 +3,7 @@ import { addMinutes, differenceInMinutes, format, Locale } from 'date-fns';
 import { CalendarEvent, CalendarProps, CalendarTranslations } from '../types';
 import { cx } from '../utils';
 import { useClassNames } from './customize';
+import { durationLabel } from './duration';
 import { interpolate, timeFormats } from '../core/format';
 import type { Draft } from '../core/store';
 import { toDisplay } from '../core/timezone';
@@ -26,11 +27,6 @@ interface QuickCreateProps {
 }
 
 const DURATIONS = [30, 60, 90, 120];
-
-function durationLabel(minutes: number, t: CalendarTranslations) {
-  if (minutes < 60) return interpolate(t.durationMinutes, { n: minutes });
-  return minutes % 60 ? interpolate(t.durationHoursMinutes, { h: Math.floor(minutes / 60), m: minutes % 60 }) : interpolate(t.durationHours, { n: minutes / 60 });
-}
 
 /**
  * Quick create (spec §8.5): a compact card over the grid. The title is a sentence the engine
