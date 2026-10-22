@@ -151,6 +151,10 @@ export const Scheduler: React.FC<CalendarProps> = ({
   // parent (a refetch) do not reset what the user is typing, and the last event stays available
   // after the form closes (exit animations, a save that comes after onClose).
   const lastOpened = useRef<{ id?: string; event: CalendarEvent | null }>({ event: null });
+  // Where the last pointer press was: the event card opens next to it, and keeps that place while open.
+  const pointer = useRef<{ x: number; y: number } | null>(null);
+  const anchor = useRef<{ dialog: unknown; at: { x: number; y: number } | null }>({ dialog: null, at: null });
+  if (dialog?.kind === 'event' && anchor.current.dialog !== dialog) anchor.current = { dialog, at: pointer.current };
   const rootRef = useRef<HTMLDivElement>(null);
   useMissingStylesWarning(rootRef, injectStyles);
   if (dialog && dialog.kind !== 'more') {
@@ -181,8 +185,6 @@ export const Scheduler: React.FC<CalendarProps> = ({
   // still opens on the click).
   const popoverEvent = dialog?.kind === 'event' && !hasCustomForm ? selectedEvent : null;
   const isModalOpen = dialog !== null && dialog.kind !== 'more' && dialog.kind !== 'quick' && !popoverEvent;
-  // Where the last pointer press was: the popover opens next to it.
-  const pointer = useRef<{ x: number; y: number } | null>(null);
   const handlers = useMemo(() => ({
     handleViewChange: calendar.setView,
     handleDateChange: (date: Date) => calendar.navigate(date),
@@ -488,7 +490,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
         {popoverEvent && editingId !== undefined && (
             <EventPopover
                 event={popoverEvent}
-                anchor={pointer.current}
+                anchor={anchor.current.at}
                 timezone={timezone}
                 locale={locale}
                 translations={t}

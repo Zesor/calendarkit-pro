@@ -121,6 +121,54 @@ describe('event popover', () => {
     expect(parseFloat(style.top)).toBe(48)
   })
 
+  test('it never runs off the bottom: its height is bounded by the room left below or above the pointer', () => {
+    const { rerender } = render(<Scheduler view="day" date={today} events={[standup]} />)
+    const y = Math.round(window.innerHeight * 0.45)
+    fireEvent.pointerDown(screen.getByText('Standup'), { clientX: 100, clientY: y })
+    act(() => screen.getByText('Standup').click())
+    expect(parseFloat(popover()!.style.maxHeight)).toBeLessThanOrEqual(window.innerHeight - (y + 8) - 8)
+    fireEvent.keyDown(document, { key: 'Escape' })
+    rerender(<Scheduler view="day" date={today} events={[standup]} />)
+    fireEvent.pointerDown(screen.getByText('Standup'), { clientX: 100, clientY: window.innerHeight - 40 })
+    act(() => screen.getByText('Standup').click())
+    expect(popover()!.style.bottom).toBe('48px')
+    expect(parseFloat(popover()!.style.maxHeight)).toBeLessThanOrEqual(window.innerHeight - 40 - 2 * 8)
+  })
+
+  test('a press inside the open card does not move it', () => {
+    const { rerender } = render(<Scheduler view="day" date={today} events={[standup]} />)
+    fireEvent.pointerDown(screen.getByText('Standup'), { clientX: 100, clientY: 40 })
+    act(() => screen.getByText('Standup').click())
+    fireEvent.pointerDown(popover()!, { clientX: 600, clientY: 300 })
+    rerender(<Scheduler view="day" date={today} events={[{ ...standup }]} />)
+    expect(popover()!.style.left).toBe('108px')
+    expect(popover()!.style.top).toBe('48px')
+  })
+
+  test('reminders are listed, in the calendar\'s language', () => {
+    openStandup({ events: [{ ...standup, reminders: [{ id: 'r', type: 'notification', time: 30, label: '30 minutes avant' }] }] })
+    expect(popover()!.textContent).toContain('30 minutes before')
+  })
+
+  test('a recurring occurrence: Duplicate copies the series event, Delete follows the 1.x rule (the series without onOccurrenceDelete)', () => {
+    const weekly: CalendarEvent = { ...standup, id: 'w', recurrence: { freq: 'DAILY' } }
+    const onEventCreate = vi.fn()
+    const onEventDelete = vi.fn()
+    const onOccurrenceDelete = vi.fn()
+    const { rerender } = render(<Scheduler view="day" date={addDays(today, 1)} events={[weekly]} onEventCreate={onEventCreate} onEventDelete={onEventDelete} />)
+    act(() => screen.getByText('Standup').click())
+    act(() => within(popover()!).getByRole('button', { name: 'Duplicate' }).click())
+    expect(onEventCreate).toHaveBeenCalledWith(expect.objectContaining({ title: 'Standup (Copy)' }))
+    act(() => screen.getByText('Standup').click())
+    act(() => within(popover()!).getByRole('button', { name: 'Delete' }).click())
+    expect(onEventDelete).toHaveBeenCalledWith('w')
+    rerender(<Scheduler view="day" date={addDays(today, 1)} events={[weekly]} onEventDelete={onEventDelete} onOccurrenceDelete={onOccurrenceDelete} />)
+    act(() => screen.getByText('Standup').click())
+    act(() => within(popover()!).getByRole('button', { name: 'Delete' }).click())
+    expect(onOccurrenceDelete).toHaveBeenCalledTimes(1)
+    expect(onEventDelete).toHaveBeenCalledTimes(1)
+  })
+
   test('the event menu\'s Edit goes straight to the editor', () => {
     render(<Scheduler view="day" date={today} events={[standup]} />)
     fireEvent.contextMenu(screen.getByText('Standup'))

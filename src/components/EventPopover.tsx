@@ -4,7 +4,8 @@ import { CalendarEvent, CalendarTranslations } from '../types';
 import { timeFormats } from '../core/format';
 import { toDisplay } from '../core/timezone';
 import { cx } from '../utils';
-import { Copy, Edit2, MapPin, Paperclip, Trash2, Users, X } from './icons';
+import { Bell, Copy, Edit2, MapPin, Paperclip, Trash2, Users, X } from './icons';
+import { reminderLabel } from './EventModal';
 import { isSafeUrl, mapsUrl } from './links';
 import { eventColorStyle, resolveEventColor, useCalendars } from './eventColor';
 import { useClassNames } from './customize';
@@ -59,7 +60,12 @@ export const EventPopover: React.FC<EventPopoverProps> = ({ event, anchor, timez
 
   // Next to the pointer, inside the window: below it in the top half, above it in the bottom half.
   const left = anchor ? Math.max(GAP, Math.min(anchor.x + GAP, window.innerWidth - WIDTH - GAP)) : Math.max(GAP, (window.innerWidth - WIDTH) / 2);
-  const vertical = !anchor ? { top: 80 } : anchor.y < window.innerHeight / 2 ? { top: anchor.y + GAP } : { bottom: window.innerHeight - anchor.y + GAP };
+  // Its height is bounded by the room on that side, so the actions never leave the window.
+  const cap = window.innerHeight * 0.7;
+  const top = anchor ? anchor.y + GAP : 80;
+  const vertical = !anchor || anchor.y < window.innerHeight / 2
+    ? { top, maxHeight: Math.min(cap, window.innerHeight - top - GAP) }
+    : { bottom: window.innerHeight - anchor.y + GAP, maxHeight: Math.min(cap, anchor.y - 2 * GAP) };
   const action = "ck:flex ck:items-center ck:gap-1.5 ck:px-3 ck:py-1.5 ck:rounded-lg ck:text-sm ck:font-medium ck:transition-colors";
 
   return (
@@ -70,7 +76,7 @@ export const EventPopover: React.FC<EventPopoverProps> = ({ event, anchor, timez
         role="dialog"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={cx("ck:fixed ck:z-50 ck:flex ck:flex-col ck:gap-3 ck:max-h-[70vh] ck:overflow-y-auto ck:rounded-2xl ck:border ck:border-border ck:bg-background ck:p-4 ck:shadow-xl ck:outline-none ck:animate-pop-in", classNames.dialog)}
+        className={cx("ck:fixed ck:z-50 ck:flex ck:flex-col ck:gap-3 ck:overflow-y-auto ck:rounded-2xl ck:border ck:border-border ck:bg-background ck:p-4 ck:shadow-xl ck:outline-none ck:animate-pop-in", classNames.dialog)}
         style={{ left, width: WIDTH, maxWidth: `calc(100vw - ${2 * GAP}px)`, ...vertical }}
       >
         <div className="ck:flex ck:items-start ck:gap-2">
@@ -93,6 +99,15 @@ export const EventPopover: React.FC<EventPopoverProps> = ({ event, anchor, timez
             <Users className="ck:w-4 ck:h-4 ck:mt-0.5 ck:shrink-0" aria-label={t.guests} />
             <ul className="ck:min-w-0">
               {event.guests.map((guest) => <li key={guest} className="ck:truncate">{guest}</li>)}
+            </ul>
+          </div>
+        )}
+        {event.reminders && event.reminders.length > 0 && (
+          <div className="ck:flex ck:items-start ck:gap-2 ck:text-sm ck:text-muted-foreground">
+            <Bell className="ck:w-4 ck:h-4 ck:mt-0.5 ck:shrink-0" aria-label={t.reminders} />
+            {/* Labels come from the minutes, in the calendar's language (a stored label may be in another). */}
+            <ul className="ck:min-w-0">
+              {event.reminders.map((reminder) => <li key={reminder.id}>{reminderLabel(reminder.time, t)}</li>)}
             </ul>
           </div>
         )}

@@ -211,7 +211,7 @@ const events = [
 - Closing the card or the form with changes asks first ("Discard changes?").
 - New events get no colour and no reminder you did not choose: they take their calendar's colour.
 - With `renderEventForm`, a slot click opens your form as before.
-- A click on an event opens a small card next to it: its date and time, calendar, location (a link to a maps search), guests, attachments and description, with **Edit**, **Duplicate** and **Delete**. Edit opens the full form. With `renderEventForm`, a click opens your form as before.
+- A click on an event opens a small card next to it: its date and time, calendar, location (a link to a maps search), guests, reminders, attachments and description, with **Edit**, **Duplicate** and **Delete**. Edit opens the full form. With `renderEventForm`, a click opens your form as before.
 
 ## Customizing
 
