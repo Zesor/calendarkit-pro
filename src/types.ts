@@ -220,6 +220,8 @@ export interface CalendarProps {
   dayEndHour?: number;
   /** Length of a time slot in minutes: 5, 10, 15 (default), 20, 30 or 60. Clicks, drops and resizes snap to it. */
   slotDuration?: number;
+  /** Week and day views: the latest hours on top, the day running upward. */
+  reverseTimeAxis?: boolean;
   eventTypes?: EventType[]; // Pre-defined types
   onCalendarToggle?: (calendarId: string, active: boolean) => void;
   isLoading?: boolean;

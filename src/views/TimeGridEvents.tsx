@@ -1,7 +1,7 @@
 import React from 'react';
 import { differenceInMinutes, Locale } from 'date-fns';
 import { CalendarEvent, CalendarTranslations } from '../types';
-import { isEventDragDisabled } from '../utils';
+import { cx, isEventDragDisabled } from '../utils';
 import { DaySegment } from '../core/events';
 import { interpolate } from '../core/format';
 import { layoutColumns } from '../core/overlap';
@@ -84,7 +84,8 @@ export const TimeGridEvents: React.FC<TimeGridEventsProps> = ({
           dragId={`${event.id}@${dayKey}`}
           grabOffsetMs={start.getTime() - zonedStart.getTime()}
           event={event}
-          className="ck:absolute ck:z-10"
+          // Reversed: a resize grows the block from its bottom (its start) upward.
+          className={cx("ck:absolute ck:z-10", grid.reverse && "ck:flex ck:flex-col ck:justify-end")}
           style={{ ...gridOffset(grid, minutesOf(start), hourHeight), height: `${height}px`, ...horizontal(column, span, columns, inset) }}
         >
           <ResizableEvent
@@ -92,6 +93,7 @@ export const TimeGridEvents: React.FC<TimeGridEventsProps> = ({
             event={event}
             hourHeight={hourHeight}
             snapMinutes={grid.slotMinutes}
+            reverse={grid.reverse}
             onResize={onEventResize}
             className="ck:h-full"
             style={{ height: '100%' }}

@@ -1,6 +1,7 @@
 import React from 'react';
 import { addDays, format, isSameDay, Locale, startOfDay } from 'date-fns';
 import { CalendarEvent, CalendarTranslations } from '../types';
+import { cx } from '../utils';
 import { DaySegment, segmentsByDisplayDay } from '../core/events';
 import { partitionDayEvents } from '../core/allDay';
 import { AllDayRow } from '../components/AllDayRow';
@@ -74,7 +75,7 @@ const DayViewImpl: React.FC<DayViewProps> = ({
   React.useEffect(() => {
     if (scrollContainerRef.current) {
       const offsetHour = 3;
-      scrollContainerRef.current.scrollTop = gridScrollTop(grid, toDisplay(new Date(), timezone).getHours() - offsetHour, HOUR_HEIGHT);
+      scrollContainerRef.current.scrollTop = gridScrollTop(grid, toDisplay(new Date(), timezone).getHours(), offsetHour, HOUR_HEIGHT);
     }
   }, [timezone, grid]);
 
@@ -123,7 +124,7 @@ const DayViewImpl: React.FC<DayViewProps> = ({
         <div ref={scrollContainerRef} className="ck:flex-1 ck:overflow-y-auto ck:relative">
             <div className="ck:flex ck:relative" style={{ height: hours.length * HOUR_HEIGHT }}>
                 {/* Time Labels */}
-                <div className="ck:w-20 ck:bg-muted/5 ck:border-r-[0.5px] ck:border-border/30 ck:relative">
+                <div className={cx("ck:w-20 ck:bg-muted/5 ck:border-r-[0.5px] ck:border-border/30 ck:relative", grid.reverse && "ck:flex ck:flex-col-reverse")}>
                      {hours.map((hour) => (
                         <div
                             key={hour}
@@ -131,7 +132,7 @@ const DayViewImpl: React.FC<DayViewProps> = ({
                             style={{ height: HOUR_HEIGHT }}
                         >
                             {hour !== grid.startHour && (
-                                <span className="ck:absolute ck:w-full ck:text-center ck:-top-3 ck:left-1/2 ck:-translate-x-1/2 ck:text-[11px] ck:text-muted-foreground/80 ck:font-medium ck:tabular-nums ck:bg-background ck:px-1.5 ck:py-0.5 ck:rounded-md">
+                                <span className={cx("ck:absolute ck:w-full ck:text-center ck:left-1/2 ck:-translate-x-1/2 ck:text-[11px] ck:text-muted-foreground/80 ck:font-medium ck:tabular-nums ck:bg-background ck:px-1.5 ck:py-0.5 ck:rounded-md", grid.reverse ? "ck:-bottom-3" : "ck:-top-3")}>
                                     {format(slotDate(currentDate, hour * 60), formats.hour, { locale })}
                                 </span>
                             )}
@@ -144,7 +145,7 @@ const DayViewImpl: React.FC<DayViewProps> = ({
                              className="ck:absolute ck:left-0 ck:w-full ck:pointer-events-none ck:z-30 ck:flex ck:justify-end ck:pr-2"
                              style={gridOffset(grid, nowMinutes, HOUR_HEIGHT)}
                          >
-                             <span className="ck:text-[10px] ck:font-bold ck:text-primary-foreground ck:bg-primary ck:px-2 ck:py-1 ck:rounded-lg ck:shadow-md ck:shadow-primary/30 ck:-translate-y-1/2">
+                             <span className={cx("ck:text-[10px] ck:font-bold ck:text-primary-foreground ck:bg-primary ck:px-2 ck:py-1 ck:rounded-lg ck:shadow-md ck:shadow-primary/30", grid.reverse ? "ck:translate-y-1/2" : "ck:-translate-y-1/2")}>
                                  {format(zonedNow, formats.time, { locale })}
                              </span>
                          </div>

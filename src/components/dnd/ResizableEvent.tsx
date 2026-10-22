@@ -9,6 +9,8 @@ interface ResizableEventProps {
   minDuration?: number; // Minimum duration in minutes
   /** The resize steps, in minutes (the grid's slot). */
   snapMinutes?: number;
+  /** Reversed time axis: the end is the top edge, so the handle sits there and moves up to lengthen. */
+  reverse?: boolean;
   onResize?: (event: CalendarEvent, newEnd: Date) => void;
   children: React.ReactNode;
   className?: string;
@@ -21,6 +23,7 @@ export const ResizableEvent: React.FC<ResizableEventProps> = ({
   hourHeight,
   minDuration = 15,
   snapMinutes = 15,
+  reverse,
   onResize,
   children,
   className,
@@ -49,7 +52,7 @@ export const ResizableEvent: React.FC<ResizableEventProps> = ({
 
     const handleMove = (moveEvent: MouseEvent | TouchEvent) => {
       const moveClientY = 'touches' in moveEvent ? moveEvent.touches[0].clientY : moveEvent.clientY;
-      const deltaY = moveClientY - startYRef.current;
+      const deltaY = (moveClientY - startYRef.current) * (reverse ? -1 : 1);
 
       const snapInterval = (hourHeight * snapMinutes) / 60;
       const snappedDelta = Math.round(deltaY / snapInterval) * snapInterval;
@@ -86,7 +89,7 @@ export const ResizableEvent: React.FC<ResizableEventProps> = ({
     document.addEventListener('mouseup', handleEnd);
     document.addEventListener('touchmove', handleMove, { passive: false });
     document.addEventListener('touchend', handleEnd);
-  }, [event, hourHeight, minDuration, snapMinutes, onResize]);
+  }, [event, hourHeight, minDuration, snapMinutes, reverse, onResize]);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     // dnd-kit's PointerSensor activates on pointerdown, which mousedown's
@@ -110,7 +113,8 @@ export const ResizableEvent: React.FC<ResizableEventProps> = ({
       <div
         className={cx(
           resizeLocked ? "ck:cursor-default" : "ck:cursor-ns-resize ck:group-hover:opacity-100",
-          "ck:absolute ck:bottom-0 ck:left-0 ck:right-0 ck:h-3 ck:z-20 ck:flex ck:items-center ck:justify-center",
+          "ck:absolute ck:left-0 ck:right-0 ck:h-3 ck:z-20 ck:flex ck:items-center ck:justify-center",
+          reverse ? "ck:top-0" : "ck:bottom-0",
           "ck:transition-opacity",
           isResizing ? "ck:opacity-100" : "ck:opacity-0"
         )}

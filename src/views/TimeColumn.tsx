@@ -47,7 +47,7 @@ export const TimeColumn: React.FC<TimeColumnProps> = ({
 }) => {
   const visibleNow = nowMinutes !== undefined && nowMinutes >= grid.startHour * 60 && nowMinutes <= grid.endHour * 60;
   return (
-    <div className={cx('ck:relative', className)}>
+    <div className={cx('ck:relative', grid.reverse && 'ck:flex ck:flex-col-reverse', className)}>
       {gridHours(grid).map((hour) => (
         <div
           key={hour}
@@ -62,7 +62,7 @@ export const TimeColumn: React.FC<TimeColumnProps> = ({
                 id={cellDate.toISOString()}
                 date={cellDate}
                 className="ck:w-full ck:absolute ck:left-0 ck:right-0 ck:z-0 ck:transition-colors"
-                style={{ height: `${(grid.slotMinutes / 60) * 100}%`, top: `${(minute / 60) * 100}%` }}
+                style={{ height: `${(grid.slotMinutes / 60) * 100}%`, [grid.reverse ? 'bottom' : 'top']: `${(minute / 60) * 100}%` }}
                 onSlotClick={onTimeSlotClick}
               />
             );

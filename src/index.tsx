@@ -99,6 +99,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
   dayStartHour,
   dayEndHour,
   slotDuration,
+  reverseTimeAxis,
 }) => {
   const [activeDragEvent, setActiveDragEvent] = useState<CalendarEvent | null>(null);
   const [activeDayDrag, setActiveDayDrag] = useState(false);
@@ -265,7 +266,10 @@ export const Scheduler: React.FC<CalendarProps> = ({
       : format(currentDate, 'yyyy-MM-dd');
 
   // The views are memoized: the grid keeps its identity while its props do not change.
-  const grid = useMemo(() => resolveTimeGrid({ dayStartHour, dayEndHour, slotDuration }), [dayStartHour, dayEndHour, slotDuration]);
+  const grid = useMemo(
+    () => resolveTimeGrid({ dayStartHour, dayEndHour, slotDuration, reverseTimeAxis }),
+    [dayStartHour, dayEndHour, slotDuration, reverseTimeAxis],
+  );
   // Drag ghost: snaps by one slot (1 px per minute at the week view's 60 px per hour), kept inside the window.
   const modifiers = useMemo<Modifier[]>(() => [snapToGrid(grid.slotMinutes), restrictToWindowEdges], [grid.slotMinutes]);
 

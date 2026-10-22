@@ -84,7 +84,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
   React.useEffect(() => {
     if (scrollContainerRef.current) {
       const offsetHour = 4;
-      scrollContainerRef.current.scrollTop = gridScrollTop(grid, toDisplay(new Date(), timezone).getHours() - offsetHour, HOUR_HEIGHT);
+      scrollContainerRef.current.scrollTop = gridScrollTop(grid, toDisplay(new Date(), timezone).getHours(), offsetHour, HOUR_HEIGHT);
     }
   }, [timezone, grid]);
 
@@ -154,14 +154,14 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
           style={{ height: hours.length * HOUR_HEIGHT }}
         >
           {/* Time Labels Column */}
-          <div className="ck:flex-none ck:w-16 ck:border-r-[0.5px] ck:border-border/30 ck:relative ck:bg-muted/5">
+          <div className={cx("ck:flex-none ck:w-16 ck:border-r-[0.5px] ck:border-border/30 ck:relative ck:bg-muted/5", grid.reverse && "ck:flex ck:flex-col-reverse")}>
             {hours.map((hour) => (
                  <div
                    key={hour}
                    className="ck:relative ck:w-full ck:text-[11px] ck:text-muted-foreground/80 ck:text-right ck:pr-3 ck:font-medium ck:tabular-nums ck:box-border"
                    style={{ height: HOUR_HEIGHT }}
                  >
-                   <span className="ck:block ck:-translate-y-1/2">
+                   <span className={grid.reverse ? "ck:absolute ck:inset-x-0 ck:bottom-0 ck:pr-3 ck:translate-y-1/2" : "ck:block ck:-translate-y-1/2"}>
                     {hour !== grid.startHour && format(slotDate(currentDate, hour * 60), formats.hour, { locale })}
                    </span>
                  </div>
@@ -173,7 +173,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
                 className="ck:absolute ck:left-0 ck:w-full ck:pointer-events-none ck:z-30 ck:flex ck:justify-end ck:pr-2"
                 style={gridOffset(grid, nowMinutes, HOUR_HEIGHT)}
               >
-                <span className="ck:text-[10px] ck:font-bold ck:text-primary-foreground ck:bg-primary ck:px-1.5 ck:py-0.5 ck:rounded-md ck:shadow-md ck:-translate-y-1/2 ck:backdrop-blur-none">
+                <span className={cx("ck:text-[10px] ck:font-bold ck:text-primary-foreground ck:bg-primary ck:px-1.5 ck:py-0.5 ck:rounded-md ck:shadow-md ck:backdrop-blur-none", grid.reverse ? "ck:translate-y-1/2" : "ck:-translate-y-1/2")}>
                   {format(zonedNow, formats.compact, { locale })}
                 </span>
               </div>
