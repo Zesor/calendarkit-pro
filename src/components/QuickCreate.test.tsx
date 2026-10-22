@@ -1,6 +1,6 @@
 // Spec §8.5: a click on a free slot opens the quick card; the title is a sentence the engine
 // understands, Enter saves, and a typed draft is never dropped without asking.
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { addDays, startOfDay } from 'date-fns'
 import React from 'react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
@@ -71,11 +71,16 @@ describe('quick create', () => {
     expect(card()).toBeNull()
   })
 
-  test('"More options" opens the full editor', () => {
-    openAt9()
+  test('"More options" opens the full editor with the cleaned title, the understood time and the calendar', () => {
+    openAt9({ calendars: [{ id: 'w', label: 'Work' }, { id: 'p', label: 'Personal' }] })
+    fireEvent.change(title(), { target: { value: 'Lunch with Lea tomorrow 1pm' } })
+    act(() => screen.getByRole('button', { name: '1 hr 30 min' }).click())
+    fireEvent.change(screen.getByRole('combobox', { name: 'Calendar' }), { target: { value: 'p' } })
     act(() => screen.getByRole('button', { name: 'More options' }).click())
     expect(card()).toBeNull()
-    expect(screen.getByPlaceholderText('Add title')).toBeTruthy()
+    expect((screen.getByPlaceholderText('Add title') as HTMLInputElement).value).toBe('Lunch with Lea')
+    expect(screen.getByText('1 hr 30 min')).toBeTruthy()
+    expect(within(screen.getByPlaceholderText('Add title').closest('form')!).getByText('Personal')).toBeTruthy()
   })
 
   test('with renderEventForm (1.x), a slot click still opens the custom form', () => {

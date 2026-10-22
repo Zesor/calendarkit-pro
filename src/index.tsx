@@ -154,6 +154,11 @@ export const Scheduler: React.FC<CalendarProps> = ({
   }, [dialog, expandedEvents]);
   const modalInitialDate = editingId === undefined ? draft?.start : undefined;
   const modalInitialAllDay = editingId === undefined && !!draft?.allDay;
+  // "More options" from quick create: the editor opens with what the card already has.
+  const modalInitialValues = useMemo(() => {
+    if (editingId !== undefined || !draft) return undefined;
+    return { title: draft.savedTitle, end: draft.end, ...(draft.calendarId ? { calendarId: draft.calendarId } : {}) };
+  }, [editingId, draft]);
 
   // Stable handlers (the store's actions never change identity).
   const hasCustomForm = !!renderEventForm;
@@ -431,6 +436,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 translations={t}
                 locale={locale}
                 initialAllDay={modalInitialAllDay}
+                initialValues={modalInitialValues}
             />
         )}
 

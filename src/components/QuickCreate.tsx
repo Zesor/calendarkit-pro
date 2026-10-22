@@ -6,6 +6,7 @@ import { interpolate, timeFormats } from '../core/format';
 import type { Draft } from '../core/store';
 import { toDisplay } from '../core/timezone';
 import { Clock } from './icons';
+import { DiscardPrompt } from './DiscardPrompt';
 
 type DraftPatch = Partial<Pick<Draft, 'title' | 'end' | 'calendarId'>>;
 
@@ -117,11 +118,7 @@ export const QuickCreate: React.FC<QuickCreateProps> = ({ draft, events, calenda
         )}
         {overlap && <p role="status" className="ck:text-xs ck:font-medium ck:text-warning">{interpolate(t.overlaps, { title: overlap.title })}</p>}
         {confirming ? (
-          <div role="alertdialog" aria-label={t.discardChanges} className="ck:flex ck:items-center ck:gap-2 ck:border-t ck:border-border ck:pt-3">
-            <span className="ck:flex-1 ck:text-sm ck:font-medium ck:text-foreground">{t.discardChanges}</span>
-            <button type="button" autoFocus className="ck:rounded-lg ck:px-3 ck:py-1.5 ck:text-sm ck:font-semibold ck:hover:bg-muted" onClick={() => setConfirming(false)}>{t.keepEditing}</button>
-            <button type="button" className="ck:rounded-lg ck:px-3 ck:py-1.5 ck:text-sm ck:font-semibold ck:text-destructive ck:hover:bg-destructive/10" onClick={onClose}>{t.discard}</button>
-          </div>
+          <DiscardPrompt translations={t} onKeep={() => setConfirming(false)} onDiscard={onClose} />
         ) : (
           <div className="ck:flex ck:items-center ck:gap-2">
             <button type="button" className="ck:text-sm ck:font-semibold ck:text-foreground ck:underline ck:underline-offset-4 ck:decoration-border ck:hover:decoration-foreground" onClick={onMoreOptions}>{t.moreOptions}</button>

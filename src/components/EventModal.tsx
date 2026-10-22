@@ -9,6 +9,7 @@ import {
     ExternalLink
   } from './icons';
 import { cx } from '../utils';
+import { DiscardPrompt } from './DiscardPrompt';
 import { interpolate, timeFormats } from '../core/format';
 import { dayEventSpan, isDayEvent } from '../core/allDay';
 
@@ -25,6 +26,8 @@ interface EventModalProps {
   locale?: Locale;
   /** Opens the create form preset to an all-day event (click in the all-day row). */
   initialAllDay?: boolean;
+  /** Fields of a new event already chosen (quick create's "More options"). */
+  initialValues?: Partial<CalendarEvent>;
 }
 
 // Predefined reminder offsets, in minutes before the event
@@ -88,14 +91,18 @@ export const EventModal: React.FC<EventModalProps> = ({
   calendars,
   translations: t,
   locale,
-  initialAllDay
+  initialAllDay,
+  initialValues,
 }) => {
   const [mode, setMode] = useState<'view' | 'edit' | 'create'>('create');
-  // Read through a ref so a new translations object (e.g. an inline prop) does not reset the form.
-  const translationsRef = useRef(t);
+  // Read through a ref so a new initialValues object (an inline prop) does not reset the form.
+  const initialValuesRef = useRef(initialValues);
   useInsertionEffect(() => {
-    translationsRef.current = t;
+    initialValuesRef.current = initialValues;
   });
+  // The form as it opened: closing with changes asks first (spec §8.5).
+  const openedAs = useRef('');
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false);
 
   const [formData, setFormData] = useState<Partial<CalendarEvent>>({
     title: '',
@@ -104,7 +111,6 @@ export const EventModal: React.FC<EventModalProps> = ({
     start: new Date(),
     end: new Date(),
     allDay: false,
-    color: '#3b82f6',
     calendarId: calendars?.[0]?.id,
     type: undefined,
     recurrence: undefined,
@@ -119,20 +125,22 @@ export const EventModal: React.FC<EventModalProps> = ({
   const [guestError, setGuestError] = useState(false);
 
   useEffect(() => {
-    const defaultReminders = (): EventReminder[] => [{ id: '1', type: 'notification', time: 30, label: reminderLabel(30, translationsRef.current) }];
     if (isOpen) {
       setGuestInput('');
       setGuestError(false);
+      setConfirmingDiscard(false);
+      // No made-up defaults (spec §8.5): no reminder, no colour (the calendar's colour applies).
+      let opened: Partial<CalendarEvent>;
       if (event) {
         setMode('view');
-        setFormData({
+        opened = {
           ...event,
           start: new Date(event.start),
           end: new Date(event.end),
           attachments: event.attachments || [],
-          reminders: event.reminders || defaultReminders(),
+          reminders: event.reminders || [],
           guests: event.guests || [],
-        });
+        };
       } else {
         setMode('create');
         const base = initialDate || new Date();
@@ -140,22 +148,29 @@ export const EventModal: React.FC<EventModalProps> = ({
         const start = initialAllDay ? startOfDay(base) : base;
         const end = initialAllDay ? addDays(start, 1) : new Date(base.getTime() + 60 * 60 * 1000);
 
-        setFormData({
+        opened = {
           title: '',
           description: '',
           location: '',
           start,
           end,
           allDay: !!initialAllDay,
-          color: '#3b82f6',
           calendarId: calendars?.[0]?.id,
           attachments: [],
-          reminders: defaultReminders(),
+          reminders: [],
           guests: [],
-        });
+          ...initialValuesRef.current,
+        };
       }
+      setFormData(opened);
+      openedAs.current = JSON.stringify(opened);
     }
   }, [isOpen, event, initialDate, calendars, initialAllDay]);
+
+  const requestClose = () => {
+    if (mode !== 'view' && JSON.stringify(formData) !== openedAs.current) setConfirmingDiscard(true);
+    else onClose();
+  };
 
   const guests = formData.guests || [];
 
@@ -185,20 +200,11 @@ export const EventModal: React.FC<EventModalProps> = ({
       return;
     }
 
-    let eventColor = formData.color;
-    if (formData.calendarId && calendars) {
-        const selectedCal = calendars.find(c => c.id === formData.calendarId);
-        if (selectedCal?.color) {
-            eventColor = selectedCal.color;
-        }
-    }
-
     const finalGuests = mergeGuests(guests, pending);
 
     onSave({
       ...formData,
       guests: finalGuests,
-      color: eventColor,
       id: event?.id,
     });
     onClose();
@@ -532,8 +538,8 @@ export const EventModal: React.FC<EventModalProps> = ({
             <div
               className="ck:w-5 ck:h-5 ck:rounded-full ck:cursor-pointer ck:hover:scale-110 ck:transition-transform"
               style={{
-                backgroundColor: formData.color,
-                boxShadow: `0 0 0 2px var(--ck-background), 0 0 0 4px ${formData.color}60`
+                backgroundColor: formData.color || calendars?.find((c) => c.id === formData.calendarId)?.color || 'var(--ck-event)',
+                boxShadow: '0 0 0 2px var(--ck-background), 0 0 0 4px var(--ck-border)'
               }}
             />
             {isColorPickerOpen && (
@@ -563,7 +569,7 @@ export const EventModal: React.FC<EventModalProps> = ({
         </div>
         <button
           type="button"
-          onClick={onClose}
+          onClick={requestClose}
           className="ck:p-2 ck:hover:bg-accent ck:rounded-xl ck:transition-all ck:text-muted-foreground ck:hover:text-foreground"
           aria-label={t.close}
         >
@@ -858,11 +864,7 @@ export const EventModal: React.FC<EventModalProps> = ({
                         type="button"
                         className="ck:w-full ck:flex ck:items-center ck:gap-3 ck:px-3 ck:py-2 ck:hover:bg-accent ck:transition-colors ck:text-left"
                         onClick={() => {
-                          setFormData({
-                            ...formData,
-                            calendarId: cal.id,
-                            color: cal.color || formData.color
-                          });
+                          setFormData({ ...formData, calendarId: cal.id });
                           setIsCalendarDropdownOpen(false);
                         }}
                       >
@@ -880,6 +882,12 @@ export const EventModal: React.FC<EventModalProps> = ({
         </div>
       </div>
 
+      {confirmingDiscard && (
+        <div className="ck:px-5 ck:pb-3">
+          <DiscardPrompt translations={t} onKeep={() => setConfirmingDiscard(false)} onDiscard={onClose} />
+        </div>
+      )}
+
       {/* Footer */}
       <div className="ck:px-5 ck:py-4 ck:border-t ck:border-border/50 ck:flex ck:items-center ck:justify-between ck:bg-muted/10 ck:shrink-0">
         {mode === 'edit' && (
@@ -896,7 +904,7 @@ export const EventModal: React.FC<EventModalProps> = ({
         <div className="ck:flex ck:items-center ck:gap-2">
           <button
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
             className="ck:px-4 ck:py-2.5 ck:text-muted-foreground ck:hover:text-foreground ck:font-medium ck:text-sm ck:rounded-xl ck:transition-all ck:hover:bg-accent"
           >
             {t.cancel}
@@ -913,7 +921,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   );
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} hideHeader className="ck:p-0 ck:overflow-hidden ck:max-w-lg">
+    <Modal isOpen={isOpen} onClose={requestClose} hideHeader className="ck:p-0 ck:overflow-hidden ck:max-w-lg">
       {mode === 'view' && event ? (
         <div key="view" className="ck:animate-fade-in">
           {renderViewMode()}
