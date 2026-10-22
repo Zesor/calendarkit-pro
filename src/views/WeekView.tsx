@@ -114,7 +114,8 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
         className="ck:flex-1 ck:overflow-y-auto ck:relative ck:bg-background ck:scroll-smooth"
       >
         {/* Header + all-day row - sticky inside scroll container */}
-        <div className="ck:sticky ck:top-0 ck:z-20">
+        {/* Above everything that scrolls under it (events, the current-time line and badge), and opaque. */}
+        <div className="ck:sticky ck:top-0 ck:z-40 ck:bg-background">
         <div className="ck:flex ck:border-b-[0.5px] ck:border-border/50 ck:bg-linear-to-r ck:from-muted/20 ck:via-background ck:to-muted/20 ck:backdrop-blur-xs">
           <div className="ck:flex-none ck:p-3 ck:text-center ck:text-xs ck:font-semibold ck:text-muted-foreground ck:w-16 ck:flex ck:items-center ck:justify-center ck:border-r-[0.5px] ck:border-border/30 ck:bg-muted/10">
             <div className="ck:flex ck:flex-col ck:items-center ck:justify-center ck:leading-tight">

@@ -1,5 +1,11 @@
 # Pro-Scheduler Changelog
 
+## Unreleased
+
+### Fixed
+- Week view: the current-time line and its badge were drawn over the day header when the grid was scrolled past them; the header now stays above everything that scrolls and is opaque.
+- Working hours read as a band: the time outside them is hatched, with a line where work starts and ends (it was a faint flat tint, so the working hours looked like a stray white box).
+
 ## 2.0.0-alpha.8
 
 Pre-release on the `next` dist-tag (`latest` stays on 1.4.x).
