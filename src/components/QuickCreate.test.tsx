@@ -37,7 +37,9 @@ describe('quick create', () => {
     const onEventCreate = vi.fn()
     openAt9({ onEventCreate })
     fireEvent.change(title(), { target: { value: 'Lunch with Lea tomorrow 1pm' } })
-    expect(card()!.textContent).toContain('Understood: “tomorrow”, “1pm” · saved as “Lunch with Lea”')
+    // Each understood word is marked; the title is saved without them.
+    expect([...card()!.querySelectorAll('mark')].map((m) => m.textContent)).toEqual(['tomorrow', '1pm'])
+    expect(card()!.textContent).toContain('saved as “Lunch with Lea”')
     expect(card()!.textContent).toContain('1:00 PM – 2:00 PM')
     fireEvent.keyDown(title(), { key: 'Enter' })
     expect(onEventCreate).toHaveBeenCalledWith(expect.objectContaining({ title: 'Lunch with Lea', start: new Date(addDays(today, 1).getTime() + 13 * 3600e3) }))
@@ -107,9 +109,25 @@ describe('quick create', () => {
     expect(renderEventForm).toHaveBeenLastCalledWith(expect.objectContaining({ isOpen: true, event: null }))
   })
 
+  test('the card opens beside the new event drawn in the grid, inside the calendar', () => {
+    // jsdom measures nothing: the ghost and the card's layer get their boxes here.
+    const boxes = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      const box = this.matches('[data-ck-ghost]') ? { left: 300, top: 260, right: 400, bottom: 320 }
+        : this.matches('[data-ck-layer]') ? { left: 50, top: 100, right: 1050, bottom: 800 }
+        : { left: 0, top: 0, right: 0, bottom: 0 }
+      return { ...box, x: box.left, y: box.top, width: box.right - box.left, height: box.bottom - box.top, toJSON: () => ({}) } as DOMRect
+    })
+    openAt9()
+    expect(card()!.style.left).toBe('362px')
+    expect(card()!.style.top).toBe('160px')
+    boxes.mockRestore()
+  })
+
   test('French sentences in French', () => {
     openAt9({ language: 'fr' })
     fireEvent.change(screen.getByRole('textbox', { name: 'Ajouter un titre' }), { target: { value: 'Déj avec Léa demain 13h' } })
-    expect(screen.getByRole('dialog').textContent).toContain('Compris : “demain”, “13h” · enregistré sous « Déj avec Léa »')
+    expect([...screen.getByRole('dialog').querySelectorAll('mark')].map((m) => m.textContent)).toEqual(['demain', '13h'])
+    expect(screen.getByRole('dialog').textContent).toContain('Compris :')
+    expect(screen.getByRole('dialog').textContent).toContain('enregistré sous « Déj avec Léa »')
   })
 })
