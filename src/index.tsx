@@ -20,7 +20,7 @@ import { CalendarProps, CalendarEvent, CalendarClassNames, CalendarComponents } 
 import { cx } from './utils';
 import { colorMode, getThemeStyles, themePreset } from './lib/theme';
 import { resolveTranslations, timeFormats } from './core/format';
-import { toDisplay } from './core/timezone';
+import { fromDisplay, toDisplay } from './core/timezone';
 import { resolveWeekStartsOn } from './core/week';
 import { useCalendar, useCalendarSelector } from './react/useCalendar';
 import { CalendarDndContext } from './react/dnd';
@@ -293,6 +293,16 @@ export const Scheduler: React.FC<CalendarProps> = ({
   // Drag ghost: snaps by one slot (1 px per minute at the week view's 60 px per hour), kept inside the window.
   const modifiers = useMemo<Modifier[]>(() => [snapToGrid(grid.slotMinutes), restrictToWindowEdges], [grid.slotMinutes]);
 
+  // The built-in form edits the wall-clock times the grid shows (the display zone, like the quick
+  // card); its dates go back to instants on save. A host's own form keeps the 1.x instants.
+  const editorEvent = useMemo(
+    () => (selectedEvent && !selectedEvent.allDay ? { ...selectedEvent, start: toDisplay(selectedEvent.start, timezone), end: toDisplay(selectedEvent.end, timezone) } : selectedEvent),
+    [selectedEvent, timezone],
+  );
+  const handleEditorSave = useStableCallback((data: Partial<CalendarEvent>) => handleModalSave(
+    data.allDay ? data : { ...data, start: data.start && fromDisplay(data.start, timezone), end: data.end && fromDisplay(data.end, timezone) },
+  ));
+
   // "Create" works like a click in the grid (spec §8.5): the quick card at the next free hour, today
   // (the week and day views go there first), or the host's form at that time.
   const handleCreateEvent = useStableCallback(() => {
@@ -521,9 +531,9 @@ export const Scheduler: React.FC<CalendarProps> = ({
             <EventModal
                 isOpen={isModalOpen}
                 onClose={handleModalClose}
-                event={selectedEvent}
+                event={editorEvent}
                 initialDate={modalInitialDate}
-                onSave={handleModalSave}
+                onSave={handleEditorSave}
                 onDelete={handleModalDelete}
                 calendars={calendars}
                 eventTypes={eventTypes}

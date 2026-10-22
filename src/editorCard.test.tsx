@@ -53,3 +53,29 @@ describe('the full form as a card', () => {
     expect(screen.getByRole('alertdialog', { name: 'Discard changes?' })).toBeTruthy()
   })
 })
+
+describe('the full form in the calendar\'s time zone', () => {
+  // 14:00 in Tokyo, whatever the zone of the machine running the tests.
+  const tokyo: CalendarEvent = { id: 't', title: 'Sync', start: new Date('2026-10-15T05:00:00Z'), end: new Date('2026-10-15T06:00:00Z') }
+
+  test('editing shows the times the grid shows, and saving keeps the instant', () => {
+    const onEventUpdate = vi.fn()
+    render(<Scheduler view="day" date={new Date('2026-10-15T05:00:00Z')} timezone="Asia/Tokyo" events={[tokyo]} onEventUpdate={onEventUpdate} />)
+    act(() => screen.getByText('Sync').click())
+    act(() => within(screen.getByRole('dialog', { name: 'Sync' })).getByRole('button', { name: 'Edit' }).click())
+    expect((screen.getByLabelText('Start') as HTMLInputElement).value).toBe('2026-10-15T14:00')
+    fireEvent.submit(screen.getByPlaceholderText('Add title').closest('form')!)
+    expect(onEventUpdate.mock.calls[0][0].start.toISOString()).toBe('2026-10-15T05:00:00.000Z')
+  })
+
+  test('"More options" saves the new event at the time it showed', () => {
+    const onEventCreate = vi.fn()
+    const { container } = render(<Scheduler view="day" date={new Date('2026-10-15T05:00:00Z')} timezone="Asia/Tokyo" events={[]} onEventCreate={onEventCreate} />)
+    act(() => container.querySelectorAll<HTMLElement>('.ck\\:z-0.ck\\:cursor-pointer')[56].click())
+    act(() => screen.getByRole('button', { name: 'More options' }).click())
+    expect((screen.getByLabelText('Start') as HTMLInputElement).value).toBe('2026-10-15T14:00')
+    fireEvent.change(screen.getByPlaceholderText('Add title'), { target: { value: 'Call' } })
+    fireEvent.submit(screen.getByPlaceholderText('Add title').closest('form')!)
+    expect(onEventCreate.mock.calls[0][0].start.toISOString()).toBe('2026-10-15T05:00:00.000Z')
+  })
+})
