@@ -107,7 +107,12 @@ export interface CalendarTheme {
 export type CalendarTranslations = typeof en;
 
 export interface CalendarProps {
+  /** Controlled (1.x): the host owns the list and updates it from the callbacks. */
   events?: CalendarEvent[];
+  /** Uncontrolled: the starting list; the calendar keeps it and reports it through `onEventsChange`. Ignored with `events`. */
+  defaultEvents?: CalendarEvent[];
+  /** The whole list after every change (create, edit, move, resize, duplicate, delete, undo), in both modes. */
+  onEventsChange?: (events: CalendarEvent[]) => void;
   translations?: Partial<CalendarTranslations>; // New prop
   view?: ViewType;
   onViewChange?: (view: ViewType) => void;

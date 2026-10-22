@@ -45,14 +45,13 @@ export type {
   ColorMode,
 } from './types';
 
-// A stable default: a new `[]` on every render would look like new events to the engine.
-const NO_EVENTS: CalendarEvent[] = [];
-
 // Drag ghost: 15px snap (15 minutes at 60px per hour), kept inside the window.
 const MODIFIERS: Modifier[] = [snapToGrid(15), restrictToWindowEdges];
 
 export const Scheduler: React.FC<CalendarProps> = ({
-  events = NO_EVENTS,
+  events,
+  defaultEvents,
+  onEventsChange,
   view: controlledView,
   onViewChange: controlledOnViewChange,
   date: controlledDate,
@@ -100,6 +99,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
   // keeps only UI state (sidebar, drag ghost, context menu).
   const calendar = useCalendar({
     events,
+    defaultEvents,
+    onEventsChange,
     view: controlledView,
     onViewChange: controlledOnViewChange,
     date: controlledDate,
