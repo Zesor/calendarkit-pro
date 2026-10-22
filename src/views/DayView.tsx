@@ -6,9 +6,10 @@ import { partitionDayEvents } from '../core/allDay';
 import { AllDayRow } from '../components/AllDayRow';
 import { timeFormats } from '../core/format';
 import { displayToday, minutesSinceDisplayMidnight, toDisplay } from '../core/timezone';
-import { DroppableCell } from '../components/dnd/DroppableCell';
 import { useElementWidth } from '../hooks/useElementWidth';
-import { DAY_MAX_COLUMNS, type GhostEvent, TimeGridEvents } from './TimeGridEvents';
+import { DAY_MAX_COLUMNS, type GhostEvent } from './TimeGridEvents';
+import { TimeColumn } from './TimeColumn';
+import { DEFAULT_GRID, gridHours, gridOffset, gridScrollTop, slotDate, type TimeGrid } from './grid';
 
 interface DayViewProps {
   currentDate: Date;
@@ -29,18 +30,12 @@ interface DayViewProps {
   highlightId?: string;
   /** Quick create: the new event's draft, drawn in its column. */
   draft?: GhostEvent & { allDay: boolean };
+  /** Visible hours and slots (`dayStartHour`, `dayEndHour`…). */
+  grid?: TimeGrid;
 }
 
 const HOUR_HEIGHT = 80; // Larger height for Day View
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
-const QUARTERS = [0, 15, 30, 45];
 const NO_SEGMENTS: DaySegment[] = [];
-
-const slotDate = (day: Date, hour: number, minute: number) => {
-  const date = new Date(day);
-  date.setHours(hour, minute, 0, 0);
-  return date;
-};
 
 const DayViewImpl: React.FC<DayViewProps> = ({
   currentDate,
@@ -58,6 +53,7 @@ const DayViewImpl: React.FC<DayViewProps> = ({
   onMoreClick,
   draft,
   highlightId,
+  grid = DEFAULT_GRID,
 }) => {
   // Only the day on screen gets segments, so endless events stay cheap.
   const visibleRange = React.useMemo(() => {
@@ -78,9 +74,9 @@ const DayViewImpl: React.FC<DayViewProps> = ({
   React.useEffect(() => {
     if (scrollContainerRef.current) {
       const offsetHour = 3;
-      scrollContainerRef.current.scrollTop = (toDisplay(new Date(), timezone).getHours() - offsetHour) * HOUR_HEIGHT;
+      scrollContainerRef.current.scrollTop = gridScrollTop(grid, toDisplay(new Date(), timezone).getHours() - offsetHour, HOUR_HEIGHT);
     }
-  }, [timezone]);
+  }, [timezone, grid]);
 
   const dayKey = format(currentDate, 'yyyy-MM-dd');
   // All-day and 24 h+ events go to the all-day row; the grid only shows timed events.
@@ -89,7 +85,8 @@ const DayViewImpl: React.FC<DayViewProps> = ({
   const segments = segmentsByDisplayDay(timedEvents, timezone, visibleRange).get(dayKey) ?? NO_SEGMENTS;
   const isToday = isSameDay(currentDate, displayToday(timezone, now));
   const zonedNow = toDisplay(now, timezone);
-  const nowTop = (minutesSinceDisplayMidnight(now, timezone) / 60) * HOUR_HEIGHT;
+  const nowMinutes = minutesSinceDisplayMidnight(now, timezone);
+  const hours = gridHours(grid);
   const formats = timeFormats(locale);
 
   return (
@@ -124,28 +121,28 @@ const DayViewImpl: React.FC<DayViewProps> = ({
 
         {/* Grid */}
         <div ref={scrollContainerRef} className="ck:flex-1 ck:overflow-y-auto ck:relative">
-            <div className="ck:flex ck:relative" style={{ height: HOURS.length * HOUR_HEIGHT }}>
+            <div className="ck:flex ck:relative" style={{ height: hours.length * HOUR_HEIGHT }}>
                 {/* Time Labels */}
                 <div className="ck:w-20 ck:bg-muted/5 ck:border-r-[0.5px] ck:border-border/30 ck:relative">
-                     {HOURS.map((hour) => (
+                     {hours.map((hour) => (
                         <div
                             key={hour}
                             className="ck:relative ck:w-full"
                             style={{ height: HOUR_HEIGHT }}
                         >
-                            {hour !== 0 && (
+                            {hour !== grid.startHour && (
                                 <span className="ck:absolute ck:w-full ck:text-center ck:-top-3 ck:left-1/2 ck:-translate-x-1/2 ck:text-[11px] ck:text-muted-foreground/80 ck:font-medium ck:tabular-nums ck:bg-background ck:px-1.5 ck:py-0.5 ck:rounded-md">
-                                    {format(slotDate(currentDate, hour, 0), formats.hour, { locale })}
+                                    {format(slotDate(currentDate, hour * 60), formats.hour, { locale })}
                                 </span>
                             )}
                         </div>
                      ))}
 
                      {/* Left Side Current Time Indicator (Overlay) */}
-                     {isToday && (
+                     {isToday && nowMinutes >= grid.startHour * 60 && nowMinutes <= grid.endHour * 60 && (
                          <div
                              className="ck:absolute ck:left-0 ck:w-full ck:pointer-events-none ck:z-30 ck:flex ck:justify-end ck:pr-2"
-                             style={{ top: `${nowTop}px` }}
+                             style={gridOffset(grid, nowMinutes, HOUR_HEIGHT)}
                          >
                              <span className="ck:text-[10px] ck:font-bold ck:text-primary-foreground ck:bg-primary ck:px-2 ck:py-1 ck:rounded-lg ck:shadow-md ck:shadow-primary/30 ck:-translate-y-1/2">
                                  {format(zonedNow, formats.time, { locale })}
@@ -156,42 +153,21 @@ const DayViewImpl: React.FC<DayViewProps> = ({
 
                 {/* Day Column */}
                 <div ref={gridRef} className="ck:flex-1 ck:relative">
-                     {HOURS.map((hour) => (
-                        <div
-                            key={hour}
-                            className="ck:border-b-[0.5px] ck:border-dashed ck:border-border/20 ck:box-border ck:relative ck:hover:bg-accent/5 ck:transition-colors"
-                            style={{ height: HOUR_HEIGHT }}
-                        >
-                            {/* 4 x 15-minute intervals */}
-                            {QUARTERS.map((minute) => {
-                                const cellDate = slotDate(currentDate, hour, minute);
-                                return (
-                                    <DroppableCell
-                                        key={minute}
-                                        id={cellDate.toISOString()}
-                                        date={cellDate}
-                                        className="ck:w-full ck:absolute ck:left-0 ck:right-0 ck:z-0 ck:transition-colors"
-                                        style={{
-                                            height: '25%',
-                                            top: `${(minute / 60) * 100}%`
-                                        }}
-                                        onSlotClick={onTimeSlotClick}
-                                    />
-                                );
-                            })}
-                        </div>
-                     ))}
-
-                     <TimeGridEvents
+                    <TimeColumn
+                        day={currentDate}
                         dayKey={dayKey}
                         segments={segments}
+                        grid={grid}
                         hourHeight={HOUR_HEIGHT}
                         maxColumns={DAY_MAX_COLUMNS}
                         columnWidth={gridWidth}
                         inset={4}
+                        nowMinutes={isToday ? nowMinutes : undefined}
+                        className="ck:h-full"
                         timezone={timezone}
                         locale={locale}
                         readonly={readonly}
+                        onTimeSlotClick={onTimeSlotClick}
                         onEventClick={onEventClick}
                         onEventContextMenu={onEventContextMenu}
                         onEventResize={onEventResize}
@@ -199,20 +175,7 @@ const DayViewImpl: React.FC<DayViewProps> = ({
                         highlightId={highlightId}
                         ghost={draft && !draft.allDay && isSameDay(draft.start, currentDate) ? draft : undefined}
                         translations={translations}
-                     />
-
-                     {/* Current Time Indicator */}
-                     {isToday && (
-                       <div
-                         className="ck:absolute ck:left-0 ck:right-0 ck:z-20 ck:pointer-events-none ck:flex ck:items-center"
-                         style={{ top: `${nowTop}px` }}
-                       >
-                         {/* Line */}
-                         <div className="ck:h-[2px] ck:w-full ck:bg-linear-to-r ck:from-primary ck:via-primary ck:to-primary/50" />
-                         {/* Dot */}
-                         <div className="ck:absolute ck:-left-1.5 ck:w-3 ck:h-3 ck:bg-primary ck:rounded-full ck:shadow-lg ck:shadow-primary/40 ck:ring-2 ck:ring-background ck:animate-pulse" />
-                       </div>
-                     )}
+                    />
                 </div>
             </div>
         </div>

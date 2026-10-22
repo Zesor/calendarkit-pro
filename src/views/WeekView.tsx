@@ -8,9 +8,10 @@ import { AllDayRow } from '../components/AllDayRow';
 import { timeFormats, timeZoneAbbreviation } from '../core/format';
 import { displayToday, minutesSinceDisplayMidnight, resolveTimeZone, toDisplay } from '../core/timezone';
 import { getWeekDays, resolveWeekStartsOn } from '../core/week';
-import { DroppableCell } from '../components/dnd/DroppableCell';
 import { useElementWidth } from '../hooks/useElementWidth';
-import { type GhostEvent, TimeGridEvents, weekMaxColumns } from './TimeGridEvents';
+import { type GhostEvent, weekMaxColumns } from './TimeGridEvents';
+import { TimeColumn } from './TimeColumn';
+import { DEFAULT_GRID, gridHours, gridOffset, gridScrollTop, slotDate, type TimeGrid } from './grid';
 import { TODAY_MARK } from '../components/todayMark';
 
 interface WeekViewProps {
@@ -32,18 +33,12 @@ interface WeekViewProps {
   /** Quick create: the new event's draft, drawn in its column. */
   draft?: GhostEvent & { allDay: boolean };
   translations?: Partial<CalendarTranslations>;
+  /** Visible hours and slots (`dayStartHour`, `dayEndHour`…). */
+  grid?: TimeGrid;
 }
 
 const HOUR_HEIGHT = 60; // px
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
-const QUARTERS = [0, 15, 30, 45];
 const NO_SEGMENTS: DaySegment[] = [];
-
-const slotDate = (day: Date, hour: number, minute: number) => {
-  const date = new Date(day);
-  date.setHours(hour, minute, 0, 0);
-  return date;
-};
 
 const WeekViewImpl: React.FC<WeekViewProps> = ({
   currentDate,
@@ -61,6 +56,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
   draft,
   highlightId,
   translations,
+  grid = DEFAULT_GRID,
 }) => {
   // Week start follows the locale (historical Monday fallback without a locale).
   const weekDays = React.useMemo(
@@ -88,17 +84,18 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
   React.useEffect(() => {
     if (scrollContainerRef.current) {
       const offsetHour = 4;
-      scrollContainerRef.current.scrollTop = (toDisplay(new Date(), timezone).getHours() - offsetHour) * HOUR_HEIGHT;
+      scrollContainerRef.current.scrollTop = gridScrollTop(grid, toDisplay(new Date(), timezone).getHours() - offsetHour, HOUR_HEIGHT);
     }
-  }, [timezone]);
+  }, [timezone, grid]);
 
   // All-day and 24 h+ events go to the all-day row; the grid only shows timed events.
   const { dayEvents, timedEvents } = partitionDayEvents(events, timezone);
   const segmentsByDay = segmentsByDisplayDay(timedEvents, timezone, visibleRange);
   const today = displayToday(timezone, now);
   const zonedNow = toDisplay(now, timezone);
-  const nowTop = (minutesSinceDisplayMidnight(now, timezone) / 60) * HOUR_HEIGHT;
-  const showsToday = weekDays.some((day) => isSameDay(day, today));
+  const nowMinutes = minutesSinceDisplayMidnight(now, timezone);
+  const hours = gridHours(grid);
+  const showsNow = weekDays.some((day) => isSameDay(day, today)) && nowMinutes >= grid.startHour * 60 && nowMinutes <= grid.endHour * 60;
   const zone = resolveTimeZone(timezone);
   const zoneLabel = timeZoneAbbreviation(now, zone) || zone || 'LOC';
   const formats = timeFormats(locale);
@@ -154,27 +151,27 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
         {/* Grid Content */}
         <div
           className="ck:flex ck:min-w-full ck:relative"
-          style={{ height: HOURS.length * HOUR_HEIGHT }}
+          style={{ height: hours.length * HOUR_HEIGHT }}
         >
           {/* Time Labels Column */}
           <div className="ck:flex-none ck:w-16 ck:border-r-[0.5px] ck:border-border/30 ck:relative ck:bg-muted/5">
-            {HOURS.map((hour) => (
+            {hours.map((hour) => (
                  <div
                    key={hour}
                    className="ck:relative ck:w-full ck:text-[11px] ck:text-muted-foreground/80 ck:text-right ck:pr-3 ck:font-medium ck:tabular-nums ck:box-border"
                    style={{ height: HOUR_HEIGHT }}
                  >
                    <span className="ck:block ck:-translate-y-1/2">
-                    {hour !== 0 && format(slotDate(currentDate, hour, 0), formats.hour, { locale })}
+                    {hour !== grid.startHour && format(slotDate(currentDate, hour * 60), formats.hour, { locale })}
                    </span>
                  </div>
             ))}
 
             {/* Current Time Label (Left Axis), positioned in the grid so no header offset is needed */}
-            {showsToday && (
+            {showsNow && (
               <div
                 className="ck:absolute ck:left-0 ck:w-full ck:pointer-events-none ck:z-30 ck:flex ck:justify-end ck:pr-2"
-                style={{ top: `${nowTop}px` }}
+                style={gridOffset(grid, nowMinutes, HOUR_HEIGHT)}
               >
                 <span className="ck:text-[10px] ck:font-bold ck:text-primary-foreground ck:bg-primary ck:px-1.5 ck:py-0.5 ck:rounded-md ck:shadow-md ck:-translate-y-1/2 ck:backdrop-blur-none">
                   {format(zonedNow, formats.compact, { locale })}
@@ -187,45 +184,22 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
           <div ref={gridRef} className="ck:flex-1 ck:grid ck:grid-cols-7 ck:relative">
             {weekDays.map((day, dayIndex) => {
                 const dayKey = format(day, 'yyyy-MM-dd');
-
                 return (
-                <div key={dayKey} className={cx("ck:relative ck:h-full", dayIndex > 0 && "ck:border-l-[0.5px] ck:border-border/30")}>
-                    {/* Grid Rows (Droppable Cells) */}
-                    {HOURS.map((hour) => (
-                        <div
-                            key={hour}
-                            className="ck:w-full ck:border-b-[0.5px] ck:border-dashed ck:border-border/20 ck:box-border ck:relative ck:hover:bg-accent/5 ck:transition-colors"
-                            style={{ height: HOUR_HEIGHT }}
-                        >
-                            {/* 4 x 15-minute intervals */}
-                            {QUARTERS.map((minute) => {
-                                const cellDate = slotDate(day, hour, minute);
-                                return (
-                                    <DroppableCell
-                                        key={minute}
-                                        id={cellDate.toISOString()}
-                                        date={cellDate}
-                                        className="ck:w-full ck:absolute ck:left-0 ck:right-0 ck:z-0 ck:transition-colors"
-                                        style={{
-                                            height: '25%',
-                                            top: `${(minute / 60) * 100}%`
-                                        }}
-                                        onSlotClick={onTimeSlotClick}
-                                    />
-                                );
-                            })}
-                        </div>
-                    ))}
-
-                    <TimeGridEvents
+                    <TimeColumn
+                        key={dayKey}
+                        day={day}
                         dayKey={dayKey}
                         segments={segmentsByDay.get(dayKey) ?? NO_SEGMENTS}
+                        grid={grid}
                         hourHeight={HOUR_HEIGHT}
                         maxColumns={weekMaxColumns(columnWidth)}
                         columnWidth={columnWidth}
+                        nowMinutes={isSameDay(day, today) ? nowMinutes : undefined}
+                        className={cx("ck:h-full", dayIndex > 0 && "ck:border-l-[0.5px] ck:border-border/30")}
                         timezone={timezone}
                         locale={locale}
                         readonly={readonly}
+                        onTimeSlotClick={onTimeSlotClick}
                         onEventClick={onEventClick}
                         onEventContextMenu={onEventContextMenu}
                         onEventResize={onEventResize}
@@ -234,18 +208,6 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
                         ghost={draft && !draft.allDay && isSameDay(draft.start, day) ? draft : undefined}
                         translations={translations}
                     />
-
-                    {/* Current Time Indicator */}
-                    {isSameDay(day, today) && (
-                    <div
-                        className="ck:absolute ck:left-0 ck:right-0 ck:z-20 ck:pointer-events-none ck:flex ck:items-center"
-                        style={{ top: `${nowTop}px` }}
-                    >
-                        <div className="ck:h-[2px] ck:w-full ck:bg-linear-to-r ck:from-primary ck:via-primary ck:to-primary/50" />
-                        <div className="ck:absolute ck:-left-1.5 ck:w-3 ck:h-3 ck:bg-primary ck:rounded-full ck:shadow-lg ck:shadow-primary/40 ck:ring-2 ck:ring-background ck:animate-pulse" />
-                    </div>
-                    )}
-                </div>
                 );
             })}
           </div>

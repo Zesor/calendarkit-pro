@@ -9,11 +9,13 @@ import { toDisplay } from '../core/timezone';
 import { DraggableEvent } from '../components/dnd/DraggableEvent';
 import { ResizableEvent } from '../components/dnd/ResizableEvent';
 import { EventBlock } from '../components/EventBlock';
+import { gridOffset, type TimeGrid } from './grid';
 
 interface TimeGridEventsProps {
   dayKey: string;
   /** The day's timed segments (wall clock in the display zone). */
   segments: DaySegment[];
+  grid: TimeGrid;
   hourHeight: number;
   /** Columns shown per overlap cluster before the extra events collapse into "+N" (spec §8.4). */
   maxColumns: number;
@@ -64,7 +66,7 @@ function horizontal(column: number, span: number, columns: number, inset: number
  * stretching right while the next column is free, and the events past `maxColumns` behind "+N".
  */
 export const TimeGridEvents: React.FC<TimeGridEventsProps> = ({
-  dayKey, segments, hourHeight, maxColumns, columnWidth, inset = 0, timezone, locale, readonly, onEventClick, onEventContextMenu, onEventResize, onMoreClick, highlightId, ghost, translations,
+  dayKey, segments, grid, hourHeight, maxColumns, columnWidth, inset = 0, timezone, locale, readonly, onEventClick, onEventContextMenu, onEventResize, onMoreClick, highlightId, ghost, translations,
 }) => {
   const { blocks, more } = layoutColumns(segments, maxColumns);
   return (
@@ -72,7 +74,6 @@ export const TimeGridEvents: React.FC<TimeGridEventsProps> = ({
     {blocks.map(({ event, start, end, column, span, columns }) => {
       const zonedStart = toDisplay(event.start, timezone);
       const zonedEnd = toDisplay(event.end, timezone);
-      const top = (minutesOf(start) / 60) * hourHeight;
       const height = Math.max((differenceInMinutes(end, start) / 60) * hourHeight, 12);
       // Only the segment holding the event's real end can be resized.
       const isLastSegment = end.getTime() === zonedEnd.getTime();
@@ -84,7 +85,7 @@ export const TimeGridEvents: React.FC<TimeGridEventsProps> = ({
           grabOffsetMs={start.getTime() - zonedStart.getTime()}
           event={event}
           className="ck:absolute ck:z-10"
-          style={{ top: `${top}px`, height: `${height}px`, ...horizontal(column, span, columns, inset) }}
+          style={{ ...gridOffset(grid, minutesOf(start), hourHeight), height: `${height}px`, ...horizontal(column, span, columns, inset) }}
         >
           <ResizableEvent
             readonly={readonly || !isLastSegment}
@@ -115,7 +116,7 @@ export const TimeGridEvents: React.FC<TimeGridEventsProps> = ({
         type="button"
         className="ck:absolute ck:z-10 ck:flex ck:items-start ck:justify-center ck:pt-1 ck:rounded-md ck:bg-muted ck:hover:bg-accent ck:text-xs ck:font-semibold ck:text-foreground ck:tabular-nums ck:transition-colors"
         style={{
-          top: `${(minutesOf(start) / 60) * hourHeight}px`,
+          ...gridOffset(grid, minutesOf(start), hourHeight),
           height: `${Math.max((differenceInMinutes(end, start) / 60) * hourHeight, 20)}px`,
           ...horizontal(column, 1, columns, inset),
         }}
@@ -133,7 +134,7 @@ export const TimeGridEvents: React.FC<TimeGridEventsProps> = ({
         aria-hidden="true"
         className="ck-event ck:absolute ck:z-20 ck:pointer-events-none ck:rounded-md ck:outline-2 ck:outline-dashed ck:outline-ring ck:-outline-offset-2 ck:px-2 ck:py-1 ck:text-xs ck:font-semibold ck:leading-tight ck:overflow-hidden"
         style={{
-          top: `${(minutesOf(ghost.start) / 60) * hourHeight}px`,
+          ...gridOffset(grid, minutesOf(ghost.start), hourHeight),
           height: `${Math.max((differenceInMinutes(ghost.end, ghost.start) / 60) * hourHeight, 12)}px`,
           ...horizontal(0, 1, 1, inset),
         }}

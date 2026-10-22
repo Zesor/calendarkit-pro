@@ -30,6 +30,7 @@ import { restrictToWindowEdges, snapToGrid } from './components/dnd/modifiers';
 import { CalendarStyles, useMissingStylesWarning } from './styles/CalendarStyles';
 import { EventColorProvider, eventColorStyle, resolveEventColor } from './components/eventColor';
 import { ClassNamesProvider, ComponentsProvider } from './components/customize';
+import { resolveTimeGrid } from './views/grid';
 
 // Re-export types for consumers
 export type {
@@ -97,6 +98,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
   injectStyles = true,
   classNames = NO_CLASSES,
   components = NO_COMPONENTS,
+  dayStartHour,
+  dayEndHour,
 }) => {
   const [activeDragEvent, setActiveDragEvent] = useState<CalendarEvent | null>(null);
   const [activeDayDrag, setActiveDayDrag] = useState(false);
@@ -262,6 +265,9 @@ export const Scheduler: React.FC<CalendarProps> = ({
       ? format(startOfWeek(currentDate, { weekStartsOn: resolveWeekStartsOn(locale, 1) }), 'yyyy-MM-dd')
       : format(currentDate, 'yyyy-MM-dd');
 
+  // The views are memoized: the grid keeps its identity while its props do not change.
+  const grid = useMemo(() => resolveTimeGrid({ dayStartHour, dayEndHour }), [dayStartHour, dayEndHour]);
+
   const slotClickHandler = readOnly ? undefined : handleTimeSlotClick;
   const allDaySlotClickHandler = readOnly ? undefined : handleAllDaySlotClick;
   const contextMenuHandler = readOnly ? undefined : openContextMenu;
@@ -395,6 +401,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                 draft={quickDraft}
                                 highlightId={landedId}
                                 translations={t}
+                                grid={grid}
                                 />
                             )}
                             {view === 'day' && (
@@ -414,6 +421,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                     onMoreClick={handleMoreClick}
                                     draft={quickDraft}
                                     highlightId={landedId}
+                                    grid={grid}
                                 />
                             )}
                             {view === 'agenda' && (
@@ -439,6 +447,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                     timezone={timezone}
                                     translations={t}
                                     onEventContextMenu={contextMenuHandler}
+                                    grid={grid}
                                 />
                             )}
                         </div>

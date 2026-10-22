@@ -214,6 +214,10 @@ export interface CalendarProps {
     active?: boolean;
   }[];
   resources?: Resource[];
+  /** First hour drawn by the week, day and resource views (0 to 23, default 0). */
+  dayStartHour?: number;
+  /** Hour the week, day and resource views end at (1 to 24, default 24). Events are cut at these hours. */
+  dayEndHour?: number;
   eventTypes?: EventType[]; // Pre-defined types
   onCalendarToggle?: (calendarId: string, active: boolean) => void;
   isLoading?: boolean;
