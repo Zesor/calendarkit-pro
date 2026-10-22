@@ -92,6 +92,17 @@ describe('Focus layout: the editor as a side panel', () => {
     expect(screen.getByRole('alertdialog', { name: 'Discard changes?' })).toBeTruthy()
   })
 
+  test('with changes in the panel, the grid asks before anything else opens (no silent loss)', () => {
+    render(<Scheduler layout="focus" view="day" date={day} events={[standup]} />)
+    act(() => screen.getByText('Standup').click())
+    expect(document.querySelector('[data-ck-guard]')).toBeNull()
+    fireEvent.change(within(panel()!).getByPlaceholderText('Add title'), { target: { value: 'Standup (moved)' } })
+    // A press on the grid lands on the guard over it, which asks first.
+    act(() => (document.querySelector('[data-ck-guard]') as HTMLElement).click())
+    expect(screen.getByRole('alertdialog', { name: 'Discard changes?' })).toBeTruthy()
+    expect((within(panel()!).getByPlaceholderText('Add title') as HTMLInputElement).value).toBe('Standup (moved)')
+  })
+
   test('with renderEventForm (1.x) a click still opens the host\'s form', () => {
     const renderEventForm = vi.fn(() => null)
     render(<Scheduler layout="focus" view="day" date={day} events={[standup]} renderEventForm={renderEventForm} />)

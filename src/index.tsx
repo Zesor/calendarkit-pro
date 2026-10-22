@@ -28,7 +28,7 @@ import { resolveWeekStartsOn } from './core/week';
 import { useCalendar, useCalendarSelector } from './react/useCalendar';
 import { CalendarDndContext } from './react/dnd';
 import { useStableCallback } from './hooks/useStableCallback';
-import { format, startOfWeek } from 'date-fns';
+import { addDays, format, startOfWeek } from 'date-fns';
 import { useViewSwipe } from './hooks/useSwipeGesture';
 import { dragOverlaySize } from './components/dnd/dragOverlay';
 import { restrictToWindowEdges, snapToGrid } from './components/dnd/modifiers';
@@ -343,7 +343,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
     // Events drawn in the grid only: a day or longer is a bar above it and does not push the slot.
     const timed = filteredEvents.filter((e) => !e.allDay && e.end.getTime() - e.start.getTime() < 864e5).map((e) => ({ start: toDisplay(e.start, timezone), end: toDisplay(e.end, timezone) }));
     const start = nextFreeSlot(toDisplay(new Date(), timezone), timed, grid.startHour, grid.endHour);
-    if (view === 'week' || view === 'day') calendar.navigate(start);
+    if (view === 'week' || view === 'day' || layout === 'flow') calendar.navigate(start);
     calendar.openSlot(start, { editor: hasCustomForm });
   });
 
@@ -357,6 +357,11 @@ export const Scheduler: React.FC<CalendarProps> = ({
     (day: Date, at: Date) => selectFlowDay({ ...calendar.getState(), visible: filteredEvents }, { day, now: at, fromHour: dayStartHour ?? 8, toHour: dayEndHour ?? 20 }),
     [calendar, filteredEvents, dayStartHour, dayEndHour],
   );
+
+  // Focus: the grid stays live beside the panel; while the form has changes, a guard over the grid
+  // asks first (as the Classic card's backdrop does), so nothing typed is lost to another click.
+  const [editorDirty, setEditorDirty] = useState(false);
+  const [closeRequest, setCloseRequest] = useState(0);
 
   const builtInEditor = (
     <EventModal
@@ -373,6 +378,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
       initialValues={modalInitialValues}
       placeSearch={placeSearch}
       variant={layout === 'focus' ? 'panel' : layout === 'flow' ? 'sheet' : 'card'}
+      onDirtyChange={setEditorDirty}
+      closeRequest={closeRequest}
     />
   );
 
@@ -410,6 +417,17 @@ export const Scheduler: React.FC<CalendarProps> = ({
             // An hour at the start of the free time (all of it when shorter).
             onBook={readOnly ? undefined : (start, end) => handleTimeRangeSelect(start, new Date(Math.min(end.getTime(), start.getTime() + 3600e3)))}
             onCreate={readOnly ? undefined : handleCreateEvent}
+            toolbar={Toolbar && (
+              <Toolbar
+                date={currentDate}
+                view={view}
+                onPrev={() => handleDateChange(addDays(currentDate, -7))}
+                onNext={() => handleDateChange(addDays(currentDate, 7))}
+                onToday={handleToday}
+                onViewChange={handleViewChange}
+                onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+              />
+            )}
           />
         ) : (
         <>
@@ -489,6 +507,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
             )}
 
             <div className="ck:flex-1 ck:flex ck:flex-col ck:overflow-hidden ck:relative">
+                {layout === 'focus' && isModalOpen && editorDirty && <div data-ck-guard className="ck:absolute ck:inset-0 ck:z-40" onClick={() => setCloseRequest((n) => n + 1)} />}
                 {isLoading ? (
                     <div className="ck:flex-1 ck:overflow-auto ck:p-0 ck:md:p-4">
                       <div className="ck:h-full ck:min-w-full">

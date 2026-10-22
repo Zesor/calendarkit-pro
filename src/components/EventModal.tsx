@@ -29,6 +29,10 @@ interface EventModalProps {
   placeSearch?: PlaceSearch;
   /** A card beside what it edits (Classic), a panel docked beside the grid (Focus), or a bottom sheet (Flow). */
   variant?: 'card' | 'panel' | 'sheet';
+  /** Told when the form starts or stops having changes (the Focus grid then asks before opening anything else). */
+  onDirtyChange?: (dirty: boolean) => void;
+  /** Each new value asks to close, as Cancel does (a press on the guarded Focus grid). */
+  closeRequest?: number;
 }
 
 // Predefined reminder offsets, in minutes before the event
@@ -107,6 +111,8 @@ export const EventModal: React.FC<EventModalProps> = ({
   initialValues,
   placeSearch,
   variant = 'card',
+  onDirtyChange,
+  closeRequest,
 }) => {
   const [mode, setMode] = useState<'edit' | 'create'>('create');
   // Read through a ref so a new initialValues object (an inline prop) does not reset the form.
@@ -186,10 +192,18 @@ export const EventModal: React.FC<EventModalProps> = ({
     }
   }, [isOpen, event, initialDate, calendars, initialAllDay]);
 
+  const dirty = isOpen && JSON.stringify(formData) !== openedAs.current;
   const requestClose = () => {
-    if (JSON.stringify(formData) !== openedAs.current) setConfirmingDiscard(true);
+    if (dirty) setConfirmingDiscard(true);
     else onClose();
   };
+  useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
+  const closeRequestRef = useRef(closeRequest);
+  useEffect(() => {
+    if (closeRequest === closeRequestRef.current) return;
+    closeRequestRef.current = closeRequest;
+    setConfirmingDiscard(true);
+  }, [closeRequest]);
   // A card beside what it edits (no overlay): the event's block, or the new event's ghost.
   const editedId = event?.id;
   useLayoutEffect(() => {

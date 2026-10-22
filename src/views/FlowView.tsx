@@ -25,13 +25,15 @@ interface FlowViewProps {
   /** Undefined in read-only mode. */
   onBook?: (start: Date, end: Date) => void;
   onCreate?: () => void;
+  /** The host's `components.Toolbar`, in place of the month and week arrows. */
+  toolbar?: React.ReactNode;
 }
 
 /**
  * Flow layout (spec §8.1): the week's days as a strip (with how busy each is), the chosen day as a
  * feed of cards in order, free slots to book, the current time, and a floating Create.
  */
-export const FlowView: React.FC<FlowViewProps> = ({ date, events, model, timezone, locale, translations: t, onDateChange, onEventClick, onBook, onCreate }) => {
+export const FlowView: React.FC<FlowViewProps> = ({ date, events, model, timezone, locale, translations: t, onDateChange, onEventClick, onBook, onCreate, toolbar }) => {
   const calendars = useCalendars();
   const classNames = useClassNames();
   // The current time moves every minute.
@@ -52,11 +54,13 @@ export const FlowView: React.FC<FlowViewProps> = ({ date, events, model, timezon
 
   return (
     <div className="ck:relative ck:mx-auto ck:flex ck:min-h-0 ck:w-full ck:max-w-3xl ck:flex-1 ck:flex-col">
-      <div className="ck:flex ck:items-center ck:gap-1 ck:px-5 ck:pt-4 ck:pb-1">
-        <h2 className="ck:flex-1 ck:font-display ck:text-xl ck:font-semibold ck:text-foreground ck:first-letter:uppercase">{format(day, 'MMMM yyyy', { locale })}</h2>
-        <button type="button" onClick={() => onDateChange(addDays(day, -7))} aria-label={t.previous} className="ck:flex ck:h-9 ck:w-9 ck:items-center ck:justify-center ck:rounded-full ck:text-muted-foreground ck:hover:bg-muted ck:hover:text-foreground"><ChevronLeft className="ck:h-4 ck:w-4" aria-hidden="true" /></button>
-        <button type="button" onClick={() => onDateChange(addDays(day, 7))} aria-label={t.next} className="ck:flex ck:h-9 ck:w-9 ck:items-center ck:justify-center ck:rounded-full ck:text-muted-foreground ck:hover:bg-muted ck:hover:text-foreground"><ChevronRight className="ck:h-4 ck:w-4" aria-hidden="true" /></button>
-      </div>
+      {toolbar ?? (
+        <div className="ck:flex ck:items-center ck:gap-1 ck:px-5 ck:pt-4 ck:pb-1">
+          <h2 className="ck:flex-1 ck:font-display ck:text-xl ck:font-semibold ck:text-foreground ck:first-letter:uppercase">{format(day, 'MMMM yyyy', { locale })}</h2>
+          <button type="button" onClick={() => onDateChange(addDays(day, -7))} aria-label={t.previous} className="ck:flex ck:h-9 ck:w-9 ck:items-center ck:justify-center ck:rounded-full ck:text-muted-foreground ck:hover:bg-muted ck:hover:text-foreground"><ChevronLeft className="ck:h-4 ck:w-4" aria-hidden="true" /></button>
+          <button type="button" onClick={() => onDateChange(addDays(day, 7))} aria-label={t.next} className="ck:flex ck:h-9 ck:w-9 ck:items-center ck:justify-center ck:rounded-full ck:text-muted-foreground ck:hover:bg-muted ck:hover:text-foreground"><ChevronRight className="ck:h-4 ck:w-4" aria-hidden="true" /></button>
+        </div>
+      )}
 
       <div role="group" aria-label={t.daysOfWeek} className="ck:flex ck:gap-2 ck:overflow-x-auto ck:px-5 ck:pt-2 ck:pb-3.5">
         {week.map((d) => {

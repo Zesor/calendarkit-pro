@@ -61,6 +61,20 @@ describe('Flow layout', () => {
     expect(document.querySelector('[data-ck-layer] [role="dialog"]')).toBeTruthy()
   })
 
+  test('Create opens the card on today, the day it shows, whatever the host\'s view', () => {
+    render(<Scheduler layout="flow" view="month" defaultEvents={events} />)
+    act(() => within(strip()).getAllByRole('button')[4].click())
+    act(() => screen.getByRole('button', { name: 'Create' }).click())
+    expect(within(strip()).getByRole('button', { pressed: true }).getAttribute('aria-label')).toMatch(/^Thursday 15 October/)
+  })
+
+  test('a custom Toolbar replaces the top bar here too', () => {
+    const Toolbar = () => <div>my toolbar</div>
+    render(<Scheduler layout="flow" defaultEvents={events} components={{ Toolbar }} />)
+    expect(screen.getByText('my toolbar')).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: 'October 2026' })).toBeNull()
+  })
+
   test('an empty day says so', () => {
     render(<Scheduler layout="flow" defaultEvents={[]} />)
     act(() => within(strip()).getAllByRole('button')[0].click())
