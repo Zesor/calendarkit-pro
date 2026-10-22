@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useId, useRef } from 'react';
 import { X } from '../icons';
 import { cx } from '../../utils';
 import { useClassNames } from '../customize';
@@ -13,6 +13,8 @@ interface ModalProps {
   hideHeader?: boolean;
   /** Screen-reader label of the header close button. */
   closeLabel?: string;
+  /** Id of the heading that names the dialog, when it draws its own header (`hideHeader`). */
+  labelledBy?: string;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -23,8 +25,15 @@ export const Modal: React.FC<ModalProps> = ({
   className,
   hideHeader = false,
   closeLabel = 'Close',
+  labelledBy,
 }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+  // A calendar taller than the window: bring the whole dialog into view (it fits: see max-h below).
+  useEffect(() => {
+    if (isOpen) panelRef.current?.scrollIntoView?.({ block: 'nearest' });
+  }, [isOpen]);
   const classNames = useClassNames();
 
   useEffect(() => {
@@ -53,16 +62,21 @@ export const Modal: React.FC<ModalProps> = ({
         className="ck:absolute ck:inset-0"
         onClick={onClose}
       />
+      {/* No taller than the calendar nor the window: the footer stays in view. */}
       <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={hideHeader ? labelledBy : titleId}
         className={cx(
-          "ck:relative ck:bg-background ck:rounded-2xl ck:shadow-2xl ck:w-full ck:flex ck:flex-col ck:max-h-[70vh] ck:sm:max-h-[80vh] ck:duration-300 ck:border ck:border-border/50",
+          "ck:relative ck:bg-background ck:rounded-2xl ck:shadow-2xl ck:w-full ck:flex ck:flex-col ck:max-h-[min(100%,calc(100dvh-2rem))] ck:duration-300 ck:border ck:border-border/50",
           className,
           classNames.dialog
         )}
       >
         {!hideHeader && (
           <div className="ck:flex ck:items-center ck:justify-between ck:px-6 ck:py-4 ck:border-b ck:border-border/50 ck:shrink-0 ck:bg-linear-to-r ck:from-muted/20 ck:to-background">
-            <h3 className="ck:text-lg ck:font-semibold ck:text-foreground">
+            <h3 id={titleId} className="ck:text-lg ck:font-semibold ck:text-foreground">
               {title}
             </h3>
             <Button
@@ -74,7 +88,7 @@ export const Modal: React.FC<ModalProps> = ({
             </Button>
           </div>
         )}
-        <div className={cx("ck:overflow-y-auto ck:flex-1", !hideHeader && "ck:p-6")}>
+        <div className={cx("ck:flex-1 ck:min-h-0", hideHeader ? "ck:flex ck:flex-col" : "ck:overflow-y-auto ck:p-6")}>
           {children}
         </div>
       </div>

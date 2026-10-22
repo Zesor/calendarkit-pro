@@ -19,7 +19,8 @@ function openAt9(props: Partial<CalendarProps> = {}) {
   act(() => slots(view.container)[36].click())
   return view
 }
-const card = () => screen.queryByRole('dialog', { name: 'New Event' })
+// The quick card (the full editor is a dialog named "New Event" too): the one with the sentence field.
+const card = () => (screen.queryByPlaceholderText('Event title')?.closest('[role="dialog"]') as HTMLElement | null) ?? null
 const title = () => screen.getByRole('textbox', { name: 'Add title' })
 
 describe('quick create', () => {
@@ -82,7 +83,7 @@ describe('quick create', () => {
     expect(card()).toBeNull()
     expect((screen.getByPlaceholderText('Add title') as HTMLInputElement).value).toBe('Lunch with Lea')
     expect(screen.getByText('1 hr 30 min')).toBeTruthy()
-    expect(within(screen.getByPlaceholderText('Add title').closest('form')!).getByText('Personal')).toBeTruthy()
+    expect((within(screen.getByPlaceholderText('Add title').closest('form')!).getByRole('combobox', { name: 'Calendar' }) as HTMLSelectElement).value).toBe('p')
   })
 
   test('what the card carried into the editor is not dropped silently: Cancel asks first', () => {
