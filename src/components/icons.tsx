@@ -49,6 +49,7 @@ export const ListTodo = icon('ListTodo', [['rect', { x: '3', y: '5', width: '6',
 export const MapPin = icon('MapPin', [['path', { d: 'M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0' }], ['circle', { cx: '12', cy: '10', r: '3' }]])
 export const Menu = icon('Menu', [['line', { x1: '4', x2: '20', y1: '12', y2: '12' }], ['line', { x1: '4', x2: '20', y1: '6', y2: '6' }], ['line', { x1: '4', x2: '20', y1: '18', y2: '18' }]])
 export const Moon = icon('Moon', [['path', { d: 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z' }]])
+export const Navigation = icon('Navigation', [['path', { d: 'M3 11 22 2 13 21 11 13 3 11Z' }]])
 export const Paperclip = icon('Paperclip', [['path', { d: 'M13.234 20.252 21 12.3' }], ['path', { d: 'm16 6-8.414 8.586a2 2 0 0 0 0 2.828 2 2 0 0 0 2.828 0l8.414-8.586a4 4 0 0 0 0-5.656 4 4 0 0 0-5.656 0l-8.415 8.585a6 6 0 1 0 8.486 8.486' }]])
 export const Plus = icon('Plus', [['path', { d: 'M5 12h14' }], ['path', { d: 'M12 5v14' }]])
 export const Sun = icon('Sun', [['circle', { cx: '12', cy: '12', r: '4' }], ['path', { d: 'M12 2v2' }], ['path', { d: 'M12 20v2' }], ['path', { d: 'm4.93 4.93 1.41 1.41' }], ['path', { d: 'm17.66 17.66 1.41 1.41' }], ['path', { d: 'M2 12h2' }], ['path', { d: 'M20 12h2' }], ['path', { d: 'm6.34 17.66-1.41 1.41' }], ['path', { d: 'm19.07 4.93-1.41 1.41' }]])

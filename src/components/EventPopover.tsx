@@ -4,9 +4,9 @@ import { CalendarEvent, CalendarTranslations } from '../types';
 import { timeFormats } from '../core/format';
 import { toDisplay } from '../core/timezone';
 import { cx } from '../utils';
-import { AlignLeft, Bell, Calendar, Clock, Copy, Edit2, MapPin, Paperclip, Trash2, Users, X } from './icons';
+import { AlignLeft, Bell, Calendar, Clock, Copy, Edit2, MapPin, Navigation, Paperclip, Trash2, Users, X } from './icons';
 import { reminderLabel } from './EventModal';
-import { isSafeUrl, mapsUrl } from './links';
+import { directionsUrl, isSafeUrl, mapsUrl } from './links';
 import { eventColorStyle, resolveEventColor, useCalendars } from './eventColor';
 import { useClassNames } from './customize';
 import { durationLabel } from './duration';
@@ -102,7 +102,16 @@ export const EventPopover: React.FC<EventPopoverProps> = ({ event, anchor, timez
             <p className="ck:text-foreground ck:font-medium ck:first-letter:uppercase">{day}</p>
             {times && <p className="ck:tabular-nums">{times}</p>}
           </Row>
-          {event.location && (
+          {event.place ? (
+            <Row icon={MapPin}>
+              <p className="ck:text-foreground ck:font-medium ck:break-words">{event.place.name}</p>
+              {event.place.address && <p className="ck:break-words">{event.place.address}</p>}
+              <div className="ck:mt-1 ck:flex ck:flex-wrap ck:gap-x-4">
+                <a href={mapsUrl(event.place)} target="_blank" rel="noopener noreferrer" className="ck:inline-flex ck:items-center ck:gap-1.5 ck:font-semibold ck:text-foreground ck:underline ck:decoration-border ck:underline-offset-4 ck:hover:decoration-foreground"><MapPin className="ck:h-3.5 ck:w-3.5" aria-hidden="true" />{t.openInMaps}</a>
+                <a href={directionsUrl(event.place)} target="_blank" rel="noopener noreferrer" className="ck:inline-flex ck:items-center ck:gap-1.5 ck:font-semibold ck:text-foreground ck:underline ck:decoration-border ck:underline-offset-4 ck:hover:decoration-foreground"><Navigation className="ck:h-3.5 ck:w-3.5" aria-hidden="true" />{t.directions}</a>
+              </div>
+            </Row>
+          ) : event.location && (
             <Row icon={MapPin}>
               <a href={mapsUrl(event.location)} target="_blank" rel="noopener noreferrer" title={t.openInMaps} className="ck:text-foreground ck:break-words ck:underline ck:decoration-border ck:underline-offset-4 ck:hover:decoration-foreground">{event.location}</a>
             </Row>

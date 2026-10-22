@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useId, useInsertionEffect, useLayoutEffect, useRef } from 'react';
 import { useClassNames } from './customize';
 import { placeBeside } from './placement';
-import { CalendarEvent, CalendarTranslations, EventType, EventReminder } from '../types';
+import { CalendarEvent, CalendarTranslations, EventType, EventReminder, PlaceSearch } from '../types';
+import { PlaceField } from './PlaceField';
 import { addDays, differenceInCalendarDays, format, differenceInMinutes, startOfDay } from 'date-fns';
 import { AlignLeft, Bell, Calendar, Clock, MapPin, Plus, Trash2, Users, X } from './icons';
 import { eventColorStyle } from './eventColor';
@@ -24,6 +25,8 @@ interface EventModalProps {
   initialAllDay?: boolean;
   /** Fields of a new event already chosen (quick create's "More options"). */
   initialValues?: Partial<CalendarEvent>;
+  /** Place suggestions in the Location field (spec §8.7); plain text without. */
+  placeSearch?: PlaceSearch;
 }
 
 // Predefined reminder offsets, in minutes before the event
@@ -100,6 +103,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   translations: t,
   initialAllDay,
   initialValues,
+  placeSearch,
 }) => {
   const [mode, setMode] = useState<'edit' | 'create'>('create');
   // Read through a ref so a new initialValues object (an inline prop) does not reset the form.
@@ -483,13 +487,14 @@ export const EventModal: React.FC<EventModalProps> = ({
         )}
 
         <Field icon={MapPin} label={t.locationLabel} htmlFor={`${id}-location`}>
-          <input
+          <PlaceField
             id={`${id}-location`}
-            type="text"
-            className={cx(INPUT, "ck:w-full")}
-            placeholder={t.addLocation}
             value={formData.location || ''}
-            onChange={e => setFormData({ ...formData, location: e.target.value })}
+            place={formData.place}
+            search={placeSearch}
+            className={INPUT}
+            translations={t}
+            onChange={(location, place) => setFormData(prev => ({ ...prev, location, place }))}
           />
         </Field>
 

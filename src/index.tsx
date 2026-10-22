@@ -56,7 +56,10 @@ export type {
   SidebarProps,
   EmptyStateProps,
   WorkingHours,
+  Place,
+  PlaceSearch,
 } from './types';
+export { photonPlaces } from './places';
 
 const NO_CLASSES: CalendarClassNames = {};
 
@@ -105,6 +108,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
   injectStyles = true,
   classNames = NO_CLASSES,
   components = NO_COMPONENTS,
+  placeSearch,
   dayStartHour,
   dayEndHour,
   slotDuration,
@@ -526,6 +530,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 translations={t}
                 initialAllDay={modalInitialAllDay}
                 initialValues={modalInitialValues}
+                placeSearch={placeSearch}
             />
         )}
 
