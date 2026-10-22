@@ -121,6 +121,59 @@ export interface CalendarClassNames {
   dialog?: string;
 }
 
+/** Props of `components.EventContent`: what is drawn inside an event block, an all-day bar or a month chip. */
+export interface EventContentProps {
+  event: CalendarEvent;
+  variant: 'block' | 'bar' | 'chip';
+}
+
+/** Props of `components.EventEditor` (the same as `renderEventForm`'s). */
+export interface EventEditorProps {
+  isOpen: boolean;
+  onClose: () => void;
+  event?: CalendarEvent | null;
+  initialDate?: Date;
+  /** True when the form is opened from the all-day row (preset to an all-day event). */
+  initialAllDay?: boolean;
+  onSave: (event: Partial<CalendarEvent>) => void;
+  onDelete?: (eventId: string) => void;
+}
+
+/** Props of `components.Toolbar`. */
+export interface ToolbarProps {
+  date: Date;
+  view: ViewType;
+  onPrev: () => void;
+  onNext: () => void;
+  onToday: () => void;
+  onViewChange: (view: ViewType) => void;
+  /** Shows or hides the side panel. */
+  onToggleSidebar: () => void;
+}
+
+/** Props of `components.Sidebar`. `onCreate` is undefined in read-only mode. */
+export interface SidebarProps {
+  date: Date;
+  onDateChange: (date: Date) => void;
+  onCreate?: () => void;
+  calendars?: CalendarProps['calendars'];
+  onCalendarToggle?: (calendarId: string, active: boolean) => void;
+}
+
+/** Props of `components.EmptyState` (the agenda without events). `onCreate` is undefined in read-only mode. */
+export interface EmptyStateProps {
+  onCreate?: () => void;
+}
+
+/** The host's own parts, used in place of the built-in ones. */
+export interface CalendarComponents {
+  EventContent?: React.ComponentType<EventContentProps>;
+  EventEditor?: React.ComponentType<EventEditorProps>;
+  Toolbar?: React.ComponentType<ToolbarProps>;
+  Sidebar?: React.ComponentType<SidebarProps>;
+  EmptyState?: React.ComponentType<EmptyStateProps>;
+}
+
 export interface CalendarProps {
   /** Controlled (1.x): the host owns the list and updates it from the callbacks. */
   events?: CalendarEvent[];
@@ -170,19 +223,12 @@ export interface CalendarProps {
    */
   injectStyles?: boolean;
   classNames?: CalendarClassNames;
+  components?: CalendarComponents;
   isDarkMode?: boolean;
   onThemeToggle?: () => void;
   hideViewSwitcher?: boolean;
   language?: 'en' | 'fr';
   onLanguageChange?: (lang: 'en' | 'fr') => void;
-  renderEventForm?: (props: {
-    isOpen: boolean;
-    onClose: () => void;
-    event?: CalendarEvent | null;
-    initialDate?: Date;
-    /** True when the form is opened from the all-day row (preset to an all-day event). */
-    initialAllDay?: boolean;
-    onSave: (event: Partial<CalendarEvent>) => void;
-    onDelete?: (eventId: string) => void;
-  }) => React.ReactNode;
+  /** 1.x: the same as `components.EventEditor`, as a render function. */
+  renderEventForm?: (props: EventEditorProps) => React.ReactNode;
 }

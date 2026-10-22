@@ -13,7 +13,7 @@ import { QuickCreate } from './components/QuickCreate';
 import { UndoToast } from './components/UndoToast';
 import { MonthViewSkeleton, WeekViewSkeleton, DayViewSkeleton, AgendaViewSkeleton } from './components/Skeleton';
 import { EventContextMenu, useEventContextMenu } from './components/ContextMenu';
-import { CalendarProps, CalendarEvent, CalendarClassNames } from './types';
+import { CalendarProps, CalendarEvent, CalendarClassNames, CalendarComponents } from './types';
 import { cx } from './utils';
 import { colorMode, getThemeStyles, themePreset } from './lib/theme';
 import { resolveTranslations, timeFormats } from './core/format';
@@ -28,7 +28,7 @@ import { dragOverlaySize } from './components/dnd/dragOverlay';
 import { restrictToWindowEdges, snapToGrid } from './components/dnd/modifiers';
 import { CalendarStyles, useMissingStylesWarning } from './styles/CalendarStyles';
 import { EventColorProvider, eventColorStyle, resolveEventColor } from './components/eventColor';
-import { ClassNamesProvider } from './components/customize';
+import { ClassNamesProvider, ComponentsProvider } from './components/customize';
 
 // Re-export types for consumers
 export type {
@@ -45,9 +45,16 @@ export type {
   ThemePreset,
   ColorMode,
   CalendarClassNames,
+  CalendarComponents,
+  EventContentProps,
+  EventEditorProps,
+  ToolbarProps,
+  SidebarProps,
+  EmptyStateProps,
 } from './types';
 
 const NO_CLASSES: CalendarClassNames = {};
+const NO_COMPONENTS: CalendarComponents = {};
 
 // Drag ghost: 15px snap (15 minutes at 60px per hour), kept inside the window.
 const MODIFIERS: Modifier[] = [snapToGrid(15), restrictToWindowEdges];
@@ -88,6 +95,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
   locale, // Date-fns locale
   injectStyles = true,
   classNames = NO_CLASSES,
+  components = NO_COMPONENTS,
 }) => {
   const [activeDragEvent, setActiveDragEvent] = useState<CalendarEvent | null>(null);
   const [activeDayDrag, setActiveDayDrag] = useState(false);
@@ -167,7 +175,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
   }, [editingId, draft]);
 
   // Stable handlers (the store's actions never change identity).
-  const hasCustomForm = !!renderEventForm;
+  const { EventEditor, Toolbar, Sidebar: CustomSidebar } = components;
+  const hasCustomForm = !!(renderEventForm || EventEditor);
   const handlers = useMemo(() => ({
     handleViewChange: calendar.setView,
     handleDateChange: (date: Date) => calendar.navigate(date),
@@ -251,6 +260,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
 
   return (
     <ClassNamesProvider value={classNames}>
+    <ComponentsProvider value={components}>
     <EventColorProvider value={calendars}>
     <CalendarDndContext
         calendar={calendar}
@@ -267,6 +277,17 @@ export const Scheduler: React.FC<CalendarProps> = ({
         data-ck-mode={colorMode(mode, isDarkMode)}
       >
         {injectStyles && <CalendarStyles />}
+        {Toolbar ? (
+          <Toolbar
+            date={currentDate}
+            view={view}
+            onPrev={handlePrev}
+            onNext={handleNext}
+            onToday={handleToday}
+            onViewChange={handleViewChange}
+            onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+          />
+        ) : (
         <CalendarHeader
           currentDate={currentDate}
           onPrev={handlePrev}
@@ -283,12 +304,22 @@ export const Scheduler: React.FC<CalendarProps> = ({
           onLanguageChange={onLanguageChange}
           locale={locale} // Pass locale
         />
+        )}
         
         <div className="ck:flex ck:flex-1 ck:overflow-hidden">
             <div
                 className="ck:hidden ck:md:block ck:overflow-hidden ck:transition-[width,opacity] ck:duration-300 ck:ease-[cubic-bezier(0.4,0,0.2,1)]"
                 style={{ width: isSidebarOpen ? 256 : 0, opacity: isSidebarOpen ? 1 : 0 }}
             >
+                {CustomSidebar ? (
+                  <CustomSidebar
+                    date={currentDate}
+                    onDateChange={handleDateChange}
+                    onCreate={readOnly ? undefined : handleCreateEvent}
+                    calendars={calendars}
+                    onCalendarToggle={onCalendarToggle}
+                  />
+                ) : (
                 <Sidebar
                     currentDate={currentDate}
                     onDateChange={handleDateChange}
@@ -303,6 +334,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                     translations={t}
                     locale={locale}
                 />
+                )}
             </div>
 
             <div className="ck:flex-1 ck:flex ck:flex-col ck:overflow-hidden ck:relative">
@@ -380,7 +412,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                     currentDate={currentDate}
                                     events={filteredEvents}
                                     onEventClick={handleEventClickInternal}
-                                    onCreateEvent={handleCreateEvent}
+                                    onCreateEvent={readOnly ? undefined : handleCreateEvent}
                                     locale={locale}
                                     translations={t}
                                     timezone={timezone}
@@ -420,8 +452,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
             </div>
         </div>
         
-        {renderEventForm ? (
-            renderEventForm({
+        {hasCustomForm ? (
+            (renderEventForm ?? ((props) => EventEditor && <EventEditor {...props} />))({
                 isOpen: isModalOpen,
                 onClose: handleModalClose,
                 event: selectedEvent,
@@ -541,6 +573,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
       </div>
     </CalendarDndContext>
     </EventColorProvider>
+    </ComponentsProvider>
     </ClassNamesProvider>
   );
 };

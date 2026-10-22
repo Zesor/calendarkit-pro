@@ -3,7 +3,7 @@ import { format, isSameDay, isSameMonth, Locale } from 'date-fns';
 import { CalendarEvent, CalendarTranslations } from '../types';
 import { interpolate } from '../core/format';
 import { cx } from '../utils';
-import { useClassNames } from '../components/customize';
+import { useClassNames, useComponents } from '../components/customize';
 import { eventsByStartDay } from '../core/events';
 import { layoutDayRow, partitionDayEvents } from '../core/allDay';
 import { AllDayBar } from '../components/AllDayBar';
@@ -37,6 +37,7 @@ interface EventItemProps {
 const EventItem = React.memo(({ event, onEventClick, onEventContextMenu }: EventItemProps) => {
     const colorStyle = useEventColorStyle(event);
     const classNames = useClassNames();
+    const { EventContent } = useComponents();
     return (
     <DraggableEvent event={event}>
         <div
@@ -49,7 +50,7 @@ const EventItem = React.memo(({ event, onEventClick, onEventContextMenu }: Event
             onContextMenu={onEventContextMenu ? (e) => onEventContextMenu(event, e) : undefined}
         >
             <span className="ck-dot ck:w-2 ck:h-2 ck:rounded-[3px] ck:shrink-0" style={colorStyle} aria-hidden="true" />
-            <span className="ck:font-medium ck:truncate">{event.title}</span>
+            {EventContent ? <EventContent event={event} variant="chip" /> : <span className="ck:font-medium ck:truncate">{event.title}</span>}
         </div>
     </DraggableEvent>
     );

@@ -2,7 +2,7 @@ import React from 'react';
 import { format, Locale } from 'date-fns';
 import { CalendarEvent } from '../types';
 import { cx } from '../utils';
-import { useClassNames } from './customize';
+import { useClassNames, useComponents } from './customize';
 import { timeFormats } from '../core/format';
 import { toDisplay } from '../core/timezone';
 import { useEventColorStyle } from './eventColor';
@@ -51,6 +51,7 @@ interface EventBlockProps {
 export const EventBlock: React.FC<EventBlockProps> = ({ event, height, width, timezone, locale, className, highlight, onClick, onContextMenu }) => {
   const colorStyle = useEventColorStyle(event);
   const classNames = useClassNames();
+  const { EventContent } = useComponents();
   const formats = timeFormats(locale);
   const start = format(toDisplay(event.start, timezone), formats.time, { locale });
   const end = format(toDisplay(event.end, timezone), formats.time, { locale });
@@ -74,11 +75,15 @@ export const EventBlock: React.FC<EventBlockProps> = ({ event, height, width, ti
       }}
       onContextMenu={onContextMenu ? (e) => onContextMenu(event, e) : undefined}
     >
-      <span className={cx("ck:min-w-0", layout.size === 'lg' ? CLAMP[layout.titleLines] : "ck:truncate")}>{event.title}</span>
-      {layout.showTime && (
-        <span className="ck:shrink-0 ck:truncate ck:font-medium ck:opacity-90 ck:tabular-nums">
-          {layout.size === 'sm' ? start : `${start} – ${end}`}
-        </span>
+      {EventContent ? <EventContent event={event} variant="block" /> : (
+        <>
+          <span className={cx("ck:min-w-0", layout.size === 'lg' ? CLAMP[layout.titleLines] : "ck:truncate")}>{event.title}</span>
+          {layout.showTime && (
+            <span className="ck:shrink-0 ck:truncate ck:font-medium ck:opacity-90 ck:tabular-nums">
+              {layout.size === 'sm' ? start : `${start} – ${end}`}
+            </span>
+          )}
+        </>
       )}
     </div>
   );
