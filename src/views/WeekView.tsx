@@ -10,7 +10,7 @@ import { displayToday, minutesSinceDisplayMidnight, resolveTimeZone, toDisplay }
 import { getWeekDays, resolveWeekStartsOn } from '../core/week';
 import { DroppableCell } from '../components/dnd/DroppableCell';
 import { useElementWidth } from '../hooks/useElementWidth';
-import { TimeGridEvents, weekMaxColumns } from './TimeGridEvents';
+import { type GhostEvent, TimeGridEvents, weekMaxColumns } from './TimeGridEvents';
 import { TODAY_MARK } from '../components/todayMark';
 
 interface WeekViewProps {
@@ -27,6 +27,8 @@ interface WeekViewProps {
   onAllDaySlotClick?: (day: Date) => void;
   /** "+N" in the grid: the events of a cluster that did not fit. */
   onMoreClick?: (events: CalendarEvent[]) => void;
+  /** Quick create: the new event's draft, drawn in its column. */
+  draft?: GhostEvent & { allDay: boolean };
   translations?: Partial<CalendarTranslations>;
 }
 
@@ -54,6 +56,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
   onDayEventResize,
   onAllDaySlotClick,
   onMoreClick,
+  draft,
   translations,
 }) => {
   // Week start follows the locale (historical Monday fallback without a locale).
@@ -224,6 +227,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
                         onEventContextMenu={onEventContextMenu}
                         onEventResize={onEventResize}
                         onMoreClick={onMoreClick}
+                        ghost={draft && !draft.allDay && isSameDay(draft.start, day) ? draft : undefined}
                         translations={translations}
                     />
 

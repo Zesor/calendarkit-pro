@@ -34,6 +34,12 @@ export const SCHEDULER_STATES: Array<[string, () => void]> = [
     render(<Scheduler {...props} events={crowd} view="day" />)
     act(() => screen.getByRole('button', { name: '+2 more' }).click())
   }],
+  ['quick create', () => {
+    const { container } = render(<Scheduler {...props} view="day" />)
+    act(() => container.querySelectorAll<HTMLElement>('.ck\\:z-0.ck\\:cursor-pointer')[36].click())
+    fireEvent.change(screen.getByRole('textbox', { name: 'Add title' }), { target: { value: 'Lunch tomorrow 1pm' } })
+    fireEvent.keyDown(document, { key: 'Escape' })
+  }],
   ['context menu', () => {
     render(<Scheduler {...props} view="week" />)
     fireEvent.contextMenu(screen.getByText('Design review'))

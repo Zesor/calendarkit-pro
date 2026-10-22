@@ -1,0 +1,93 @@
+// Spec §8.5: a click on a free slot opens the quick card; the title is a sentence the engine
+// understands, Enter saves, and a typed draft is never dropped without asking.
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { addDays, startOfDay } from 'date-fns'
+import React from 'react'
+import { afterEach, describe, expect, test, vi } from 'vitest'
+import { Scheduler } from '../index'
+import type { CalendarEvent, CalendarProps } from '../types'
+
+afterEach(cleanup)
+
+const today = startOfDay(new Date())
+const standup: CalendarEvent = { id: 'su', title: 'Standup', start: new Date(today.getTime() + 9.5 * 3600e3), end: new Date(today.getTime() + 10 * 3600e3) }
+
+// The day view's quarter-hour slots, in order (index 36 = 09:00).
+const slots = (container: HTMLElement) => container.querySelectorAll<HTMLElement>('.ck\\:z-0.ck\\:cursor-pointer')
+function openAt9(props: Partial<CalendarProps> = {}) {
+  const view = render(<Scheduler view="day" date={today} events={[standup]} {...props} />)
+  act(() => slots(view.container)[36].click())
+  return view
+}
+const card = () => screen.queryByRole('dialog', { name: 'New Event' })
+const title = () => screen.getByRole('textbox', { name: 'Add title' })
+
+describe('quick create', () => {
+  test('a slot click opens the card with the title focused and draws the new event dashed in its column', () => {
+    const { container } = openAt9()
+    expect(card()).toBeTruthy()
+    expect(document.activeElement).toBe(title())
+    expect(card()!.textContent).toContain('9:00 AM – 10:00 AM')
+    const ghost = container.querySelector<HTMLElement>('.ck\\:outline-dashed')!
+    expect(ghost.textContent).toBe('New Event')
+    expect(ghost.style.top).toBe(`${9 * 80}px`)
+  })
+
+  test('the title is understood as a sentence and Enter saves the cleaned title at the understood time', () => {
+    const onEventCreate = vi.fn()
+    openAt9({ onEventCreate })
+    fireEvent.change(title(), { target: { value: 'Lunch with Lea tomorrow 1pm' } })
+    expect(card()!.textContent).toContain('Understood: “tomorrow”, “1pm” · saved as “Lunch with Lea”')
+    expect(card()!.textContent).toContain('1:00 PM – 2:00 PM')
+    fireEvent.keyDown(title(), { key: 'Enter' })
+    expect(onEventCreate).toHaveBeenCalledWith(expect.objectContaining({ title: 'Lunch with Lea', start: new Date(addDays(today, 1).getTime() + 13 * 3600e3) }))
+    expect(card()).toBeNull()
+  })
+
+  test('duration chips set the end, the calendar menu sets the calendar, an overlap is announced', () => {
+    const onEventCreate = vi.fn()
+    openAt9({ onEventCreate, calendars: [{ id: 'w', label: 'Work' }] })
+    expect(screen.getByText('Overlaps “Standup”').getAttribute('role')).toBe('status')
+    act(() => screen.getByRole('button', { name: '1 hr 30 min' }).click())
+    expect(screen.getByRole('button', { name: '1 hr 30 min' }).getAttribute('aria-pressed')).toBe('true')
+    fireEvent.change(screen.getByRole('combobox', { name: 'Calendar' }), { target: { value: 'w' } })
+    act(() => screen.getByRole('button', { name: 'Save' }).click())
+    expect(onEventCreate).toHaveBeenCalledWith(expect.objectContaining({ calendarId: 'w', end: new Date(today.getTime() + 10.5 * 3600e3) }))
+  })
+
+  test('Escape closes an untouched card, and asks before dropping a typed title', () => {
+    openAt9()
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(card()).toBeNull()
+    cleanup()
+    openAt9()
+    fireEvent.change(title(), { target: { value: 'Call Bob' } })
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.getByRole('alertdialog', { name: 'Discard changes?' })).toBeTruthy()
+    act(() => screen.getByRole('button', { name: 'Keep editing' }).click())
+    expect((title() as HTMLInputElement).value).toBe('Call Bob')
+    fireEvent.click(card()!.parentElement!) // outside the card
+    act(() => screen.getByRole('button', { name: 'Discard' }).click())
+    expect(card()).toBeNull()
+  })
+
+  test('"More options" opens the full editor', () => {
+    openAt9()
+    act(() => screen.getByRole('button', { name: 'More options' }).click())
+    expect(card()).toBeNull()
+    expect(screen.getByPlaceholderText('Add title')).toBeTruthy()
+  })
+
+  test('with renderEventForm (1.x), a slot click still opens the custom form', () => {
+    const renderEventForm = vi.fn(() => null)
+    openAt9({ renderEventForm })
+    expect(card()).toBeNull()
+    expect(renderEventForm).toHaveBeenLastCalledWith(expect.objectContaining({ isOpen: true, event: null }))
+  })
+
+  test('French sentences in French', () => {
+    openAt9({ language: 'fr' })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Ajouter un titre' }), { target: { value: 'Déj avec Léa demain 13h' } })
+    expect(screen.getByRole('dialog').textContent).toContain('Compris : “demain”, “13h” · enregistré sous « Déj avec Léa »')
+  })
+})

@@ -115,7 +115,7 @@ describe('createCalendar: dialogs and drafts', () => {
     cal.openSlot(new Date(2026, 9, 14, 15))
     cal.updateDraft({ title: 'Déj. avec Léa demain 13h pendant 2h' })
     const d = cal.getState().dialog
-    expect(d?.kind === 'quick' && d.draft).toMatchObject({ start: new Date(2026, 9, 15, 13), end: new Date(2026, 9, 15, 15), dirty: true })
+    expect(d?.kind === 'quick' && d.draft).toMatchObject({ start: new Date(2026, 9, 15, 13), end: new Date(2026, 9, 15, 15), dirty: true, savedTitle: 'Déj. avec Léa' })
     expect(d?.kind === 'quick' && d.draft.tokens.map((t) => t.kind)).toEqual(['date', 'time', 'duration'])
   })
 
