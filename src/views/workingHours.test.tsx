@@ -8,6 +8,7 @@ import type { CalendarEvent } from '../types'
 import { resolveTimeGrid } from './grid'
 import { DayView } from './DayView'
 import { WeekView } from './WeekView'
+import { css } from '../styles/css.generated'
 
 afterEach(() => {
   cleanup()
@@ -31,6 +32,15 @@ describe('working hours', () => {
     expect(shades(container)).toHaveLength(5 * 2 + 2)
     expect(shades(container).slice(0, 2).map(box)).toEqual([['0px', '540px'], [`${17.5 * 60}px`, `${6.5 * 60}px`]])
     expect(box(shades(container)[10])).toEqual(['0px', `${24 * 60}px`])
+  })
+
+  test('the bands mark where work starts and ends (an edge line), so the working hours read as a band', () => {
+    const { container } = render(<Scheduler view="week" date={thursday} events={[]} workingHours={{ start: 9, end: 17.5 }} />)
+    expect(shades(container).slice(0, 2).map((el) => el.dataset.ckEdge)).toEqual(['start', 'end'])
+    // A day off has no working hours, so no edge.
+    expect(shades(container)[10].dataset.ckEdge).toBeUndefined()
+    expect(css).toMatch(/\.ck-off-hours\s*\{[^}]*repeating-linear-gradient/)
+    expect(css).toMatch(/\.ck-off-hours\[data-ck-edge="?start"?\]/)
   })
 
   test('working days can be chosen (0 is Sunday), and the bands stay inside the visible hours', () => {
@@ -70,5 +80,18 @@ describe('opening scroll', () => {
   test('on a reversed grid, scrollToHour is still the hour at the top', () => {
     const { container } = render(<DndContext><WeekView currentDate={thursday} events={[]} grid={resolveTimeGrid({ scrollToHour: 18, reverseTimeAxis: true })} /></DndContext>)
     expect(scrollTopOf(container)).toBe((24 - 18) * 60)
+  })
+})
+
+describe('the sticky header', () => {
+  // A week grid scrolled past the current time keeps the time line and its badge under the header (the
+  // day view's header sits outside its scrolling area).
+  const z = (el: Element) => Number(/ck:z-(\d+)/.exec(el.className)?.[1] ?? 0)
+  test('week view: the day header sits above the current-time line and badge, on an opaque background', () => {
+    const { container } = render(<Scheduler view="week" events={[]} />)
+    const header = container.querySelector('.ck\\:sticky')!
+    expect(header.className).toContain('ck:bg-background')
+    const above = [...container.querySelectorAll('[class*="ck:z-"]')].filter((el) => !header.contains(el) && el.closest('.ck\\:overflow-y-auto'))
+    expect(Math.max(...above.map(z))).toBeLessThan(z(header))
   })
 })

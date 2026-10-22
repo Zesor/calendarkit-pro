@@ -34,3 +34,19 @@
 .ck-root .ck-dot {
   background-color: var(--ck-ev, var(--ck-event));
 }
+
+/* Outside working hours (spec §2, B): a hatched tint, and a line where work starts and ends, so the
+   working hours read as a band. The line sits on the side touching them (flipped on a reversed axis). */
+.ck-root .ck-off-hours {
+  --ck-off-line: color-mix(in srgb, var(--ck-muted-foreground) 35%, transparent);
+  background-color: color-mix(in srgb, var(--ck-muted) 70%, transparent);
+  background-image: repeating-linear-gradient(135deg, transparent 0 7px, color-mix(in srgb, var(--ck-muted-foreground) 10%, transparent) 7px 8px);
+}
+.ck-root .ck-off-hours[data-ck-edge="start"],
+.ck-root .ck-off-hours[data-ck-edge="end"][data-ck-reverse] {
+  box-shadow: inset 0 -1px 0 var(--ck-off-line);
+}
+.ck-root .ck-off-hours[data-ck-edge="end"],
+.ck-root .ck-off-hours[data-ck-edge="start"][data-ck-reverse] {
+  box-shadow: inset 0 1px 0 var(--ck-off-line);
+}

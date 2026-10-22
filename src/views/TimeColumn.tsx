@@ -105,7 +105,10 @@ export const TimeColumn: React.FC<TimeColumnProps> = ({
         <div
           key={from}
           aria-hidden="true"
-          className="ck-off-hours ck:absolute ck:inset-x-0 ck:bg-muted/60 ck:pointer-events-none"
+          // The edge touching the working hours gets a line (events.css), so they read as a band.
+          data-ck-edge={grid.workingHours && to === Math.max(grid.workingHours.start * 60, grid.startHour * 60) && to < grid.endHour * 60 ? 'start' : grid.workingHours && from === Math.min(grid.workingHours.end * 60, grid.endHour * 60) && from > grid.startHour * 60 ? 'end' : undefined}
+          data-ck-reverse={grid.reverse || undefined}
+          className="ck-off-hours ck:absolute ck:inset-x-0 ck:pointer-events-none"
           style={{ ...gridOffset(grid, from, hourHeight), height: `${((to - from) / 60) * hourHeight}px` }}
         />
       ))}
