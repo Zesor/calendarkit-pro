@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { format, isSameDay, addDays, startOfDay, differenceInMinutes, Locale } from 'date-fns';
 import { CalendarEvent, CalendarTranslations } from '../types';
 import { cx } from '../utils';
+import { useClassNames } from '../components/customize';
 import { eventsByStartDay } from '../core/events';
 import { timeFormats, uses24HourClock } from '../core/format';
 import { displayToday, toDisplay } from '../core/timezone';
@@ -50,6 +51,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
   timezone,
   onEventContextMenu,
 }) => {
+  const classNames = useClassNames();
   // Times follow the locale's clock convention (e.g. 24h for pt-BR/fr); the
   // historical 12h format stays the default without a locale.
   const is24h = uses24HourClock(locale);
@@ -131,7 +133,8 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                                   "ck:group ck:relative ck:flex ck:gap-4 ck:p-4 ck:rounded-2xl ck:border ck:border-border/40",
                                   "ck:hover:border-primary/40 ck:hover:shadow-lg ck:hover:shadow-primary/5",
                                   "ck:transition-all ck:duration-200 ck:cursor-pointer ck:hover:scale-[1.01] ck:hover:-translate-y-0.5",
-                                  "ck:bg-linear-to-br ck:from-card ck:via-card ck:to-card/80"
+                                  "ck:bg-linear-to-br ck:from-card ck:via-card ck:to-card/80",
+                                  classNames.event
                                 )}
                             >
                                 {/* Time Column */}

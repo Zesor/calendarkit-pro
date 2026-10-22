@@ -4,6 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { addDays, differenceInCalendarDays, format, Locale } from 'date-fns';
 import { CalendarEvent, CalendarTranslations } from '../types';
 import { cx, isEventDragDisabled, isEventResizeDisabled } from '../utils';
+import { useClassNames } from './customize';
 import { dayEventSpan, DaySpanSegment } from '../core/allDay';
 import { useEventColorStyle } from './eventColor';
 
@@ -33,6 +34,7 @@ const AllDayBarImpl: React.FC<AllDayBarProps> = ({
   onEventContextMenu,
   onDayEventResize,
 }) => {
+  const classNames = useClassNames();
   const { event, startCol, span, lane, continuesBefore, continuesAfter } = segment;
   const columns = rowDays.length;
   const { firstDay, lastDay } = dayEventSpan(event, timezone);
@@ -128,7 +130,9 @@ const AllDayBarImpl: React.FC<AllDayBarProps> = ({
         className={cx(
           "ck-event ck-event-bar ck:relative ck:h-[calc(100%-4px)] ck:mt-[2px] ck:flex ck:items-center ck:gap-1 ck:px-1.5 ck:text-[11px] ck:font-semibold ck:overflow-hidden",
           continuesBefore ? "ck:rounded-l-none" : "ck:rounded-l-md",
-          continuesAfter ? "ck:rounded-r-none" : "ck:rounded-r-md"
+          continuesAfter ? "ck:rounded-r-none" : "ck:rounded-r-md",
+          classNames.event,
+          classNames.allDayBar
         )}
         style={colorStyle}
       >

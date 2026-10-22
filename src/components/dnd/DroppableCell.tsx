@@ -1,6 +1,7 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { cx } from '../../utils';
+import { useClassNames } from '../customize';
 
 interface DroppableCellProps {
   id: string; // usually ISO date string
@@ -48,6 +49,7 @@ export function droppableCellClasses({ className, idleClassName, date, isOver, c
 }
 
 const DroppableCellImpl: React.FC<DroppableCellProps> = ({ id, date, resourceId, allDayRow, children, className, idleClassName, style, onClick, onSlotClick }) => {
+  const classNames = useClassNames();
   const { isOver, setNodeRef } = useDroppable({
     id: id,
     data: { date, resourceId, allDayRow },
@@ -56,7 +58,7 @@ const DroppableCellImpl: React.FC<DroppableCellProps> = ({ id, date, resourceId,
   return (
     <div
       ref={setNodeRef}
-      className={droppableCellClasses({ className, idleClassName, date, isOver, clickable: !!onSlotClick })}
+      className={cx(droppableCellClasses({ className, idleClassName, date, isOver, clickable: !!onSlotClick }), classNames.slot)}
       style={style}
       onClick={onSlotClick ? () => onSlotClick(date, resourceId) : onClick}
     >

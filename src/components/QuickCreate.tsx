@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { addMinutes, differenceInMinutes, format, Locale } from 'date-fns';
 import { CalendarEvent, CalendarProps, CalendarTranslations } from '../types';
 import { cx } from '../utils';
+import { useClassNames } from './customize';
 import { interpolate, timeFormats } from '../core/format';
 import type { Draft } from '../core/store';
 import { toDisplay } from '../core/timezone';
@@ -38,6 +39,7 @@ function durationLabel(minutes: number, t: CalendarTranslations) {
  */
 export const QuickCreate: React.FC<QuickCreateProps> = ({ draft, events, calendars, timezone, locale, translations: t, onChange, onSave, onMoreOptions, onClose }) => {
   const [confirming, setConfirming] = useState(false);
+  const classNames = useClassNames();
   const dismiss = () => (draft.dirty ? setConfirming(true) : onClose());
 
   useEffect(() => {
@@ -65,7 +67,7 @@ export const QuickCreate: React.FC<QuickCreateProps> = ({ draft, events, calenda
         role="dialog"
         aria-modal="true"
         aria-label={t.newEvent}
-        className="ck:absolute ck:left-1/2 ck:top-20 ck:-translate-x-1/2 ck:w-[360px] ck:max-w-[calc(100%-2rem)] ck:flex ck:flex-col ck:gap-3 ck:rounded-2xl ck:border ck:border-border ck:bg-background ck:p-4 ck:shadow-xl ck:animate-pop-in"
+        className={cx("ck:absolute ck:left-1/2 ck:top-20 ck:-translate-x-1/2 ck:w-[360px] ck:max-w-[calc(100%-2rem)] ck:flex ck:flex-col ck:gap-3 ck:rounded-2xl ck:border ck:border-border ck:bg-background ck:p-4 ck:shadow-xl ck:animate-pop-in", classNames.dialog)}
         onClick={(e) => e.stopPropagation()}
       >
         <input

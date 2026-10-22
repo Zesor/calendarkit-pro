@@ -2,6 +2,7 @@ import React from 'react';
 import { format, Locale } from 'date-fns';
 import { CalendarEvent } from '../types';
 import { cx } from '../utils';
+import { useClassNames } from './customize';
 import { timeFormats } from '../core/format';
 import { toDisplay } from '../core/timezone';
 import { useEventColorStyle } from './eventColor';
@@ -49,6 +50,7 @@ interface EventBlockProps {
 /** A timed event in the week or day grid: its colour, and as much text as its size allows. */
 export const EventBlock: React.FC<EventBlockProps> = ({ event, height, width, timezone, locale, className, highlight, onClick, onContextMenu }) => {
   const colorStyle = useEventColorStyle(event);
+  const classNames = useClassNames();
   const formats = timeFormats(locale);
   const start = format(toDisplay(event.start, timezone), formats.time, { locale });
   const end = format(toDisplay(event.end, timezone), formats.time, { locale });
@@ -61,7 +63,8 @@ export const EventBlock: React.FC<EventBlockProps> = ({ event, height, width, ti
         layout.size === 'lg' ? "ck:flex ck:flex-col ck:gap-px ck:py-1" : "ck:flex ck:items-center ck:gap-1.5",
         layout.narrow ? "ck:px-1.5" : "ck:px-2",
         highlight && "ck:animate-landed",
-        className
+        className,
+        classNames.event
       )}
       style={colorStyle}
       title={`${event.title}, ${start} – ${end}`}

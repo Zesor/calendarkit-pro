@@ -13,7 +13,7 @@ import { QuickCreate } from './components/QuickCreate';
 import { UndoToast } from './components/UndoToast';
 import { MonthViewSkeleton, WeekViewSkeleton, DayViewSkeleton, AgendaViewSkeleton } from './components/Skeleton';
 import { EventContextMenu, useEventContextMenu } from './components/ContextMenu';
-import { CalendarProps, CalendarEvent } from './types';
+import { CalendarProps, CalendarEvent, CalendarClassNames } from './types';
 import { cx } from './utils';
 import { colorMode, getThemeStyles, themePreset } from './lib/theme';
 import { resolveTranslations, timeFormats } from './core/format';
@@ -28,6 +28,7 @@ import { dragOverlaySize } from './components/dnd/dragOverlay';
 import { restrictToWindowEdges, snapToGrid } from './components/dnd/modifiers';
 import { CalendarStyles, useMissingStylesWarning } from './styles/CalendarStyles';
 import { EventColorProvider, eventColorStyle, resolveEventColor } from './components/eventColor';
+import { ClassNamesProvider } from './components/customize';
 
 // Re-export types for consumers
 export type {
@@ -43,7 +44,10 @@ export type {
   ThemeColors,
   ThemePreset,
   ColorMode,
+  CalendarClassNames,
 } from './types';
+
+const NO_CLASSES: CalendarClassNames = {};
 
 // Drag ghost: 15px snap (15 minutes at 60px per hour), kept inside the window.
 const MODIFIERS: Modifier[] = [snapToGrid(15), restrictToWindowEdges];
@@ -83,6 +87,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
   onLanguageChange,
   locale, // Date-fns locale
   injectStyles = true,
+  classNames = NO_CLASSES,
 }) => {
   const [activeDragEvent, setActiveDragEvent] = useState<CalendarEvent | null>(null);
   const [activeDayDrag, setActiveDayDrag] = useState(false);
@@ -245,6 +250,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
   const contextMenuHandler = readOnly ? undefined : openContextMenu;
 
   return (
+    <ClassNamesProvider value={classNames}>
     <EventColorProvider value={calendars}>
     <CalendarDndContext
         calendar={calendar}
@@ -255,7 +261,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
     >
       <div
         ref={rootRef}
-        className={cx("ck-root ck:flex ck:flex-col ck:h-full ck:bg-background ck:text-foreground ck:relative", className)}
+        className={cx("ck-root ck:flex ck:flex-col ck:h-full ck:bg-background ck:text-foreground ck:relative", className, classNames.root)}
         style={getThemeStyles(theme)}
         data-ck-theme={themePreset(theme)}
         data-ck-mode={colorMode(mode, isDarkMode)}
@@ -535,5 +541,6 @@ export const Scheduler: React.FC<CalendarProps> = ({
       </div>
     </CalendarDndContext>
     </EventColorProvider>
+    </ClassNamesProvider>
   );
 };

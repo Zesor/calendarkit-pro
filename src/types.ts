@@ -106,6 +106,21 @@ export interface CalendarTheme {
 // had drifted from the runtime keys).
 export type CalendarTranslations = typeof en;
 
+/** Extra classes for the calendar's parts, added next to the built-in ones. */
+export interface CalendarClassNames {
+  root?: string;
+  toolbar?: string;
+  sidebar?: string;
+  /** Event blocks, all-day bars, month chips, agenda and resource items. */
+  event?: string;
+  /** Time slots, all-day slots and month days. */
+  slot?: string;
+  /** All-day and multi-day bars (they also get `event`). */
+  allDayBar?: string;
+  /** The quick card, the editor and the "+N" list. */
+  dialog?: string;
+}
+
 export interface CalendarProps {
   /** Controlled (1.x): the host owns the list and updates it from the callbacks. */
   events?: CalendarEvent[];
@@ -154,6 +169,7 @@ export interface CalendarProps {
    * `import 'calendarkit-pro/styles.css'` instead for a strict Content-Security-Policy or a cached file.
    */
   injectStyles?: boolean;
+  classNames?: CalendarClassNames;
   isDarkMode?: boolean;
   onThemeToggle?: () => void;
   hideViewSwitcher?: boolean;
