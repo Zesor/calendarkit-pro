@@ -1,6 +1,5 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { fr as frLocale } from 'date-fns/locale'
 import { resolveTranslations } from '../core/format'
 import type { CalendarEvent } from '../types'
 import { EventModal, reminderLabel } from './EventModal'
@@ -46,25 +45,11 @@ describe('EventModal all-day', () => {
     fireEvent.click(screen.getByRole('switch', { name: 'All Day' }))
     expect((screen.getByLabelText('Start') as HTMLInputElement).value).toBe('2026-10-15T09:00')
   })
-
-  test('the read view shows the day range and an "All Day" badge', async () => {
-    const event: CalendarEvent = { id: 'c', title: 'Conference', start: new Date(2026, 9, 12), end: new Date(2026, 9, 15), allDay: true }
-    render(<EventModal isOpen event={event} onClose={() => {}} onSave={() => {}} translations={en} />)
-    expect(await screen.findByText('Mon 12 Oct – Wed 14 Oct')).toBeTruthy()
-    expect(screen.getByText('All Day')).toBeTruthy()
-  })
-
-  test('an overnight timed event (under 24 h) keeps the historical single date', async () => {
-    const event: CalendarEvent = { id: 'n', title: 'Night shift', start: new Date(2026, 9, 14, 22), end: new Date(2026, 9, 15, 2) }
-    render(<EventModal isOpen event={event} onClose={() => {}} onSave={() => {}} translations={en} />)
-    expect(await screen.findByText('Wed, Oct 14')).toBeTruthy()
-    expect(screen.queryByText(/Wed 14 Oct –/)).toBeNull()
-  })
 })
 
 describe('EventModal', () => {
-  test('I1/I3: the form is fully translated (French) and times follow the locale', () => {
-    openCreate({ translations: fr, locale: frLocale })
+  test('I1/I3: the form is fully translated (French)', () => {
+    openCreate({ translations: fr })
     expect(screen.getByText('Nouvel événement')).toBeTruthy()
     expect(screen.getByText('Début')).toBeTruthy()
     expect(screen.getByText('Fin')).toBeTruthy()
@@ -137,44 +122,6 @@ describe('EventModal', () => {
     openCreate()
     expect(screen.queryByText('Calendar')).toBeNull()
   })
-
-  describe('view mode', () => {
-    const event: CalendarEvent = {
-      id: 'e', title: 'Offsite', start, end: new Date(2026, 9, 15, 10),
-      location: '10 Downing St, London',
-      attachments: [
-        { id: 'a', name: 'agenda.pdf', url: 'https://files.example/agenda.pdf', type: 'file' },
-        { id: 'b', name: 'notes.txt', type: 'file' },
-      ],
-    }
-
-    // The view mode appears after the edit form's exit animation: wait for it.
-    test('U4: the location opens a maps search with an encoded query', async () => {
-      render(<EventModal isOpen event={event} onClose={() => {}} onSave={() => {}} translations={en} />)
-      const link = (await screen.findByText('Open in maps')).closest('a')!
-      expect(link.getAttribute('href')).toBe('https://www.google.com/maps/search/?api=1&query=10%20Downing%20St%2C%20London')
-      expect(link.getAttribute('rel')).toBe('noopener noreferrer')
-    })
-
-    test('U6: only attachments with a URL are links (no generated placeholder download)', async () => {
-      render(<EventModal isOpen event={event} onClose={() => {}} onSave={() => {}} translations={en} />)
-      expect((await screen.findByText('agenda.pdf')).closest('a')?.getAttribute('href')).toBe('https://files.example/agenda.pdf')
-      expect(screen.getByText('notes.txt').closest('a')).toBeNull()
-    })
-
-    test('an attachment with an unsafe URL scheme is not a link', async () => {
-      const unsafe = { ...event, attachments: [{ id: 'x', name: 'evil.txt', url: 'javascript:alert(1)', type: 'file' as const }] }
-      render(<EventModal isOpen event={unsafe} onClose={() => {}} onSave={() => {}} translations={en} />)
-      expect((await screen.findByText('evil.txt')).closest('a')).toBeNull()
-    })
-
-    test('A1: icon-only buttons have accessible names', async () => {
-      render(<EventModal isOpen event={event} onClose={() => {}} onSave={() => {}} translations={fr} />)
-      expect(await screen.findByRole('button', { name: 'Modifier' })).toBeTruthy()
-      expect(screen.getByRole('button', { name: 'Supprimer' })).toBeTruthy()
-      expect(screen.getByRole('button', { name: 'Fermer' })).toBeTruthy()
-    })
-  })
 })
 
 describe('EventModal: no made-up defaults, and changes are never dropped without asking (spec §8.5)', () => {
@@ -193,7 +140,6 @@ describe('EventModal: no made-up defaults, and changes are never dropped without
     const onSave = vi.fn()
     const event: CalendarEvent = { id: 'a', title: 'Review', start, end: new Date(2026, 9, 15, 10) }
     render(<EventModal isOpen onClose={() => {}} onSave={onSave} event={event} translations={en} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
     save()
     expect(onSave.mock.calls[0][0].reminders).toEqual([])
   })

@@ -10,6 +10,7 @@ import { ResourceView } from './views/ResourceView';
 import { EventModal } from './components/EventModal';
 import { MoreEventsDialog } from './components/MoreEventsDialog';
 import { QuickCreate } from './components/QuickCreate';
+import { EventPopover } from './components/EventPopover';
 import { UndoToast } from './components/UndoToast';
 import { MonthViewSkeleton, WeekViewSkeleton, DayViewSkeleton, AgendaViewSkeleton } from './components/Skeleton';
 import { EventContextMenu, useEventContextMenu } from './components/ContextMenu';
@@ -159,7 +160,6 @@ export const Scheduler: React.FC<CalendarProps> = ({
   const selectedEvent = lastOpened.current.event;
   const draft = dialog?.kind === 'quick' || dialog?.kind === 'editor' ? dialog.draft : undefined;
   const quickDraft = dialog?.kind === 'quick' ? dialog.draft : undefined;
-  const isModalOpen = dialog !== null && dialog.kind !== 'more' && dialog.kind !== 'quick';
   // In the order the grid listed them (by start time), not the order of the events prop.
   const moreEvents = useMemo(() => {
     if (dialog?.kind !== 'more') return [];
@@ -177,6 +177,12 @@ export const Scheduler: React.FC<CalendarProps> = ({
   // Stable handlers (the store's actions never change identity).
   const { EventEditor, Toolbar, Sidebar: CustomSidebar } = components;
   const hasCustomForm = !!(renderEventForm || EventEditor);
+  // Classic: a click on an event opens the popover; the editor opens from its Edit (a 1.x custom form
+  // still opens on the click).
+  const popoverEvent = dialog?.kind === 'event' && !hasCustomForm ? selectedEvent : null;
+  const isModalOpen = dialog !== null && dialog.kind !== 'more' && dialog.kind !== 'quick' && !popoverEvent;
+  // Where the last pointer press was: the popover opens next to it.
+  const pointer = useRef<{ x: number; y: number } | null>(null);
   const handlers = useMemo(() => ({
     handleViewChange: calendar.setView,
     handleDateChange: (date: Date) => calendar.navigate(date),
@@ -271,6 +277,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
     >
       <div
         ref={rootRef}
+        onPointerDownCapture={(e) => { pointer.current = { x: e.clientX, y: e.clientY }; }}
         className={cx("ck-root ck:flex ck:flex-col ck:h-full ck:bg-background ck:text-foreground ck:relative", className, classNames.root)}
         style={getThemeStyles(theme)}
         data-ck-theme={themePreset(theme)}
@@ -473,9 +480,22 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 calendars={calendars}
                 eventTypes={eventTypes}
                 translations={t}
-                locale={locale}
                 initialAllDay={modalInitialAllDay}
                 initialValues={modalInitialValues}
+            />
+        )}
+
+        {popoverEvent && editingId !== undefined && (
+            <EventPopover
+                event={popoverEvent}
+                anchor={pointer.current}
+                timezone={timezone}
+                locale={locale}
+                translations={t}
+                onEdit={() => calendar.openEditor(editingId)}
+                onDuplicate={() => calendar.duplicate(editingId)}
+                onDelete={() => calendar.remove(editingId)}
+                onClose={handleModalClose}
             />
         )}
 
@@ -511,7 +531,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
           position={contextMenuPosition}
           onClose={closeContextMenu}
           onEdit={(event) => {
-            handleEventClickInternal(event);
+            calendar.openEditor(event.id);
             closeContextMenu();
           }}
           onDelete={() => {
