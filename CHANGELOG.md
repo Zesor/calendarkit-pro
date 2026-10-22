@@ -1,6 +1,6 @@
 # Pro-Scheduler Changelog
 
-## 2.0.0-alpha.N
+## 2.0.0-alpha.7
 
 Pre-release on the `next` dist-tag (`latest` stays on 1.4.x).
 
