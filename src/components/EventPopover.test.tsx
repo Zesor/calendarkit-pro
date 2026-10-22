@@ -29,7 +29,8 @@ describe('event popover', () => {
     openStandup({ onEventClick })
     expect(onEventClick).toHaveBeenCalledWith(expect.objectContaining({ id: 'su' }))
     const text = popover()!.textContent
-    expect(text).toContain(`${format(today, 'EEE d MMM')}, 9:30 AM – 10:00 AM`)
+    expect(text).toContain(format(today, 'EEEE d MMMM'))
+    expect(text).toContain('9:30 AM – 10:00 AM · 30 min')
     expect(text).toContain('Work')
     expect(text).toContain('lea@example.com')
     expect(text).toContain('Daily sync')
@@ -47,7 +48,9 @@ describe('event popover', () => {
     const night: CalendarEvent = { id: 'n', title: 'Night shift', start: new Date(today.getTime() + 22 * 3600e3), end: new Date(today.getTime() + 26 * 3600e3) }
     render(<Scheduler view="day" date={today} events={[night]} />)
     act(() => screen.getAllByText('Night shift')[0].click())
-    expect(screen.getByRole('dialog', { name: 'Night shift' }).textContent).toContain(`${format(today, 'EEE d MMM')}, 10:00 PM – ${format(addDays(today, 1), 'EEE d MMM')}, 2:00 AM`)
+    const text = screen.getByRole('dialog', { name: 'Night shift' }).textContent
+    expect(text).toContain(`${format(today, 'EEE d MMM')}, 10:00 PM –`)
+    expect(text).toContain(`${format(addDays(today, 1), 'EEE d MMM')}, 2:00 AM · 4 hr`)
   })
 
   test('the location opens a maps search; only attachments with a safe URL are links', () => {
@@ -112,27 +115,43 @@ describe('event popover', () => {
     expect(popover()).toBeNull()
   })
 
-  test('it opens next to the pointer and stays inside the window', () => {
+  // jsdom measures nothing: the event's box and the card's height are given where a test needs them.
+  const boxOf = (el: Element, box: { left: number; top: number; right: number; bottom: number }) =>
+    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({ ...box, x: box.left, y: box.top, width: box.right - box.left, height: box.bottom - box.top, toJSON: () => ({}) } as DOMRect)
+
+  test('it opens beside the event it belongs to: right of it, else left of it, top-aligned', () => {
+    const { rerender } = render(<Scheduler view="day" date={today} events={[standup]} />)
+    const block = screen.getByText('Standup').closest('.ck-event')!
+    boxOf(block, { left: 100, top: 150, right: 200, bottom: 250 })
+    fireEvent.pointerDown(block, { clientX: 150, clientY: 160 })
+    act(() => screen.getByText('Standup').click())
+    expect(popover()!.style.left).toBe('212px')
+    expect(popover()!.style.top).toBe('150px')
+    fireEvent.keyDown(document, { key: 'Escape' })
+    rerender(<Scheduler view="day" date={today} events={[standup]} />)
+    const right = window.innerWidth - 100
+    boxOf(screen.getByText('Standup').closest('.ck-event')!, { left: right - 100, top: 150, right, bottom: 250 })
+    fireEvent.pointerDown(screen.getByText('Standup'), { clientX: right - 50, clientY: 160 })
+    act(() => screen.getByText('Standup').click())
+    expect(popover()!.style.left).toBe(`${right - 100 - 340 - 12}px`)
+  })
+
+  test('without a measured event it opens next to the pointer, inside the window', () => {
     render(<Scheduler view="day" date={today} events={[standup]} />)
     fireEvent.pointerDown(screen.getByText('Standup'), { clientX: window.innerWidth - 4, clientY: 40 })
     act(() => screen.getByText('Standup').click())
-    const style = popover()!.style
-    expect(parseFloat(style.left)).toBeLessThanOrEqual(window.innerWidth - 320 - 8)
-    expect(parseFloat(style.top)).toBe(48)
+    expect(parseFloat(popover()!.style.left)).toBeLessThanOrEqual(window.innerWidth - 340 - 8)
+    expect(popover()!.style.top).toBe('40px')
   })
 
-  test('it never runs off the bottom: its height is bounded by the room left below or above the pointer', () => {
-    const { rerender } = render(<Scheduler view="day" date={today} events={[standup]} />)
-    const y = Math.round(window.innerHeight * 0.45)
-    fireEvent.pointerDown(screen.getByText('Standup'), { clientX: 100, clientY: y })
-    act(() => screen.getByText('Standup').click())
-    expect(parseFloat(popover()!.style.maxHeight)).toBeLessThanOrEqual(window.innerHeight - (y + 8) - 8)
-    fireEvent.keyDown(document, { key: 'Escape' })
-    rerender(<Scheduler view="day" date={today} events={[standup]} />)
+  test('it never runs off the bottom: a tall card moves up and scrolls inside the window', () => {
+    const height = vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(300)
+    render(<Scheduler view="day" date={today} events={[standup]} />)
     fireEvent.pointerDown(screen.getByText('Standup'), { clientX: 100, clientY: window.innerHeight - 40 })
     act(() => screen.getByText('Standup').click())
-    expect(popover()!.style.bottom).toBe('48px')
-    expect(parseFloat(popover()!.style.maxHeight)).toBeLessThanOrEqual(window.innerHeight - 40 - 2 * 8)
+    expect(popover()!.style.top).toBe(`${window.innerHeight - 300 - 8}px`)
+    expect(popover()!.style.maxHeight).toBe(`${window.innerHeight - 16}px`)
+    height.mockRestore()
   })
 
   test('a press inside the open card does not move it', () => {
@@ -141,8 +160,8 @@ describe('event popover', () => {
     act(() => screen.getByText('Standup').click())
     fireEvent.pointerDown(popover()!, { clientX: 600, clientY: 300 })
     rerender(<Scheduler view="day" date={today} events={[{ ...standup }]} />)
-    expect(popover()!.style.left).toBe('108px')
-    expect(popover()!.style.top).toBe('48px')
+    expect(popover()!.style.left).toBe('112px')
+    expect(popover()!.style.top).toBe('40px')
   })
 
   test('reminders are listed, in the calendar\'s language', () => {

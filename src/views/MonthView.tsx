@@ -43,6 +43,7 @@ const EventItem = React.memo(({ event, onEventClick, onEventContextMenu }: Event
         <div
             className={cx("ck:flex ck:items-center ck:gap-1.5 ck:text-xs ck:px-1.5 ck:py-0.5 ck:rounded-md ck:cursor-pointer ck:text-foreground ck:hover:bg-muted ck:transition-colors", classNames.event)}
             title={event.title}
+            data-ck-event
             onClick={(e) => {
               e.stopPropagation();
               onEventClick?.(event);

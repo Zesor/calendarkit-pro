@@ -135,6 +135,7 @@ export const TimeGridEvents: React.FC<TimeGridEventsProps> = ({
     {ghost && (
       <div
         aria-hidden="true"
+        data-ck-ghost
         className="ck-event ck:absolute ck:z-20 ck:pointer-events-none ck:rounded-md ck:outline-2 ck:outline-dashed ck:outline-ring ck:-outline-offset-2 ck:px-2 ck:py-1 ck:text-xs ck:font-semibold ck:leading-tight ck:overflow-hidden"
         style={{
           ...gridOffset(grid, minutesOf(ghost.start), hourHeight),
