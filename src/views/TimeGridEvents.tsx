@@ -91,6 +91,7 @@ export const TimeGridEvents: React.FC<TimeGridEventsProps> = ({
             readonly={readonly || !isLastSegment}
             event={event}
             hourHeight={hourHeight}
+            snapMinutes={grid.slotMinutes}
             onResize={onEventResize}
             className="ck:h-full"
             style={{ height: '100%' }}

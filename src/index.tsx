@@ -58,8 +58,6 @@ export type {
 const NO_CLASSES: CalendarClassNames = {};
 const NO_COMPONENTS: CalendarComponents = {};
 
-// Drag ghost: 15px snap (15 minutes at 60px per hour), kept inside the window.
-const MODIFIERS: Modifier[] = [snapToGrid(15), restrictToWindowEdges];
 
 export const Scheduler: React.FC<CalendarProps> = ({
   events,
@@ -100,6 +98,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
   components = NO_COMPONENTS,
   dayStartHour,
   dayEndHour,
+  slotDuration,
 }) => {
   const [activeDragEvent, setActiveDragEvent] = useState<CalendarEvent | null>(null);
   const [activeDayDrag, setActiveDayDrag] = useState(false);
@@ -266,7 +265,9 @@ export const Scheduler: React.FC<CalendarProps> = ({
       : format(currentDate, 'yyyy-MM-dd');
 
   // The views are memoized: the grid keeps its identity while its props do not change.
-  const grid = useMemo(() => resolveTimeGrid({ dayStartHour, dayEndHour }), [dayStartHour, dayEndHour]);
+  const grid = useMemo(() => resolveTimeGrid({ dayStartHour, dayEndHour, slotDuration }), [dayStartHour, dayEndHour, slotDuration]);
+  // Drag ghost: snaps by one slot (1 px per minute at the week view's 60 px per hour), kept inside the window.
+  const modifiers = useMemo<Modifier[]>(() => [snapToGrid(grid.slotMinutes), restrictToWindowEdges], [grid.slotMinutes]);
 
   const slotClickHandler = readOnly ? undefined : handleTimeSlotClick;
   const allDaySlotClickHandler = readOnly ? undefined : handleAllDaySlotClick;
@@ -281,7 +282,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
         id={id}
         onDragStart={handleDragStart}
         onDragEnd={onDragEndWrapper}
-        modifiers={MODIFIERS}
+        modifiers={modifiers}
     >
       <div
         ref={rootRef}

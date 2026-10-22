@@ -218,6 +218,8 @@ export interface CalendarProps {
   dayStartHour?: number;
   /** Hour the week, day and resource views end at (1 to 24, default 24). Events are cut at these hours. */
   dayEndHour?: number;
+  /** Length of a time slot in minutes: 5, 10, 15 (default), 20, 30 or 60. Clicks, drops and resizes snap to it. */
+  slotDuration?: number;
   eventTypes?: EventType[]; // Pre-defined types
   onCalendarToggle?: (calendarId: string, active: boolean) => void;
   isLoading?: boolean;

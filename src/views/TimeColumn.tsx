@@ -5,9 +5,7 @@ import { cx } from '../utils';
 import { DaySegment } from '../core/events';
 import { DroppableCell } from '../components/dnd/DroppableCell';
 import { type GhostEvent, TimeGridEvents } from './TimeGridEvents';
-import { gridHours, gridOffset, slotDate, type TimeGrid } from './grid';
-
-const QUARTERS = [0, 15, 30, 45];
+import { gridHours, gridOffset, gridSlots, slotDate, type TimeGrid } from './grid';
 
 /** The day's segments inside the visible hours, cut at their edges. */
 function clipSegments(segments: DaySegment[], day: Date, grid: TimeGrid) {
@@ -56,7 +54,7 @@ export const TimeColumn: React.FC<TimeColumnProps> = ({
           className="ck:w-full ck:border-b-[0.5px] ck:border-dashed ck:border-border/20 ck:box-border ck:relative ck:hover:bg-accent/5 ck:transition-colors"
           style={{ height: hourHeight }}
         >
-          {QUARTERS.map((minute) => {
+          {gridSlots(grid).map((minute) => {
             const cellDate = slotDate(day, hour * 60 + minute);
             return (
               <DroppableCell
@@ -64,7 +62,7 @@ export const TimeColumn: React.FC<TimeColumnProps> = ({
                 id={cellDate.toISOString()}
                 date={cellDate}
                 className="ck:w-full ck:absolute ck:left-0 ck:right-0 ck:z-0 ck:transition-colors"
-                style={{ height: '25%', top: `${(minute / 60) * 100}%` }}
+                style={{ height: `${(grid.slotMinutes / 60) * 100}%`, top: `${(minute / 60) * 100}%` }}
                 onSlotClick={onTimeSlotClick}
               />
             );

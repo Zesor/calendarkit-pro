@@ -7,6 +7,8 @@ interface ResizableEventProps {
   event: CalendarEvent;
   hourHeight: number;
   minDuration?: number; // Minimum duration in minutes
+  /** The resize steps, in minutes (the grid's slot). */
+  snapMinutes?: number;
   onResize?: (event: CalendarEvent, newEnd: Date) => void;
   children: React.ReactNode;
   className?: string;
@@ -18,6 +20,7 @@ export const ResizableEvent: React.FC<ResizableEventProps> = ({
   event,
   hourHeight,
   minDuration = 15,
+  snapMinutes = 15,
   onResize,
   children,
   className,
@@ -48,8 +51,7 @@ export const ResizableEvent: React.FC<ResizableEventProps> = ({
       const moveClientY = 'touches' in moveEvent ? moveEvent.touches[0].clientY : moveEvent.clientY;
       const deltaY = moveClientY - startYRef.current;
 
-      // Snap to 15-minute intervals
-      const snapInterval = hourHeight / 4; // 15 minutes
+      const snapInterval = (hourHeight * snapMinutes) / 60;
       const snappedDelta = Math.round(deltaY / snapInterval) * snapInterval;
 
       const newHeight = Math.max(
@@ -84,7 +86,7 @@ export const ResizableEvent: React.FC<ResizableEventProps> = ({
     document.addEventListener('mouseup', handleEnd);
     document.addEventListener('touchmove', handleMove, { passive: false });
     document.addEventListener('touchend', handleEnd);
-  }, [event, hourHeight, minDuration, onResize]);
+  }, [event, hourHeight, minDuration, snapMinutes, onResize]);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     // dnd-kit's PointerSensor activates on pointerdown, which mousedown's

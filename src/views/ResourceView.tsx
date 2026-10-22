@@ -8,7 +8,7 @@ import { DroppableCell } from '../components/dnd/DroppableCell';
 import { eventColorStyle, resolveEventColor, useCalendars } from '../components/eventColor';
 import { useClassNames } from '../components/customize';
 import { cx } from '../utils';
-import { DEFAULT_GRID, gridHours, slotDate, type TimeGrid } from './grid';
+import { DEFAULT_GRID, gridHours, gridSlots, slotDate, type TimeGrid } from './grid';
 
 interface ResourceViewProps {
   currentDate: Date;
@@ -116,7 +116,7 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
                                     className="ck:flex ck:h-full ck:shrink-0"
                                     style={{ width: hourWidth }}
                                 >
-                                    {[0, 15, 30, 45].map(minute => {
+                                    {gridSlots(grid).map(minute => {
                                         const date = slotDate(currentDate, hour * 60 + minute);
                                         const slotId = `${resource.id}-${date.toISOString()}`;
 

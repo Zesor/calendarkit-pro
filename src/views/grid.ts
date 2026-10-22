@@ -4,16 +4,23 @@ import type { CalendarProps } from '../types';
 export interface TimeGrid {
   startHour: number;
   endHour: number;
+  slotMinutes: number;
 }
 
-export const DEFAULT_GRID: TimeGrid = { startHour: 0, endHour: 24 };
+export const DEFAULT_GRID: TimeGrid = { startHour: 0, endHour: 24, slotMinutes: 15 };
 
-/** Whole hours inside the day, at least one hour shown. */
-export function resolveTimeGrid({ dayStartHour, dayEndHour }: Pick<CalendarProps, 'dayStartHour' | 'dayEndHour'>): TimeGrid {
+// Slots tile the hour exactly, so every hour row holds the same cells.
+const SLOT_LENGTHS = [5, 10, 15, 20, 30, 60];
+
+/** Whole hours inside the day, at least one hour shown; slots that divide an hour, 15 minutes otherwise. */
+export function resolveTimeGrid({ dayStartHour, dayEndHour, slotDuration = 15 }: Pick<CalendarProps, 'dayStartHour' | 'dayEndHour' | 'slotDuration'>): TimeGrid {
   const startHour = Math.min(Math.max(Math.floor(dayStartHour ?? 0) || 0, 0), 23);
   const endHour = Math.min(Math.max(Math.ceil(dayEndHour ?? 24) || 24, startHour + 1), 24);
-  return { startHour, endHour };
+  return { startHour, endHour, slotMinutes: SLOT_LENGTHS.includes(slotDuration) ? slotDuration : 15 };
 }
+
+/** Minutes of each slot's start within an hour. */
+export const gridSlots = (grid: TimeGrid) => Array.from({ length: 60 / grid.slotMinutes }, (_, i) => i * grid.slotMinutes);
 
 /** The hours drawn, in order. */
 export const gridHours = (grid: TimeGrid) => Array.from({ length: grid.endHour - grid.startHour }, (_, i) => grid.startHour + i);
