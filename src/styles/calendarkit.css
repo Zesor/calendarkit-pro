@@ -38,6 +38,7 @@
   --animate-rise-in: ck-rise-in 300ms ease-out both;
   --animate-slide-in: ck-slide-in 300ms ease-out both;
   --animate-view-in: ck-view-in 250ms cubic-bezier(0.25, 0.1, 0.25, 1) both;
+  --animate-landed: ck-landed 1.6s cubic-bezier(0.16, 1, 0.3, 1);
 
   @keyframes ck-fade-in {
     from { opacity: 0; }
@@ -53,6 +54,12 @@
   }
   @keyframes ck-view-in {
     from { opacity: 0; transform: translateY(15px) scale(0.98); }
+  }
+  /* A new or moved event (spec §8.6): an outline, which leaves the fill's box-shadow alone. */
+  @keyframes ck-landed {
+    0% { outline: 3px solid var(--ck-ring); outline-offset: 1px; transform: scale(1.03); }
+    30% { transform: scale(1); }
+    100% { outline: 3px solid transparent; outline-offset: 6px; }
   }
 }
 

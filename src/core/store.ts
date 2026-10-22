@@ -53,6 +53,8 @@ export interface Draft {
   title: string
   /** True once the title was typed in this draft: only then are sentence words read and stripped. */
   titleEdited: boolean
+  /** The title the event will be saved under: `title` without the sentence words understood. */
+  savedTitle: string
   start: Date
   end: Date
   allDay: boolean
@@ -227,7 +229,7 @@ export function createCalendar(initial: CalendarOptions = {}): CalendarStore {
   }
 
   function makeDraft(start: Date, end: Date, extra: Partial<Draft> = {}): Draft {
-    return { title: '', titleEdited: false, start, end, allDay: false, tokens: [], dirty: false, ...extra }
+    return { title: '', titleEdited: false, start, end, allDay: false, tokens: [], dirty: false, ...extra, savedTitle: extra.title ?? '' }
   }
 
   // Drafts hold display wall-clock times; all-day dates are calendar dates and never shift.
@@ -334,7 +336,7 @@ export function createCalendar(initial: CalendarOptions = {}): CalendarStore {
         if (parsed.date) start = new Date(parsed.date.getFullYear(), parsed.date.getMonth(), parsed.date.getDate(), start.getHours(), start.getMinutes())
         if (parsed.startMinutes !== undefined && !draft.allDay) start = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, parsed.startMinutes)
         const end = new Date(start.getTime() + (parsed.durationMinutes !== undefined ? parsed.durationMinutes * 60000 : length))
-        draft = { ...draft, start, end, tokens: parsed.tokens, recurrence: parsed.recurrence ?? draft.recurrence }
+        draft = { ...draft, start, end, tokens: parsed.tokens, savedTitle: parsed.title, recurrence: parsed.recurrence ?? draft.recurrence }
       }
       dialog = { ...dialog, draft }
       emit()
@@ -350,8 +352,7 @@ export function createCalendar(initial: CalendarOptions = {}): CalendarStore {
     saveDraft() {
       if (options.readOnly || !dialog || (dialog.kind !== 'quick' && dialog.kind !== 'editor')) return
       const { draft } = dialog
-      const parsed = draft.titleEdited ? parseEventSentence(draft.title, { now: wallNow(), language: options.language ?? 'en' }) : undefined
-      const title = ((parsed && parsed.title) || draft.title).trim() || 'Untitled'
+      const title = ((draft.titleEdited && draft.savedTitle) || draft.title).trim() || 'Untitled'
       const fields = { title, start: fromWall(draft.start, draft.allDay), end: fromWall(draft.end, draft.allDay), allDay: draft.allDay || undefined, resourceId: draft.resourceId, calendarId: draft.calendarId, recurrence: draft.recurrence }
       const eventId = dialog.kind === 'editor' ? dialog.eventId : undefined
       if (eventId === undefined) return store.create(fields)
@@ -392,7 +393,10 @@ export function createCalendar(initial: CalendarOptions = {}): CalendarStore {
       if (options.readOnly) return
       const event = { ...fields, id: fields.id ?? (options.createId ?? (() => `evt-${now().getTime()}-${Math.random().toString(36).slice(2, 7)}`))() } as CalendarEvent
       const payload = fields.id === undefined && options.stripGeneratedIds ? (({ id: _id, ...rest }) => rest)(event) : event
-      commit('create', [...source(), event], event, () => options.onEventCreate?.(payload), (list) => without(list, event.id), () => options.onEventDelete?.(event.id))
+      // A host that gives created events its own id: undo finds the event it added since.
+      const known = new Set(source().map((e) => e.id))
+      const idIn = (list: CalendarEvent[]) => list.find((e) => !known.has(e.id) && e.title === event.title)?.id ?? event.id
+      commit('create', [...source(), event], event, () => options.onEventCreate?.(payload), (list) => without(list, idIn(list)), () => options.onEventDelete?.(idIn(source())))
     },
     update(event) {
       if (options.readOnly) return

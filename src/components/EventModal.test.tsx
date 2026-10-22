@@ -69,7 +69,6 @@ describe('EventModal', () => {
     expect(screen.getByText('Début')).toBeTruthy()
     expect(screen.getByText('Fin')).toBeTruthy()
     expect(screen.getByText('Rappels')).toBeTruthy()
-    expect(screen.getByText('30 minutes avant')).toBeTruthy()
     expect(screen.getByText('1 h')).toBeTruthy()
     expect(screen.getByRole('option', { name: 'Ne se répète pas' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Créer un événement' })).toBeTruthy()
@@ -175,5 +174,49 @@ describe('EventModal', () => {
       expect(screen.getByRole('button', { name: 'Supprimer' })).toBeTruthy()
       expect(screen.getByRole('button', { name: 'Fermer' })).toBeTruthy()
     })
+  })
+})
+
+describe('EventModal: no made-up defaults, and changes are never dropped without asking (spec §8.5)', () => {
+  const save = () => fireEvent.submit(screen.getByLabelText('Add title').closest('form')!)
+
+  test('a new event has no reminder and no colour: its calendar colours it', () => {
+    const onSave = vi.fn()
+    openCreate({ onSave, calendars: [{ id: 'w', label: 'Work', color: '#047857' }] })
+    fireEvent.change(screen.getByLabelText('Add title'), { target: { value: 'Call' } })
+    save()
+    expect(onSave.mock.calls[0][0]).toMatchObject({ reminders: [], calendarId: 'w' })
+    expect(onSave.mock.calls[0][0].color).toBeUndefined()
+  })
+
+  test('saving an event without reminders keeps it without reminders', () => {
+    const onSave = vi.fn()
+    const event: CalendarEvent = { id: 'a', title: 'Review', start, end: new Date(2026, 9, 15, 10) }
+    render(<EventModal isOpen onClose={() => {}} onSave={onSave} event={event} translations={en} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+    save()
+    expect(onSave.mock.calls[0][0].reminders).toEqual([])
+  })
+
+  test('Cancel, Escape or a click outside close an untouched form, and ask once something was typed', () => {
+    const onClose = vi.fn()
+    openCreate({ onClose })
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(onClose).toHaveBeenCalledTimes(1)
+    fireEvent.change(screen.getByLabelText('Add title'), { target: { value: 'Call' } })
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.getByRole('alertdialog', { name: 'Discard changes?' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }))
+    expect(screen.queryByRole('alertdialog')).toBeNull()
+    expect(onClose).toHaveBeenCalledTimes(1)
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Discard' }))
+    expect(onClose).toHaveBeenCalledTimes(2)
+  })
+
+  test('the fields chosen in the quick card open in the editor', () => {
+    openCreate({ initialValues: { title: 'Lunch with Lea', end: new Date(2026, 9, 15, 10, 30) } })
+    expect((screen.getByLabelText('Add title') as HTMLInputElement).value).toBe('Lunch with Lea')
+    expect(screen.getByText('1 hr 30 min')).toBeTruthy()
   })
 })

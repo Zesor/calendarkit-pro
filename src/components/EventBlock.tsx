@@ -40,12 +40,14 @@ interface EventBlockProps {
   timezone?: string;
   locale?: Locale;
   className?: string;
+  /** Just created or moved: a brief outline draws the eye to it. */
+  highlight?: boolean;
   onClick?: (event: CalendarEvent) => void;
   onContextMenu?: (event: CalendarEvent, e: React.MouseEvent) => void;
 }
 
 /** A timed event in the week or day grid: its colour, and as much text as its size allows. */
-export const EventBlock: React.FC<EventBlockProps> = ({ event, height, width, timezone, locale, className, onClick, onContextMenu }) => {
+export const EventBlock: React.FC<EventBlockProps> = ({ event, height, width, timezone, locale, className, highlight, onClick, onContextMenu }) => {
   const colorStyle = useEventColorStyle(event);
   const formats = timeFormats(locale);
   const start = format(toDisplay(event.start, timezone), formats.time, { locale });
@@ -58,6 +60,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ event, height, width, ti
         "ck-event ck:h-full ck:w-full ck:rounded-md ck:overflow-hidden ck:text-xs ck:font-semibold ck:leading-tight ck:transition-[filter] ck:hover:drop-shadow-md",
         layout.size === 'lg' ? "ck:flex ck:flex-col ck:gap-px ck:py-1" : "ck:flex ck:items-center ck:gap-1.5",
         layout.narrow ? "ck:px-1.5" : "ck:px-2",
+        highlight && "ck:animate-landed",
         className
       )}
       style={colorStyle}
