@@ -174,6 +174,16 @@ export interface CalendarComponents {
   EmptyState?: React.ComponentType<EmptyStateProps>;
 }
 
+/** Working time: the week and day views shade the hours outside it. */
+export interface WorkingHours {
+  /** Start of the working day, in hours (9.5 is 9:30). */
+  start: number;
+  /** End of the working day, in hours (17.5 is 17:30). */
+  end: number;
+  /** Working days, 0 being Sunday (default: Monday to Friday). Other days are shaded all day. */
+  days?: number[];
+}
+
 export interface CalendarProps {
   /** Controlled (1.x): the host owns the list and updates it from the callbacks. */
   events?: CalendarEvent[];
@@ -222,6 +232,10 @@ export interface CalendarProps {
   slotDuration?: number;
   /** Week and day views: the latest hours on top, the day running upward. */
   reverseTimeAxis?: boolean;
+  /** Week and day views: hours outside working time are shaded (none by default). */
+  workingHours?: WorkingHours;
+  /** Week and day views: the hour at the top of the grid when it opens (default: a few hours before now). */
+  scrollToHour?: number;
   eventTypes?: EventType[]; // Pre-defined types
   onCalendarToggle?: (calendarId: string, active: boolean) => void;
   isLoading?: boolean;

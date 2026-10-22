@@ -53,6 +53,7 @@ export type {
   ToolbarProps,
   SidebarProps,
   EmptyStateProps,
+  WorkingHours,
 } from './types';
 
 const NO_CLASSES: CalendarClassNames = {};
@@ -100,6 +101,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
   dayEndHour,
   slotDuration,
   reverseTimeAxis,
+  workingHours,
+  scrollToHour,
 }) => {
   const [activeDragEvent, setActiveDragEvent] = useState<CalendarEvent | null>(null);
   const [activeDayDrag, setActiveDayDrag] = useState(false);
@@ -265,10 +268,12 @@ export const Scheduler: React.FC<CalendarProps> = ({
       ? format(startOfWeek(currentDate, { weekStartsOn: resolveWeekStartsOn(locale, 1) }), 'yyyy-MM-dd')
       : format(currentDate, 'yyyy-MM-dd');
 
-  // The views are memoized: the grid keeps its identity while its props do not change.
+  // The views are memoized: the grid keeps its identity while its props do not change (an inline
+  // `workingHours` object is compared by value).
+  const workingKey = workingHours && JSON.stringify(workingHours);
   const grid = useMemo(
-    () => resolveTimeGrid({ dayStartHour, dayEndHour, slotDuration, reverseTimeAxis }),
-    [dayStartHour, dayEndHour, slotDuration, reverseTimeAxis],
+    () => resolveTimeGrid({ dayStartHour, dayEndHour, slotDuration, reverseTimeAxis, workingHours: workingKey && JSON.parse(workingKey), scrollToHour }),
+    [dayStartHour, dayEndHour, slotDuration, reverseTimeAxis, workingKey, scrollToHour],
   );
   // Drag ghost: snaps by one slot (1 px per minute at the week view's 60 px per hour), kept inside the window.
   const modifiers = useMemo<Modifier[]>(() => [snapToGrid(grid.slotMinutes), restrictToWindowEdges], [grid.slotMinutes]);

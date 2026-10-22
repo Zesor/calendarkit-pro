@@ -5,7 +5,7 @@ import { cx } from '../utils';
 import { DaySegment } from '../core/events';
 import { DroppableCell } from '../components/dnd/DroppableCell';
 import { type GhostEvent, TimeGridEvents } from './TimeGridEvents';
-import { gridHours, gridOffset, gridSlots, slotDate, type TimeGrid } from './grid';
+import { gridHours, gridOffset, gridSlots, offHours, slotDate, type TimeGrid } from './grid';
 
 /** The day's segments inside the visible hours, cut at their edges. */
 function clipSegments(segments: DaySegment[], day: Date, grid: TimeGrid) {
@@ -48,6 +48,15 @@ export const TimeColumn: React.FC<TimeColumnProps> = ({
   const visibleNow = nowMinutes !== undefined && nowMinutes >= grid.startHour * 60 && nowMinutes <= grid.endHour * 60;
   return (
     <div className={cx('ck:relative', grid.reverse && 'ck:flex ck:flex-col-reverse', className)}>
+      {/* Outside working hours: drawn under the slots, which stay clickable. */}
+      {offHours(grid, day).map(([from, to]) => (
+        <div
+          key={from}
+          aria-hidden="true"
+          className="ck-off-hours ck:absolute ck:inset-x-0 ck:bg-muted/60 ck:pointer-events-none"
+          style={{ ...gridOffset(grid, from, hourHeight), height: `${((to - from) / 60) * hourHeight}px` }}
+        />
+      ))}
       {gridHours(grid).map((hour) => (
         <div
           key={hour}
