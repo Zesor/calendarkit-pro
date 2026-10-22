@@ -445,6 +445,8 @@ export const EventModal: React.FC<EventModalProps> = ({
                 onChange={e => setFormData({ ...formData, calendarId: e.target.value || undefined })}
               >
                 {formData.calendarId === undefined && <option value="">{t.select}</option>}
+                {/* A calendar the host no longer lists is kept, shown as itself (never silently replaced). */}
+                {formData.calendarId !== undefined && !calendars.some(c => c.id === formData.calendarId) && <option value={formData.calendarId}>{formData.calendarId}</option>}
                 {calendars.map(cal => <option key={cal.id} value={cal.id}>{cal.label}</option>)}
               </select>
             </div>

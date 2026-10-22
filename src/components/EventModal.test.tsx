@@ -201,6 +201,16 @@ describe('EventModal layout (spec §8.5): labelled rows, and a footer that stays
     expect(screen.queryByRole('button', { name: 'Create Event' })).toBeNull()
   })
 
+  test('an event whose calendar is not in `calendars` keeps it: shown as itself, saved unchanged', () => {
+    const onSave = vi.fn()
+    const event: CalendarEvent = { id: 'a', title: 'Review', start, end: new Date(2026, 9, 15, 10), calendarId: 'archived' }
+    render(<EventModal isOpen onClose={() => {}} onSave={onSave} event={event} calendars={[{ id: 'w', label: 'Work' }]} translations={en} />)
+    const select = screen.getByRole('combobox', { name: 'Calendar' }) as HTMLSelectElement
+    expect(select.value).toBe('archived')
+    fireEvent.submit(screen.getByLabelText('Add title').closest('form')!)
+    expect(onSave.mock.calls[0][0].calendarId).toBe('archived')
+  })
+
   test('the calendar row shows the event\'s calendar', () => {
     openCreate({ calendars: [{ id: 'w', label: 'Work' }, { id: 'p', label: 'Personal', color: '#16a34a' }], initialValues: { calendarId: 'p' } })
     expect((screen.getByRole('combobox', { name: 'Calendar' }) as HTMLSelectElement).value).toBe('p')

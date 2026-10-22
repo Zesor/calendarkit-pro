@@ -15,8 +15,17 @@ describe('placeBeside', () => {
     expect(placeBeside({ left: 700, top: 150, right: 800, bottom: 250 }, box, area)).toEqual({ left: 368, top: 150 })
   })
 
-  test('inside the area when there is room on neither side, and never below its bottom', () => {
-    expect(placeBeside({ left: 20, top: 600, right: 980, bottom: 680 }, box, area)).toEqual({ left: 8, top: 492 })
+  test('a wide anchor (no room on either side): below it, never over it', () => {
+    expect(placeBeside({ left: 20, top: 150, right: 980, bottom: 250 }, box, area)).toEqual({ left: 20, top: 262 })
+  })
+
+  test('a wide anchor near the bottom: above it', () => {
+    expect(placeBeside({ left: 20, top: 500, right: 980, bottom: 600 }, box, area)).toEqual({ left: 20, top: 288 })
+  })
+
+  test('a wide anchor with room neither below nor above: inside the area, never below its bottom', () => {
+    expect(placeBeside({ left: 20, top: 100, right: 980, bottom: 680 }, box, area)).toEqual({ left: 20, top: 100 })
+    expect(placeBeside({ left: 20, top: 600, right: 980, bottom: 690 }, { width: 320, height: 650 }, area)).toEqual({ left: 20, top: 42 })
   })
 
   test('relative to an area that does not start at 0', () => {
