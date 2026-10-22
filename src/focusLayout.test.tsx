@@ -1,10 +1,10 @@
 // Spec §8.1: `layout="focus"` — the grid takes the whole calendar, under a floating toolbar
 // (period, navigation, views, Create); Classic stays the default.
-import { act, cleanup, render, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import React from 'react'
-import { afterEach, describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import { Scheduler } from './index'
-import type { ToolbarProps } from './types'
+import type { CalendarEvent, ToolbarProps } from './types'
 
 afterEach(cleanup)
 
@@ -49,5 +49,54 @@ describe('Focus layout', () => {
     expect(screen.queryByRole('toolbar', { name: 'Calendar navigation' })).toBeNull()
     expect(screen.getAllByText('Create').length).toBeGreaterThan(0)
     expect(container.querySelector('.ck-root')!.getAttribute('data-ck-layout')).toBe('classic')
+  })
+})
+
+describe('Focus layout: the editor as a side panel', () => {
+  const standup: CalendarEvent = { id: 'su', title: 'Standup', start: new Date(2026, 9, 15, 9, 30), end: new Date(2026, 9, 15, 10) }
+  const panel = () => document.querySelector<HTMLElement>('[data-ck-panel]')
+
+  test('a click on an event opens it in the panel, beside the grid (no event card, no overlay)', () => {
+    const { container } = render(<Scheduler layout="focus" view="day" date={day} events={[standup]} />)
+    act(() => screen.getByText('Standup').click())
+    expect(screen.queryByRole('button', { name: 'Duplicate' })).toBeNull()
+    expect(panel()).toBeTruthy()
+    expect((within(panel()!).getByPlaceholderText('Add title') as HTMLInputElement).value).toBe('Standup')
+    // Docked in the calendar's row, next to the grid: not a floating card.
+    expect(panel()!.style.left).toBe('')
+    expect(panel()!.parentElement!.contains(container.querySelector('[data-ck-event-id="su"]'))).toBe(true)
+    expect(container.querySelector('[data-ck-backdrop]')).toBeNull()
+  })
+
+  test('saving closes the panel; "More options" from the quick card opens it too', () => {
+    const onEventUpdate = vi.fn()
+    const { container } = render(<Scheduler layout="focus" view="day" date={day} events={[standup]} onEventUpdate={onEventUpdate} />)
+    act(() => screen.getByText('Standup').click())
+    fireEvent.change(within(panel()!).getByPlaceholderText('Add title'), { target: { value: 'Standup (moved)' } })
+    fireEvent.submit(within(panel()!).getByPlaceholderText('Add title').closest('form')!)
+    expect(onEventUpdate).toHaveBeenCalledWith(expect.objectContaining({ title: 'Standup (moved)' }))
+    expect(panel()).toBeNull()
+    act(() => container.querySelectorAll<HTMLElement>('.ck\\:z-0.ck\\:cursor-pointer')[56].click())
+    act(() => screen.getByRole('button', { name: 'More options' }).click())
+    expect(panel()).toBeTruthy()
+  })
+
+  test('Escape closes an untouched panel and asks once something was typed', () => {
+    render(<Scheduler layout="focus" view="day" date={day} events={[standup]} />)
+    act(() => screen.getByText('Standup').click())
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(panel()).toBeNull()
+    act(() => screen.getByText('Standup').click())
+    fireEvent.change(within(panel()!).getByPlaceholderText('Add title'), { target: { value: 'x' } })
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.getByRole('alertdialog', { name: 'Discard changes?' })).toBeTruthy()
+  })
+
+  test('with renderEventForm (1.x) a click still opens the host\'s form', () => {
+    const renderEventForm = vi.fn(() => null)
+    render(<Scheduler layout="focus" view="day" date={day} events={[standup]} renderEventForm={renderEventForm} />)
+    act(() => screen.getByText('Standup').click())
+    expect(panel()).toBeNull()
+    expect(renderEventForm).toHaveBeenLastCalledWith(expect.objectContaining({ isOpen: true, event: expect.objectContaining({ id: 'su' }) }))
   })
 })

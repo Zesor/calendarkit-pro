@@ -240,9 +240,12 @@ export const Scheduler: React.FC<CalendarProps> = ({
     handleEventDuplicate, handleEventResize, handleDayEventResize, handleMoreClick,
   } = handlers;
   // 1.x: a click calls onEventClick, then opens the event unless readOnly.
+  // Classic opens the event card; Focus edits in its side panel at once (a host's form opens either way).
   const handleEventClickInternal = useStableCallback((event: CalendarEvent) => {
     onEventClick?.(event);
-    if (!readOnly) calendar.openEvent(event.id);
+    if (readOnly) return;
+    if (layout === 'focus' && !hasCustomForm) calendar.openEditor(event.id);
+    else calendar.openEvent(event.id);
   });
 
   const id = useId();
@@ -346,6 +349,24 @@ export const Scheduler: React.FC<CalendarProps> = ({
   const rangeSelectHandler = readOnly ? undefined : handleTimeRangeSelect;
   const allDaySlotClickHandler = readOnly ? undefined : handleAllDaySlotClick;
   const contextMenuHandler = readOnly ? undefined : openContextMenu;
+
+  const builtInEditor = (
+    <EventModal
+      isOpen={isModalOpen}
+      onClose={handleModalClose}
+      event={editorEvent}
+      initialDate={modalInitialDate}
+      onSave={handleEditorSave}
+      onDelete={handleModalDelete}
+      calendars={calendars}
+      eventTypes={eventTypes}
+      translations={t}
+      initialAllDay={modalInitialAllDay}
+      initialValues={modalInitialValues}
+      placeSearch={placeSearch}
+      variant={layout === 'focus' ? 'panel' : 'card'}
+    />
+  );
 
   return (
     <ClassNamesProvider value={classNames}>
@@ -561,6 +582,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 </div>
                 )}
             </div>
+            {/* Focus: the editor docks here, beside the grid. */}
+            {layout === 'focus' && !hasCustomForm && builtInEditor}
         </div>
         
         {hasCustomForm ? (
@@ -574,20 +597,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 onDelete: handleModalDelete
             })
         ) : (
-            <EventModal
-                isOpen={isModalOpen}
-                onClose={handleModalClose}
-                event={editorEvent}
-                initialDate={modalInitialDate}
-                onSave={handleEditorSave}
-                onDelete={handleModalDelete}
-                calendars={calendars}
-                eventTypes={eventTypes}
-                translations={t}
-                initialAllDay={modalInitialAllDay}
-                initialValues={modalInitialValues}
-                placeSearch={placeSearch}
-            />
+            layout !== 'focus' && builtInEditor
         )}
 
         {popoverEvent && editingId !== undefined && (

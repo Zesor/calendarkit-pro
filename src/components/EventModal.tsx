@@ -27,6 +27,8 @@ interface EventModalProps {
   initialValues?: Partial<CalendarEvent>;
   /** Place suggestions in the Location field (spec §8.7); plain text without. */
   placeSearch?: PlaceSearch;
+  /** A card beside what it edits (Classic), a panel docked beside the grid (Focus), or a bottom sheet (Flow). */
+  variant?: 'card' | 'panel' | 'sheet';
 }
 
 // Predefined reminder offsets, in minutes before the event
@@ -104,6 +106,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   initialAllDay,
   initialValues,
   placeSearch,
+  variant = 'card',
 }) => {
   const [mode, setMode] = useState<'edit' | 'create'>('create');
   // Read through a ref so a new initialValues object (an inline prop) does not reset the form.
@@ -191,7 +194,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   const editedId = event?.id;
   useLayoutEffect(() => {
     const el = card.current;
-    if (!isOpen || !el) return;
+    if (!isOpen || !el || variant !== 'card') return;
     const root = el.closest('.ck-root');
     const target = editedId === undefined
       ? root?.querySelector('[data-ck-ghost]')
@@ -199,7 +202,7 @@ export const EventModal: React.FC<EventModalProps> = ({
     const box = target?.getBoundingClientRect();
     const viewport = { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
     setPlace(box && box.width > 0 ? placeBeside(box, { width: Math.min(WIDTH, window.innerWidth - 2 * MARGIN), height: el.offsetHeight }, viewport) : null);
-  }, [isOpen, editedId]);
+  }, [isOpen, editedId, variant]);
 
   const closeRef = useRef(requestClose);
   closeRef.current = requestClose;
@@ -642,6 +645,14 @@ export const EventModal: React.FC<EventModalProps> = ({
   );
 
   if (!isOpen) return null;
+  if (variant === 'panel') {
+    // Focus: docked in the calendar's row, beside the grid, which stays usable (no overlay).
+    return (
+      <div data-ck-panel role="dialog" aria-labelledby={`${id}-heading`} className={cx("ck:flex ck:h-full ck:w-[440px] ck:max-w-full ck:shrink-0 ck:flex-col ck:border-l ck:border-border ck:bg-background ck:animate-fade-in", classNames.dialog)}>
+        {renderEditMode()}
+      </div>
+    );
+  }
   // No taller than the room below its top: the form scrolls inside, Save stays in the window.
   const at = place ?? { left: Math.max(MARGIN, (window.innerWidth - WIDTH) / 2), top: 80 };
   return (
