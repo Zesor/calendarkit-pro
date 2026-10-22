@@ -9,7 +9,7 @@ import { AgendaView } from './views/AgendaView';
 import { ResourceView } from './views/ResourceView';
 import { EventModal } from './components/EventModal';
 import { MoreEventsDialog } from './components/MoreEventsDialog';
-import { QuickCreate } from './components/QuickCreate';
+import { QuickCreate, QuickExtra } from './components/QuickCreate';
 import { EventPopover } from './components/EventPopover';
 import { nextFreeSlot } from './views/nextFreeSlot';
 import { Box } from './components/placement';
@@ -191,10 +191,12 @@ export const Scheduler: React.FC<CalendarProps> = ({
   const modalInitialDate = editingId === undefined ? draft?.start : undefined;
   const modalInitialAllDay = editingId === undefined && !!draft?.allDay;
   // "More options" from quick create: the editor opens with what the card already has.
+  // What the quick card added (guests, location, description) goes along with "More options".
+  const [quickExtra, setQuickExtra] = useState<QuickExtra>({});
   const modalInitialValues = useMemo(() => {
     if (editingId !== undefined || !draft) return undefined;
-    return { title: draft.savedTitle, end: draft.end, ...(draft.calendarId ? { calendarId: draft.calendarId } : {}) };
-  }, [editingId, draft]);
+    return { title: draft.savedTitle, end: draft.end, ...(draft.calendarId ? { calendarId: draft.calendarId } : {}), ...quickExtra };
+  }, [editingId, draft, quickExtra]);
 
   // Stable handlers (the store's actions never change identity).
   const { EventEditor, Toolbar, Sidebar: CustomSidebar } = components;
@@ -310,10 +312,28 @@ export const Scheduler: React.FC<CalendarProps> = ({
     },
   ));
 
+  // The quick card saves through the engine; with guests, a location or a description added, the
+  // same fields as the engine's own save (title without the understood words, wall times to instants).
+  const handleQuickSave = useStableCallback((extra: QuickExtra) => {
+    if (!quickDraft || Object.keys(extra).length === 0) return calendar.saveDraft();
+    const d = quickDraft;
+    const instant = (date: Date) => (d.allDay ? date : fromDisplay(date, timezone));
+    calendar.saveEvent({
+      title: ((d.titleEdited && d.savedTitle) || d.title).trim() || 'Untitled',
+      start: instant(d.start),
+      end: instant(d.end),
+      allDay: d.allDay || undefined,
+      calendarId: d.calendarId,
+      recurrence: d.recurrence,
+      ...extra,
+    }, { eventId: null });
+  });
+
   // "Create" works like a click in the grid (spec §8.5): the quick card at the next free hour, today
   // (the week and day views go there first), or the host's form at that time.
   const handleCreateEvent = useStableCallback(() => {
-    const timed = filteredEvents.filter((e) => !e.allDay).map((e) => ({ start: toDisplay(e.start, timezone), end: toDisplay(e.end, timezone) }));
+    // Events drawn in the grid only: a day or longer is a bar above it and does not push the slot.
+    const timed = filteredEvents.filter((e) => !e.allDay && e.end.getTime() - e.start.getTime() < 864e5).map((e) => ({ start: toDisplay(e.start, timezone), end: toDisplay(e.end, timezone) }));
     const start = nextFreeSlot(toDisplay(new Date(), timezone), timed, grid.startHour, grid.endHour);
     if (view === 'week' || view === 'day') calendar.navigate(start);
     calendar.openSlot(start, { editor: hasCustomForm });
@@ -574,8 +594,12 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 locale={locale}
                 translations={t}
                 onChange={calendar.updateDraft}
-                onSave={calendar.saveDraft}
-                onMoreOptions={() => calendar.openEditor()}
+                placeSearch={placeSearch}
+                onSave={handleQuickSave}
+                onMoreOptions={(extra) => {
+                    setQuickExtra(extra);
+                    calendar.openEditor();
+                }}
                 onClose={handleModalClose}
             />
         )}

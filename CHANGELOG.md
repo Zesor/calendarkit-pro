@@ -10,8 +10,8 @@ Pre-release on the `next` dist-tag (`latest` stays on 1.4.x).
 ### Changed
 - **Create** opens the quick card at the next free hour today (the week and day views go there first), like a click in the grid; with `renderEventForm`, your form opens at that time.
 - The full form is a card beside the event or the new event (which stays drawn in the grid), no longer a dialog over a dimmed, blurred calendar.
-- The quick card is shorter: an example sentence as placeholder, the time and the calendar on one line, More options and Save (no duration chips, no Cancel: Escape or a click outside closes it, and asks first when something was typed).
-- Scheduler budget: 51 kB brotli (was 48 kB).
+- The quick card is laid out like the quick event of the big calendars: a close button, the title, then one row each for the date and times (edited in place), guests, location (place search included), description and calendar, and More options and Save. Guests, location and description are saved with the event or carried to "More options"; the duration chips and Cancel are gone. The new event is drawn solid in the grid, with its title and times.
+- Scheduler budget: 52 kB brotli (was 48 kB).
 
 ### Fixed
 - The full form showed and saved times in the machine's time zone instead of the calendar's `timezone`.

@@ -24,7 +24,15 @@ describe('Create', () => {
     create()
     expect(quickCard()!.textContent).toContain('11:30 AM – 12:30 PM')
     expect(container.querySelector('[data-ck-ghost]')).toBeTruthy()
-    expect(screen.queryByPlaceholderText('Add title')).toBeNull()
+    // Not the full form (the only `<form>` of the calendar).
+    expect(document.querySelector('form')).toBeNull()
+  })
+
+  test('an event drawn as a bar (a day or longer) does not push the new one away', () => {
+    const flight: CalendarEvent = { id: 'f', title: 'Flight', start: new Date(2026, 9, 14, 10), end: new Date(2026, 9, 15, 14) }
+    render(<Scheduler view="week" defaultEvents={[flight]} />)
+    create()
+    expect(quickCard()!.textContent).toContain('10:30 AM – 11:30 AM')
   })
 
   test('in the day view of another day, goes to today first', () => {

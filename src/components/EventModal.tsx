@@ -46,7 +46,7 @@ const COLOR_PALETTE = [
   '#6366f1', // Indigo
 ];
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** Appends emails not already present, comparing case-insensitively and keeping the first spelling. */
 const mergeGuests = (current: string[], added: string[]): string[] => {

@@ -47,4 +47,4 @@ export const cn = (...inputs: ClassValue[]) => twMerge(clsx(inputs))
 
 **What changes:** **Create** (side panel, mobile button, empty agenda, a custom `Sidebar`'s `onCreate`) opens the quick card at the next free hour instead of the full form; "More options" opens the form. The form is a card beside the event, not a centred dialog. With `renderEventForm` or `components.EventEditor`, your form opens as before, at the time Create picked.
 
-The quick card no longer has duration chips nor a Cancel button: drag over the grid for a length (or use "More options"), and close it with Escape or a click outside. The built-in form now shows and saves times in `timezone` (it used the machine's zone); a form of your own still receives instants, as in 1.x.
+The quick card no longer has duration chips nor a Cancel button: change the times in the card (or drag over the grid), and close it with its close button, Escape or a click outside. The built-in form now shows and saves times in `timezone` (it used the machine's zone); a form of your own still receives instants, as in 1.x.

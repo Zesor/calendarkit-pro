@@ -15,6 +15,7 @@ interface PlaceFieldProps {
   place?: Place;
   search?: PlaceSearch;
   className: string;
+  autoFocus?: boolean;
   translations: CalendarTranslations;
   onChange: (location: string, place?: Place) => void;
 }
@@ -25,7 +26,7 @@ type Status = 'idle' | 'searching' | 'done' | 'error';
  * The form's Location field (spec §8.7). With `search`, an accessible combobox that suggests places
  * as you type (a video link is kept as typed); a chosen place shows a card with Maps and directions.
  */
-export const PlaceField: React.FC<PlaceFieldProps> = ({ id, value, place, search, className, translations: t, onChange }) => {
+export const PlaceField: React.FC<PlaceFieldProps> = ({ id, value, place, search, className, autoFocus, translations: t, onChange }) => {
   const [results, setResults] = useState<Place[]>([]);
   const [status, setStatus] = useState<Status>('idle');
   const [active, setActive] = useState(-1);
@@ -63,7 +64,7 @@ export const PlaceField: React.FC<PlaceFieldProps> = ({ id, value, place, search
   };
 
   if (!search) {
-    return <input id={id} type="text" className={cx(className, 'ck:w-full')} placeholder={t.addLocation} value={value} onChange={(e) => onChange(e.target.value)} />;
+    return <input id={id} type="text" autoFocus={autoFocus} className={cx(className, 'ck:w-full')} placeholder={t.addLocation} value={value} onChange={(e) => onChange(e.target.value)} />;
   }
 
   const listId = `${id}-places`;
@@ -74,6 +75,7 @@ export const PlaceField: React.FC<PlaceFieldProps> = ({ id, value, place, search
         <input
           id={id}
           type="text"
+          autoFocus={autoFocus}
           role="combobox"
           aria-expanded={showList}
           aria-controls={listId}
