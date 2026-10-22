@@ -1,6 +1,7 @@
 import React, { useCallback, useId, useState, useMemo, useRef } from 'react';
 import { Modifier, DragOverlay, DragStartEvent } from '@dnd-kit/core';
 import { CalendarHeader } from './components/CalendarHeader';
+import { FocusBar } from './components/FocusBar';
 import { Sidebar } from './components/Sidebar';
 import { MonthView } from './views/MonthView';
 import { WeekView } from './views/WeekView';
@@ -56,6 +57,7 @@ export type {
   SidebarProps,
   EmptyStateProps,
   WorkingHours,
+  CalendarLayout,
   Place,
   PlaceSearch,
 } from './types';
@@ -115,6 +117,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
   reverseTimeAxis,
   workingHours,
   scrollToHour,
+  layout = 'classic',
 }) => {
   const [activeDragEvent, setActiveDragEvent] = useState<CalendarEvent | null>(null);
   const [activeDayDrag, setActiveDayDrag] = useState(false);
@@ -362,6 +365,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
         style={getThemeStyles(theme)}
         data-ck-theme={themePreset(theme)}
         data-ck-mode={colorMode(mode, isDarkMode)}
+        data-ck-layout={layout}
       >
         {injectStyles && <CalendarStyles />}
         {Toolbar ? (
@@ -373,6 +377,19 @@ export const Scheduler: React.FC<CalendarProps> = ({
             onToday={handleToday}
             onViewChange={handleViewChange}
             onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+          />
+        ) : layout === 'focus' ? (
+          <FocusBar
+            date={currentDate}
+            view={view}
+            locale={locale}
+            translations={t}
+            hideViewSwitcher={hideViewSwitcher}
+            onPrev={handlePrev}
+            onNext={handleNext}
+            onToday={handleToday}
+            onViewChange={handleViewChange}
+            onCreate={readOnly ? undefined : handleCreateEvent}
           />
         ) : (
         <CalendarHeader
@@ -394,6 +411,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
         )}
         
         <div className="ck:flex ck:flex-1 ck:overflow-hidden">
+            {layout !== 'focus' && (
             <div
                 className="ck:hidden ck:md:block ck:overflow-hidden ck:transition-[width,opacity] ck:duration-300 ck:ease-[cubic-bezier(0.4,0,0.2,1)]"
                 style={{ width: isSidebarOpen ? 256 : 0, opacity: isSidebarOpen ? 1 : 0 }}
@@ -423,6 +441,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 />
                 )}
             </div>
+            )}
 
             <div className="ck:flex-1 ck:flex ck:flex-col ck:overflow-hidden ck:relative">
                 {isLoading ? (

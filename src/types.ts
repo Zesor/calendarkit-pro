@@ -199,6 +199,9 @@ export interface WorkingHours {
   days?: number[];
 }
 
+/** Spec §8.1: Classic (header, side panel, event card), Focus (full grid, floating toolbar, editor panel), Flow (day feed). */
+export type CalendarLayout = 'classic' | 'focus' | 'flow';
+
 export interface CalendarProps {
   /** Controlled (1.x): the host owns the list and updates it from the callbacks. */
   events?: CalendarEvent[];
@@ -261,6 +264,8 @@ export interface CalendarProps {
   injectStyles?: boolean;
   classNames?: CalendarClassNames;
   components?: CalendarComponents;
+  /** `classic` (default), `focus` or `flow` (spec §8.1). */
+  layout?: CalendarLayout;
   /**
    * Place suggestions in the form's Location field, e.g. `photonPlaces()`. Off by default: what is
    * typed there goes to the provider.
