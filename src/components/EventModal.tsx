@@ -131,6 +131,8 @@ export const EventModal: React.FC<EventModalProps> = ({
       setConfirmingDiscard(false);
       // No made-up defaults (spec §8.5): no reminder, no colour (the calendar's colour applies).
       let opened: Partial<CalendarEvent>;
+      // What a dirty check compares with: the blank form, so values carried in from the quick card count as input.
+      let pristine: Partial<CalendarEvent> | undefined;
       if (event) {
         setMode('view');
         opened = {
@@ -148,7 +150,7 @@ export const EventModal: React.FC<EventModalProps> = ({
         const start = initialAllDay ? startOfDay(base) : base;
         const end = initialAllDay ? addDays(start, 1) : new Date(base.getTime() + 60 * 60 * 1000);
 
-        opened = {
+        pristine = {
           title: '',
           description: '',
           location: '',
@@ -159,11 +161,11 @@ export const EventModal: React.FC<EventModalProps> = ({
           attachments: [],
           reminders: [],
           guests: [],
-          ...initialValuesRef.current,
         };
+        opened = { ...pristine, ...initialValuesRef.current };
       }
       setFormData(opened);
-      openedAs.current = JSON.stringify(opened);
+      openedAs.current = JSON.stringify(pristine ?? opened);
     }
   }, [isOpen, event, initialDate, calendars, initialAllDay]);
 

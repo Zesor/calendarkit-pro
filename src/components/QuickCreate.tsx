@@ -77,7 +77,7 @@ export const QuickCreate: React.FC<QuickCreateProps> = ({ draft, events, calenda
           className="ck:w-full ck:bg-transparent ck:border-b-2 ck:border-border ck:focus:border-ring ck:outline-hidden ck:py-1 ck:text-lg ck:font-semibold ck:text-foreground"
           onChange={(e) => onChange({ title: e.target.value })}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') onSave();
+            if (e.key === 'Enter' && !e.nativeEvent.isComposing) onSave();
           }}
         />
         {understood && <p aria-live="polite" className="ck:text-xs ck:text-muted-foreground">{understood}</p>}

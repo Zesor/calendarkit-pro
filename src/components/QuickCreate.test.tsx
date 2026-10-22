@@ -83,6 +83,23 @@ describe('quick create', () => {
     expect(within(screen.getByPlaceholderText('Add title').closest('form')!).getByText('Personal')).toBeTruthy()
   })
 
+  test('what the card carried into the editor is not dropped silently: Cancel asks first', () => {
+    openAt9()
+    fireEvent.change(title(), { target: { value: 'Lunch with Lea' } })
+    act(() => screen.getByRole('button', { name: 'More options' }).click())
+    act(() => within(screen.getByPlaceholderText('Add title').closest('form')!).getByRole('button', { name: 'Cancel' }).click())
+    expect(screen.getByRole('alertdialog')).toBeTruthy()
+  })
+
+  test('Enter while an input method is composing does not save', () => {
+    const onEventCreate = vi.fn()
+    openAt9({ onEventCreate })
+    fireEvent.change(title(), { target: { value: 'とうきょう' } })
+    fireEvent.keyDown(title(), { key: 'Enter', isComposing: true })
+    expect(onEventCreate).not.toHaveBeenCalled()
+    expect(card()).toBeTruthy()
+  })
+
   test('with renderEventForm (1.x), a slot click still opens the custom form', () => {
     const renderEventForm = vi.fn(() => null)
     openAt9({ renderEventForm })

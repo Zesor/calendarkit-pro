@@ -393,7 +393,10 @@ export function createCalendar(initial: CalendarOptions = {}): CalendarStore {
       if (options.readOnly) return
       const event = { ...fields, id: fields.id ?? (options.createId ?? (() => `evt-${now().getTime()}-${Math.random().toString(36).slice(2, 7)}`))() } as CalendarEvent
       const payload = fields.id === undefined && options.stripGeneratedIds ? (({ id: _id, ...rest }) => rest)(event) : event
-      commit('create', [...source(), event], event, () => options.onEventCreate?.(payload), (list) => without(list, event.id), () => options.onEventDelete?.(event.id))
+      // A host that gives created events its own id: undo finds the event it added since.
+      const known = new Set(source().map((e) => e.id))
+      const idIn = (list: CalendarEvent[]) => list.find((e) => !known.has(e.id) && e.title === event.title)?.id ?? event.id
+      commit('create', [...source(), event], event, () => options.onEventCreate?.(payload), (list) => without(list, idIn(list)), () => options.onEventDelete?.(idIn(source())))
     },
     update(event) {
       if (options.readOnly) return
