@@ -1,5 +1,21 @@
 # Pro-Scheduler Changelog
 
+## 2.0.0-alpha.8
+
+Pre-release on the `next` dist-tag (`latest` stays on 1.4.x).
+
+### Added
+- Place search in the form's Location field: `placeSearch` (off by default) and the `photonPlaces()` adapter (OpenStreetMap, no key). Suggestions as you type, a chosen place saved as `event.place` with a map card, "Open in Maps" and "Directions" in the form and the event card; a video link is kept as typed. New types `Place` and `PlaceSearch`.
+
+### Changed
+- **Create** opens the quick card at the next free hour today (the week and day views go there first), like a click in the grid; with `renderEventForm`, your form opens at that time.
+- The full form is a card beside the event or the new event (which stays drawn in the grid), no longer a dialog over a dimmed, blurred calendar.
+- The quick card is shorter: an example sentence as placeholder, the time and the calendar on one line, More options and Save (no duration chips, no Cancel: Escape or a click outside closes it, and asks first when something was typed).
+- Scheduler budget: 51 kB brotli (was 48 kB).
+
+### Fixed
+- The full form showed and saved times in the machine's time zone instead of the calendar's `timezone`.
+
 ## 2.0.0-alpha.7
 
 Pre-release on the `next` dist-tag (`latest` stays on 1.4.x).

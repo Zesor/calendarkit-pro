@@ -111,6 +111,7 @@ Or let the calendar keep the list itself (uncontrolled), and save it when it cha
 | `hideViewSwitcher` | `boolean` | Hide view switcher |
 | `renderEventForm` | `(props) => ReactNode` | Custom event form (same as `components.EventEditor`) |
 | `classNames` | `CalendarClassNames` | Extra classes for `root`, `toolbar`, `sidebar`, `event`, `slot`, `allDayBar`, `dialog` (see [Customizing](#customizing)) |
+| `placeSearch` | `(query, { signal }) => Promise<Place[]>` | Place suggestions in the form's Location field, off by default (see [Places](#places)) |
 | `components` | `CalendarComponents` | Your own `EventContent`, `EventEditor`, `Toolbar`, `Sidebar`, `EmptyState` (see [Customizing](#customizing)) |
 
 ## Types
@@ -234,13 +235,27 @@ const events = [
 
 ## Creating and undoing
 
-- A click on a free slot, or a drag over free time, opens a quick card beside the new event, which is drawn dashed in its column. The title is a sentence the calendar understands, in English or French (`language`): "Lunch with Lea tomorrow 1pm for 2h" moves the event to tomorrow 13:00–15:00 and saves it as "Lunch with Lea". Enter saves; duration chips, the calendar menu and an overlap warning sit under the title; "More options" opens the full form with what the card already has.
+- A click on a free slot, or a drag over free time, opens a quick card beside the new event, which is drawn dashed in its column. The title is a sentence the calendar understands, in English or French (`language`): "Lunch with Lea tomorrow 1pm for 2h" moves the event to tomorrow 13:00–15:00 and saves it as "Lunch with Lea". Enter saves; the time, the calendar menu and an overlap warning sit under the title; "More options" opens the full form with what the card already has. **Create** opens the same card at the next free hour today.
 - Every change (create, edit, move, resize, duplicate, delete) shows a toast with **Undo** for 6 seconds, so deleting asks no confirmation. The event just moved or edited is outlined briefly.
-- The full form has one labelled row per part (When, Calendar, Location, Guests, Reminders, Description) and keeps Save in view, however tall the calendar.
+- The full form opens as a card beside the event (or the new event), without covering the calendar. It has one labelled row per part (When, Calendar, Location, Guests, Reminders, Description), keeps Save in view, and shows times in the calendar's `timezone`.
 - Closing the card or the form with changes asks first ("Discard changes?").
 - New events get no colour and no reminder you did not choose: they take their calendar's colour.
 - With `renderEventForm`, a slot click opens your form as before.
 - A click on an event opens a small card beside it (it never covers the event): its date and time, calendar, location (a link to a maps search), guests, reminders, attachments and description, with **Edit**, **Duplicate** and **Delete**. Edit opens the full form. With `renderEventForm`, a click opens your form as before.
+
+## Places
+
+Place suggestions in the form's Location field are off by default: what is typed there goes to the provider. Turn them on with `placeSearch`, for example with the built-in OpenStreetMap adapter (Photon, no key):
+
+```tsx
+import { Scheduler, photonPlaces } from 'calendarkit-pro';
+
+const placeSearch = photonPlaces({ lang: 'en' }); // once, outside the component
+
+<Scheduler placeSearch={placeSearch} />
+```
+
+A chosen place is saved as `event.place` (`{ name, address, lat, lon }`) with its text in `location`, and the event card links to Maps and to directions. A video link is kept as typed. Any provider fits: `placeSearch` is `(query, { signal }) => Promise<Place[]>`.
 
 ## Customizing
 

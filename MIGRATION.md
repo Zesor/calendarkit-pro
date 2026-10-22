@@ -40,3 +40,9 @@ export const cn = (...inputs: ClassValue[]) => twMerge(clsx(inputs))
 **Why:** spec 2.0 (Classic layout) shows an event's details in a card next to it and keeps the full form for editing.
 
 **What changes:** a click on an event opens that card (Edit, Duplicate, Delete) instead of the form's read-only view, and the form opens ready to edit. With `renderEventForm` (or `components.EventEditor`), a click still opens your form with the event, and `onEventClick` is still called first. **Edit** in the event's right-click menu now opens the form directly and no longer calls `onEventClick`. Nothing to change in your code unless you relied on that call.
+
+## Create and the full form
+
+**Why:** spec 2.0 creates in place: one kind of card, beside what it belongs to.
+
+**What changes:** **Create** (side panel, mobile button, empty agenda, a custom `Sidebar`'s `onCreate`) opens the quick card at the next free hour instead of the full form; "More options" opens the form. The form is a card beside the event, not a centred dialog. With `renderEventForm` or `components.EventEditor`, your form opens as before, at the time Create picked.
