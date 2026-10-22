@@ -2,6 +2,8 @@ import React, { useCallback, useId, useState, useMemo, useRef } from 'react';
 import { Modifier, DragOverlay, DragStartEvent } from '@dnd-kit/core';
 import { CalendarHeader } from './components/CalendarHeader';
 import { FocusBar } from './components/FocusBar';
+import { FlowView } from './views/FlowView';
+import { selectFlowDay } from './core/models/lists';
 import { Sidebar } from './components/Sidebar';
 import { MonthView } from './views/MonthView';
 import { WeekView } from './views/WeekView';
@@ -240,11 +242,11 @@ export const Scheduler: React.FC<CalendarProps> = ({
     handleEventDuplicate, handleEventResize, handleDayEventResize, handleMoreClick,
   } = handlers;
   // 1.x: a click calls onEventClick, then opens the event unless readOnly.
-  // Classic opens the event card; Focus edits in its side panel at once (a host's form opens either way).
+  // Classic opens the event card; Focus and Flow edit at once, in a panel or a sheet (a host's form opens either way).
   const handleEventClickInternal = useStableCallback((event: CalendarEvent) => {
     onEventClick?.(event);
     if (readOnly) return;
-    if (layout === 'focus' && !hasCustomForm) calendar.openEditor(event.id);
+    if (layout !== 'classic' && !hasCustomForm) calendar.openEditor(event.id);
     else calendar.openEvent(event.id);
   });
 
@@ -350,6 +352,12 @@ export const Scheduler: React.FC<CalendarProps> = ({
   const allDaySlotClickHandler = readOnly ? undefined : handleAllDaySlotClick;
   const contextMenuHandler = readOnly ? undefined : openContextMenu;
 
+  // Flow: the day's feed from the engine's model, over the events the calendar shows (active calendars).
+  const flowModel = useCallback(
+    (day: Date, at: Date) => selectFlowDay({ ...calendar.getState(), visible: filteredEvents }, { day, now: at, fromHour: dayStartHour ?? 8, toHour: dayEndHour ?? 20 }),
+    [calendar, filteredEvents, dayStartHour, dayEndHour],
+  );
+
   const builtInEditor = (
     <EventModal
       isOpen={isModalOpen}
@@ -389,6 +397,22 @@ export const Scheduler: React.FC<CalendarProps> = ({
         data-ck-layout={layout}
       >
         {injectStyles && <CalendarStyles />}
+        {layout === 'flow' ? (
+          <FlowView
+            date={currentDate}
+            events={filteredEvents}
+            model={flowModel}
+            timezone={timezone}
+            locale={locale}
+            translations={t}
+            onDateChange={handleDateChange}
+            onEventClick={handleEventClickInternal}
+            // An hour at the start of the free time (all of it when shorter).
+            onBook={readOnly ? undefined : (start, end) => handleTimeRangeSelect(start, new Date(Math.min(end.getTime(), start.getTime() + 3600e3)))}
+            onCreate={readOnly ? undefined : handleCreateEvent}
+          />
+        ) : (
+        <>
         {Toolbar ? (
           <Toolbar
             date={currentDate}
@@ -585,6 +609,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
             {/* Focus: the editor docks here, beside the grid. */}
             {layout === 'focus' && !hasCustomForm && builtInEditor}
         </div>
+        </>
+        )}
         
         {hasCustomForm ? (
             (renderEventForm ?? ((props) => EventEditor && <EventEditor {...props} />))({
