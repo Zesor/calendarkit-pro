@@ -1,6 +1,6 @@
 // Spec §8.1: `layout="flow"` — a strip of the week's days (with how busy each is), the day as a
 // feed of cards in order, free slots to book, the current time, and a floating Create.
-import { act, cleanup, render, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { Scheduler } from './index'
@@ -65,5 +65,29 @@ describe('Flow layout', () => {
     render(<Scheduler layout="flow" defaultEvents={[]} />)
     act(() => within(strip()).getAllByRole('button')[0].click())
     expect(within(feed()).getByText('Nothing planned this day')).toBeTruthy()
+  })
+})
+
+describe('Flow layout: the full form as a bottom sheet', () => {
+  const sheet = () => document.querySelector<HTMLElement>('[data-ck-sheet]')
+
+  test('a card opens its event in a sheet from the bottom, over a light scrim (no blur)', () => {
+    render(<Scheduler layout="flow" defaultEvents={events} />)
+    act(() => screen.getByText('Standup').click())
+    expect(sheet()).toBeTruthy()
+    expect((within(sheet()!).getByPlaceholderText('Add title') as HTMLInputElement).value).toBe('Standup')
+    expect(sheet()!.className).toContain('ck:bottom-0')
+    const scrim = document.querySelector<HTMLElement>('[data-ck-backdrop]')!
+    expect(scrim.className).not.toMatch(/backdrop-blur/)
+  })
+
+  test('"More options" from Book opens the sheet; a tap on the scrim asks before dropping what was typed', () => {
+    render(<Scheduler layout="flow" defaultEvents={events} />)
+    act(() => within(feed()).getAllByRole('button', { name: /Book/ })[0].click())
+    act(() => screen.getByRole('button', { name: 'More options' }).click())
+    expect(sheet()).toBeTruthy()
+    fireEvent.change(within(sheet()!).getByPlaceholderText('Add title'), { target: { value: 'Call' } })
+    act(() => (document.querySelector('[data-ck-backdrop]') as HTMLElement).click())
+    expect(screen.getByRole('alertdialog', { name: 'Discard changes?' })).toBeTruthy()
   })
 })

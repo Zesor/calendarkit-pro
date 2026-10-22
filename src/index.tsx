@@ -372,7 +372,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
       initialAllDay={modalInitialAllDay}
       initialValues={modalInitialValues}
       placeSearch={placeSearch}
-      variant={layout === 'focus' ? 'panel' : 'card'}
+      variant={layout === 'focus' ? 'panel' : layout === 'flow' ? 'sheet' : 'card'}
     />
   );
 

@@ -653,6 +653,18 @@ export const EventModal: React.FC<EventModalProps> = ({
       </div>
     );
   }
+  if (variant === 'sheet') {
+    // Flow: a sheet from the bottom of the calendar, over a light scrim (nothing blurred).
+    return (
+      <>
+        <div data-ck-backdrop className="ck:absolute ck:inset-0 ck:z-40 ck:bg-black/20 ck:animate-fade-in" onClick={requestClose} />
+        <div data-ck-sheet role="dialog" aria-modal="true" aria-labelledby={`${id}-heading`} className={cx("ck:absolute ck:inset-x-0 ck:bottom-0 ck:z-50 ck:mx-auto ck:flex ck:max-h-[85%] ck:w-full ck:max-w-[720px] ck:flex-col ck:overflow-hidden ck:rounded-t-3xl ck:bg-background ck:shadow-[0_-20px_50px_-20px_rgb(0_0_0/0.4)] ck:animate-rise-in", classNames.dialog)}>
+          <span aria-hidden="true" className="ck:mx-auto ck:mt-2.5 ck:h-1.5 ck:w-11 ck:shrink-0 ck:rounded-full ck:bg-muted-foreground/30" />
+          {renderEditMode()}
+        </div>
+      </>
+    );
+  }
   // No taller than the room below its top: the form scrolls inside, Save stays in the window.
   const at = place ?? { left: Math.max(MARGIN, (window.innerWidth - WIDTH) / 2), top: 80 };
   return (
