@@ -20,7 +20,7 @@ function layout(container: HTMLElement) {
 
 function drag(container: HTMLElement, fromY: number, toY: number, pointerType = 'mouse') {
   fireEvent.pointerDown(slots(container)[0], { clientY: fromY, button: 0, pointerType })
-  fireEvent.pointerMove(document, { clientY: toY, pointerType })
+  fireEvent.pointerMove(document, { clientY: toY, pointerType, buttons: 1 })
 }
 
 function save(title: string) {
@@ -72,6 +72,38 @@ describe('drag to create', () => {
     expect(screen.queryByRole('textbox', { name: 'Add title' })).toBeNull()
   })
 
+  test('a move with no button down (the release was lost, e.g. ctrl+click menu) ends the gesture and creates nothing', () => {
+    const { container } = render(<Scheduler view="day" date={day} events={[]} />)
+    layout(container)
+    drag(container, 9 * HOUR, 11 * HOUR)
+    expect(ghost(container)).not.toBeNull()
+    act(() => { fireEvent.pointerMove(document, { clientY: 12 * HOUR, pointerType: 'mouse', buttons: 0 }) })
+    expect(ghost(container)).toBeNull()
+    act(() => { fireEvent.pointerUp(document) })
+    expect(screen.queryByRole('textbox', { name: 'Add title' })).toBeNull()
+  })
+
+  test('a jitter of a few pixels across a slot edge stays a click', () => {
+    const { container } = render(<Scheduler view="day" date={day} events={[]} />)
+    layout(container)
+    drag(container, 9 * HOUR + 18, 9 * HOUR + 21)
+    expect(ghost(container)).toBeNull()
+    act(() => { fireEvent.pointerUp(document) })
+    expect(screen.queryByRole('textbox', { name: 'Add title' })).toBeNull()
+  })
+
+  test('a press on the locked resize handle of a cut event starts no range', () => {
+    const events: CalendarEvent[] = [{ id: 'late', title: 'Late', start: at(17), end: at(19) }]
+    const { container } = render(<Scheduler view="day" date={day} events={events} dayEndHour={18} />)
+    layout(container)
+    const handle = screen.getByText('Late').closest('[aria-roledescription="draggable"]')!.querySelector<HTMLElement>('.ck\\:h-3')!
+    expect(handle.className).toContain('ck:cursor-default')
+    fireEvent.pointerDown(handle, { clientY: 17 * HOUR + 75, button: 0, pointerType: 'mouse' })
+    fireEvent.pointerMove(document, { clientY: 15 * HOUR, pointerType: 'mouse', buttons: 1 })
+    expect(ghost(container)).toBeNull()
+    fireEvent.pointerUp(document)
+  })
+
   test('a press without a move is a plain click: one slot, the default hour', () => {
     const onEventCreate = vi.fn()
     const { container } = render(<Scheduler view="day" date={day} events={[]} onEventCreate={onEventCreate} />)
@@ -90,14 +122,14 @@ describe('drag to create', () => {
     drag(container, 12 * HOUR, 14 * HOUR, 'touch')
     expect(ghost(container)).toBeNull()
     fireEvent.pointerDown(screen.getByText('Standup'), { clientY: 9 * HOUR + 7, button: 0, pointerType: 'mouse' })
-    fireEvent.pointerMove(document, { clientY: 12 * HOUR, pointerType: 'mouse' })
+    fireEvent.pointerMove(document, { clientY: 12 * HOUR, pointerType: 'mouse', buttons: 1 })
     expect(ghost(container)).toBeNull()
     fireEvent.pointerUp(document)
     unmount()
     const readOnly = render(<Scheduler view="day" date={day} events={[]} readOnly />)
     const cell = readOnly.container.querySelector<HTMLElement>('.ck\\:z-0.ck\\:absolute')!
     fireEvent.pointerDown(cell, { clientY: 9 * HOUR, button: 0, pointerType: 'mouse' })
-    fireEvent.pointerMove(document, { clientY: 12 * HOUR, pointerType: 'mouse' })
+    fireEvent.pointerMove(document, { clientY: 12 * HOUR, pointerType: 'mouse', buttons: 1 })
     expect(ghost(readOnly.container)).toBeNull()
   })
 
@@ -107,7 +139,7 @@ describe('drag to create', () => {
     const thursday = slots(container)[3 * 96].parentElement!.parentElement!
     vi.spyOn(thursday, 'getBoundingClientRect').mockReturnValue({ top: 0, bottom: 24 * 60, left: 0, right: 100, width: 100, height: 24 * 60, x: 0, y: 0, toJSON: () => ({}) })
     fireEvent.pointerDown(slots(container)[3 * 96 + 32], { clientY: 8 * 60, button: 0, pointerType: 'mouse' })
-    fireEvent.pointerMove(document, { clientY: 9 * 60 + 20, clientX: 500, pointerType: 'mouse' })
+    fireEvent.pointerMove(document, { clientY: 9 * 60 + 20, clientX: 500, pointerType: 'mouse', buttons: 1 })
     act(() => { fireEvent.pointerUp(document) })
     save('Focus')
     expect(onEventCreate).toHaveBeenCalledWith(expect.objectContaining({ start: at(8), end: at(9, 30) }))

@@ -62,11 +62,17 @@ export const TimeColumn: React.FC<TimeColumnProps> = ({
   };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!onRangeSelect || e.button !== 0 || e.pointerType === 'touch' || (e.target as HTMLElement).closest('.ck-event, button')) return;
+    // Events (resize handles included, even locked ones) and "+N" keep their own gestures.
+    if (!onRangeSelect || e.button !== 0 || e.pointerType === 'touch' || (e.target as HTMLElement).closest('[aria-roledescription="draggable"], button')) return;
     const column = e.currentTarget;
-    const from = minuteAt(column, e.clientY);
+    const startY = e.clientY;
+    const from = minuteAt(column, startY);
     let to = from;
     const move = (m: PointerEvent) => {
+      // No button down: the release was lost (a context menu, a window switch), so the gesture is over.
+      if (m.buttons === 0) return end(m);
+      // A few pixels of jitter keep it a click.
+      if (to === from && Math.abs(m.clientY - startY) < 5) return;
       to = minuteAt(column, m.clientY);
       setRange({ from, to });
     };
