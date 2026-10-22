@@ -16,7 +16,7 @@ afterEach(() => {
 const review: CalendarEvent = { id: 'r', title: 'Review', start: new Date(2026, 9, 15, 10, 30), end: new Date(2026, 9, 15, 11, 30) }
 // The side panel sits in a desktop-only column: its button is found by its text (jsdom applies no media query).
 const create = () => act(() => screen.getAllByText('Create')[0].click())
-const quickCard = () => screen.queryByPlaceholderText('Event title')?.closest('[role="dialog"]') ?? null
+const quickCard = () => document.querySelector('[data-ck-layer] [role="dialog"]')
 
 describe('Create', () => {
   test('opens the quick card at the next free hour, with its ghost in the grid', () => {

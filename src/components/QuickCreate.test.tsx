@@ -19,8 +19,8 @@ function openAt9(props: Partial<CalendarProps> = {}) {
   act(() => slots(view.container)[36].click())
   return view
 }
-// The quick card (the full editor is a dialog named "New Event" too): the one with the sentence field.
-const card = () => (screen.queryByPlaceholderText('Event title')?.closest('[role="dialog"]') as HTMLElement | null) ?? null
+// The quick card (the full editor is a dialog named "New Event" too): the one in the grid's layer.
+const card = () => document.querySelector<HTMLElement>('[data-ck-layer] [role="dialog"]')
 const title = () => screen.getByRole('textbox', { name: 'Add title' })
 
 describe('quick create', () => {
@@ -47,15 +47,22 @@ describe('quick create', () => {
     expect(card()).toBeNull()
   })
 
-  test('duration chips set the end, the calendar menu sets the calendar, an overlap is announced', () => {
+  test('the calendar menu sets the calendar, an overlap is announced', () => {
     const onEventCreate = vi.fn()
     openAt9({ onEventCreate, calendars: [{ id: 'w', label: 'Work' }] })
     expect(screen.getByText('Overlaps “Standup”').getAttribute('role')).toBe('status')
-    act(() => screen.getByRole('button', { name: '1 hr 30 min' }).click())
-    expect(screen.getByRole('button', { name: '1 hr 30 min' }).getAttribute('aria-pressed')).toBe('true')
     fireEvent.change(screen.getByRole('combobox', { name: 'Calendar' }), { target: { value: 'w' } })
     act(() => screen.getByRole('button', { name: 'Save' }).click())
-    expect(onEventCreate).toHaveBeenCalledWith(expect.objectContaining({ calendarId: 'w', end: new Date(today.getTime() + 10.5 * 3600e3) }))
+    expect(onEventCreate).toHaveBeenCalledWith(expect.objectContaining({ calendarId: 'w', end: new Date(today.getTime() + 10 * 3600e3) }))
+  })
+
+  test('a short card: the title (an example sentence as placeholder), when and calendar on one line, More options and Save', () => {
+    openAt9({ calendars: [{ id: 'w', label: 'Work' }] })
+    expect(title().getAttribute('placeholder')).toBe('Try “Lunch with Lea tomorrow 1pm”')
+    expect(within(card()!).queryByRole('group', { name: 'Duration' })).toBeNull()
+    expect(within(card()!).queryByRole('button', { name: 'Cancel' })).toBeNull()
+    expect(within(card()!).getAllByRole('button').map((b) => b.textContent)).toEqual(['More options', 'Save'])
+    expect(screen.getByRole('combobox', { name: 'Calendar' }).closest('p, div')!.textContent).toContain('9:00 AM – 10:00 AM')
   })
 
   test('Escape closes an untouched card, and asks before dropping a typed title', () => {
@@ -77,12 +84,11 @@ describe('quick create', () => {
   test('"More options" opens the full editor with the cleaned title, the understood time and the calendar', () => {
     openAt9({ calendars: [{ id: 'w', label: 'Work' }, { id: 'p', label: 'Personal' }] })
     fireEvent.change(title(), { target: { value: 'Lunch with Lea tomorrow 1pm' } })
-    act(() => screen.getByRole('button', { name: '1 hr 30 min' }).click())
     fireEvent.change(screen.getByRole('combobox', { name: 'Calendar' }), { target: { value: 'p' } })
     act(() => screen.getByRole('button', { name: 'More options' }).click())
     expect(card()).toBeNull()
     expect((screen.getByPlaceholderText('Add title') as HTMLInputElement).value).toBe('Lunch with Lea')
-    expect(screen.getByText('1 hr 30 min')).toBeTruthy()
+    expect((screen.getByLabelText('Start') as HTMLInputElement).value).toMatch(/T13:00$/)
     expect((within(screen.getByPlaceholderText('Add title').closest('form')!).getByRole('combobox', { name: 'Calendar' }) as HTMLSelectElement).value).toBe('p')
   })
 

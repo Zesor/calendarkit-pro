@@ -52,14 +52,14 @@ describe('components', () => {
     act(() => screen.getByText('Hide Work').click())
     expect(onCalendarToggle).toHaveBeenCalledWith('w', false)
     act(() => screen.getByText('New').click())
-    expect(screen.getByPlaceholderText('Event title')).toBeTruthy()
+    expect(document.querySelector('[data-ck-layer] [role="dialog"]')).toBeTruthy()
   })
 
   test('EmptyState replaces the empty agenda, and onCreate opens the quick card', () => {
     const EmptyState = ({ onCreate }: { onCreate?: () => void }) => <button onClick={onCreate}>Nothing yet, add one</button>
     render(<Scheduler view="agenda" date={today} events={[]} components={{ EmptyState }} />)
     act(() => screen.getByRole('button', { name: 'Nothing yet, add one' }).click())
-    expect(screen.getByPlaceholderText('Event title')).toBeTruthy()
+    expect(document.querySelector('[data-ck-layer] [role="dialog"]')).toBeTruthy()
   })
 
   test('EventEditor works like renderEventForm: a slot click opens it, and onSave creates the event', () => {
