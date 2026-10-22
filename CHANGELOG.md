@@ -1,5 +1,18 @@
 # Pro-Scheduler Changelog
 
+## 2.0.0-alpha.4
+
+Pre-release on the `next` dist-tag (`latest` stays on 1.4.x).
+
+### Added
+- Quick create: a click on a free slot opens a compact card with the new event drawn dashed in the grid. The title is understood as a sentence ("Lunch with Lea tomorrow 1pm", in English or French) and the card shows what it understood; duration chips, a calendar menu, an overlap warning, "More options" (the full form, prefilled), Enter to save.
+- Undo toast after every change (create, edit, move, resize, duplicate, delete), for 6 seconds; the event just changed is outlined briefly.
+- Closing the quick card or the form with changes asks "Discard changes?".
+
+### Changed
+- New events get no default colour or reminder, and picking a calendar no longer copies its colour into the event (see MIGRATION.md).
+- The `language` prop also sets the language the titles are understood in.
+
 ## 2.0.0-alpha.3
 
 Pre-release on the `next` dist-tag (`latest` stays on 1.4.x).

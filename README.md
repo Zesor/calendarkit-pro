@@ -194,6 +194,14 @@ const events = [
 - Drag a bar to move it by whole days, or stretch its right edge to change its last day. `onEventDrop` / `onEventResize` then `onEventUpdate` fire as for timed events; `draggable: false`, `resizable: false` and `readOnly` apply.
 - Click an empty day of the all-day row to create an all-day event. The event form has an All Day switch and shows the last day included.
 
+## Creating and undoing
+
+- A click on a free slot opens a quick card over the grid, with the new event drawn dashed in its column. The title is a sentence the calendar understands, in English or French (`language`): "Lunch with Lea tomorrow 1pm for 2h" moves the event to tomorrow 13:00–15:00 and saves it as "Lunch with Lea". Enter saves; duration chips, the calendar menu and an overlap warning sit under the title; "More options" opens the full form with what the card already has.
+- Every change (create, edit, move, resize, duplicate, delete) shows a toast with **Undo** for 6 seconds, so deleting asks no confirmation. The event just moved or edited is outlined briefly.
+- Closing the card or the form with changes asks first ("Discard changes?").
+- New events get no colour and no reminder you did not choose: they take their calendar's colour.
+- With `renderEventForm`, a slot click opens your form as before.
+
 ## Recurring Events
 
 ```tsx
