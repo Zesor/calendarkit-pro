@@ -206,12 +206,13 @@ const events = [
 
 ## Creating and undoing
 
-- A click on a free slot opens a quick card over the grid, with the new event drawn dashed in its column. The title is a sentence the calendar understands, in English or French (`language`): "Lunch with Lea tomorrow 1pm for 2h" moves the event to tomorrow 13:00–15:00 and saves it as "Lunch with Lea". Enter saves; duration chips, the calendar menu and an overlap warning sit under the title; "More options" opens the full form with what the card already has.
+- A click on a free slot opens a quick card beside the new event, which is drawn dashed in its column. The title is a sentence the calendar understands, in English or French (`language`): "Lunch with Lea tomorrow 1pm for 2h" moves the event to tomorrow 13:00–15:00 and saves it as "Lunch with Lea". Enter saves; duration chips, the calendar menu and an overlap warning sit under the title; "More options" opens the full form with what the card already has.
 - Every change (create, edit, move, resize, duplicate, delete) shows a toast with **Undo** for 6 seconds, so deleting asks no confirmation. The event just moved or edited is outlined briefly.
+- The full form has one labelled row per part (When, Calendar, Location, Guests, Reminders, Description) and keeps Save in view, however tall the calendar.
 - Closing the card or the form with changes asks first ("Discard changes?").
 - New events get no colour and no reminder you did not choose: they take their calendar's colour.
 - With `renderEventForm`, a slot click opens your form as before.
-- A click on an event opens a small card next to it: its date and time, calendar, location (a link to a maps search), guests, reminders, attachments and description, with **Edit**, **Duplicate** and **Delete**. Edit opens the full form. With `renderEventForm`, a click opens your form as before.
+- A click on an event opens a small card beside it (it never covers the event): its date and time, calendar, location (a link to a maps search), guests, reminders, attachments and description, with **Edit**, **Duplicate** and **Delete**. Edit opens the full form. With `renderEventForm`, a click opens your form as before.
 
 ## Customizing
 
