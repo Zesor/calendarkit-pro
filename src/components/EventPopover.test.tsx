@@ -6,13 +6,14 @@ import React from 'react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { Scheduler } from '../index'
 import type { CalendarEvent, CalendarProps } from '../types'
+import { todayAt } from '../test/time'
 
 afterEach(cleanup)
 
 const today = startOfDay(new Date())
 const standup: CalendarEvent = {
   id: 'su', title: 'Standup', calendarId: 'w', guests: ['lea@example.com', 'bob@example.com'], description: 'Daily sync',
-  start: new Date(today.getTime() + 9.5 * 3600e3), end: new Date(today.getTime() + 10 * 3600e3),
+  start: todayAt(9.5), end: todayAt(10),
 }
 const calendars = [{ id: 'w', label: 'Work', color: '#2563eb' }]
 const popover = () => screen.queryByRole('dialog', { name: 'Standup' })
@@ -45,7 +46,7 @@ describe('event popover', () => {
   })
 
   test('a timed event across midnight shows both dates', () => {
-    const night: CalendarEvent = { id: 'n', title: 'Night shift', start: new Date(today.getTime() + 22 * 3600e3), end: new Date(today.getTime() + 26 * 3600e3) }
+    const night: CalendarEvent = { id: 'n', title: 'Night shift', start: todayAt(22), end: todayAt(26) }
     render(<Scheduler view="day" date={today} events={[night]} />)
     act(() => screen.getAllByText('Night shift')[0].click())
     const text = screen.getByRole('dialog', { name: 'Night shift' }).textContent

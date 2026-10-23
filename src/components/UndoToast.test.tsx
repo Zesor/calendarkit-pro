@@ -6,6 +6,7 @@ import React from 'react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { Scheduler } from '../index'
 import type { CalendarEvent } from '../types'
+import { todayAt } from '../test/time'
 
 afterEach(() => {
   cleanup()
@@ -13,7 +14,7 @@ afterEach(() => {
 })
 
 const today = startOfDay(new Date())
-const standup: CalendarEvent = { id: 'su', title: 'Standup', start: new Date(today.getTime() + 9 * 3600e3), end: new Date(today.getTime() + 9.5 * 3600e3) }
+const standup: CalendarEvent = { id: 'su', title: 'Standup', start: todayAt(9), end: todayAt(9.5) }
 const toast = () => screen.queryByText(/created|deleted|resized/)
 
 describe('undo toast', () => {

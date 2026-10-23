@@ -28,6 +28,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run ci
+      # The suite on both clock changes, where "today + 9 h" is not 9:00 (alpha.9 failed on one).
+      - run: npm run test:dst
 
   # Spec §3: React 18 and 19. The suite again with React 18 (the package's other supported major).
   react18:

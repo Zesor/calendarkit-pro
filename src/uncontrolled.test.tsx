@@ -6,11 +6,12 @@ import React from 'react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { Scheduler } from './index'
 import type { CalendarEvent } from './types'
+import { todayAt } from './test/time'
 
 afterEach(cleanup)
 
 const today = startOfDay(new Date())
-const standup: CalendarEvent = { id: 'su', title: 'Standup', start: new Date(today.getTime() + 9.5 * 3600e3), end: new Date(today.getTime() + 10 * 3600e3) }
+const standup: CalendarEvent = { id: 'su', title: 'Standup', start: todayAt(9.5), end: todayAt(10) }
 const slots = (container: HTMLElement) => container.querySelectorAll<HTMLElement>('.ck\\:z-0.ck\\:cursor-pointer')
 const titleBox = () => screen.getByRole('textbox', { name: 'Add title' })
 
