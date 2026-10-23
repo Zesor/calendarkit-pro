@@ -54,3 +54,9 @@ The quick card no longer has duration chips nor a Cancel button: change the time
 **Why:** spec 2.0 (accessibility): everything reachable with Tab and named in full for screen readers.
 
 **What changes:** events (blocks, all-day bars, month chips, agenda items, resource blocks), time slots and all-day cells are now `<button>` elements, and the drag wrappers around events lose their `role="button"`, `tabindex` and `aria-roledescription` attributes. If your CSS targets `div.ck-event`, or your tests look events up by `[aria-roledescription="draggable"]`, select by `.ck-event`, `[data-ck-event-id]` or the button's accessible name instead. The `continuesBefore` and `continuesAfter` labels are no longer used (the bar's name gives its dates).
+
+## Phone layout
+
+**Why:** spec 2.0 (mobile): under 768 px the calendar has a layout of its own.
+
+**What changes:** the switch follows the calendar's own width, not the window's. Under 768 px: the day view first (only when you don't pass `view`), the side panel as a drawer, dialogs as bottom sheets, the month as day buttons with dots. From 768 px the side panel is shown as a column (it used to be hidden below 1024 px of window: close it with the menu button, or pass a `components.Sidebar` of your own). The floating Create button is no longer in the page outside the phone layout: if your tests clicked it, use the side panel's Create.

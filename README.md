@@ -379,6 +379,16 @@ All interface texts (views, event form, sidebar, accessible labels) come from th
 
 Right-click an event to edit, duplicate or delete it (disabled in `readOnly`).
 
+## Phones and narrow calendars
+
+Under 768 px of **calendar** width (a phone, or a calendar in a narrow column), the calendar switches to its phone layout by itself:
+
+- The day view first (when you don't control `view`), a header on two rows with Today always there, and 44 px touch targets.
+- The side panel becomes a drawer, opened by the menu button and closed after a pick.
+- The event card, the quick card and the full form are bottom sheets, their actions always in view; Focus edits in a sheet instead of its side panel and picks its view from a menu.
+- The month shows each day as one button with a dot per event; it opens the day.
+- One floating Create button (Classic; Focus and Flow have their own).
+
 ## Accessibility
 
 Everything works with Tab, Enter, Space and Escape; there are no other keyboard shortcuts to learn.
