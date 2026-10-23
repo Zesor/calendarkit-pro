@@ -27,6 +27,12 @@ interface EventModalProps {
   initialValues?: Partial<CalendarEvent>;
   /** Place suggestions in the Location field (spec §8.7); plain text without. */
   placeSearch?: PlaceSearch;
+  /** A card beside what it edits (Classic), a panel docked beside the grid (Focus), or a bottom sheet (Flow). */
+  variant?: 'card' | 'panel' | 'sheet';
+  /** Told when the form starts or stops having changes (the Focus grid then asks before opening anything else). */
+  onDirtyChange?: (dirty: boolean) => void;
+  /** Each new value asks to close, as Cancel does (a press on the guarded Focus grid). */
+  closeRequest?: number;
 }
 
 // Predefined reminder offsets, in minutes before the event
@@ -104,6 +110,9 @@ export const EventModal: React.FC<EventModalProps> = ({
   initialAllDay,
   initialValues,
   placeSearch,
+  variant = 'card',
+  onDirtyChange,
+  closeRequest,
 }) => {
   const [mode, setMode] = useState<'edit' | 'create'>('create');
   // Read through a ref so a new initialValues object (an inline prop) does not reset the form.
@@ -183,15 +192,23 @@ export const EventModal: React.FC<EventModalProps> = ({
     }
   }, [isOpen, event, initialDate, calendars, initialAllDay]);
 
+  const dirty = isOpen && JSON.stringify(formData) !== openedAs.current;
   const requestClose = () => {
-    if (JSON.stringify(formData) !== openedAs.current) setConfirmingDiscard(true);
+    if (dirty) setConfirmingDiscard(true);
     else onClose();
   };
+  useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
+  const closeRequestRef = useRef(closeRequest);
+  useEffect(() => {
+    if (closeRequest === closeRequestRef.current) return;
+    closeRequestRef.current = closeRequest;
+    setConfirmingDiscard(true);
+  }, [closeRequest]);
   // A card beside what it edits (no overlay): the event's block, or the new event's ghost.
   const editedId = event?.id;
   useLayoutEffect(() => {
     const el = card.current;
-    if (!isOpen || !el) return;
+    if (!isOpen || !el || variant !== 'card') return;
     const root = el.closest('.ck-root');
     const target = editedId === undefined
       ? root?.querySelector('[data-ck-ghost]')
@@ -199,7 +216,7 @@ export const EventModal: React.FC<EventModalProps> = ({
     const box = target?.getBoundingClientRect();
     const viewport = { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
     setPlace(box && box.width > 0 ? placeBeside(box, { width: Math.min(WIDTH, window.innerWidth - 2 * MARGIN), height: el.offsetHeight }, viewport) : null);
-  }, [isOpen, editedId]);
+  }, [isOpen, editedId, variant]);
 
   const closeRef = useRef(requestClose);
   closeRef.current = requestClose;
@@ -642,6 +659,26 @@ export const EventModal: React.FC<EventModalProps> = ({
   );
 
   if (!isOpen) return null;
+  if (variant === 'panel') {
+    // Focus: docked in the calendar's row, beside the grid, which stays usable (no overlay).
+    return (
+      <div data-ck-panel role="dialog" aria-labelledby={`${id}-heading`} className={cx("ck:flex ck:h-full ck:w-[440px] ck:max-w-full ck:shrink-0 ck:flex-col ck:border-l ck:border-border ck:bg-background ck:animate-fade-in", classNames.dialog)}>
+        {renderEditMode()}
+      </div>
+    );
+  }
+  if (variant === 'sheet') {
+    // Flow: a sheet from the bottom of the calendar, over a light scrim (nothing blurred).
+    return (
+      <>
+        <div data-ck-backdrop className="ck:absolute ck:inset-0 ck:z-40 ck:bg-black/20 ck:animate-fade-in" onClick={requestClose} />
+        <div data-ck-sheet role="dialog" aria-modal="true" aria-labelledby={`${id}-heading`} className={cx("ck:absolute ck:inset-x-0 ck:bottom-0 ck:z-50 ck:mx-auto ck:flex ck:max-h-[85%] ck:w-full ck:max-w-[720px] ck:flex-col ck:overflow-hidden ck:rounded-t-3xl ck:bg-background ck:shadow-[0_-20px_50px_-20px_rgb(0_0_0/0.4)] ck:animate-rise-in", classNames.dialog)}>
+          <span aria-hidden="true" className="ck:mx-auto ck:mt-2.5 ck:h-1.5 ck:w-11 ck:shrink-0 ck:rounded-full ck:bg-muted-foreground/30" />
+          {renderEditMode()}
+        </div>
+      </>
+    );
+  }
   // No taller than the room below its top: the form scrolls inside, Save stays in the window.
   const at = place ?? { left: Math.max(MARGIN, (window.innerWidth - WIDTH) / 2), top: 80 };
   return (

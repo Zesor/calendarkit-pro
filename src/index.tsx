@@ -1,6 +1,9 @@
 import React, { useCallback, useId, useState, useMemo, useRef } from 'react';
 import { Modifier, DragOverlay, DragStartEvent } from '@dnd-kit/core';
 import { CalendarHeader } from './components/CalendarHeader';
+import { FocusBar } from './components/FocusBar';
+import { FlowView } from './views/FlowView';
+import { selectFlowDay } from './core/models/lists';
 import { Sidebar } from './components/Sidebar';
 import { MonthView } from './views/MonthView';
 import { WeekView } from './views/WeekView';
@@ -25,7 +28,7 @@ import { resolveWeekStartsOn } from './core/week';
 import { useCalendar, useCalendarSelector } from './react/useCalendar';
 import { CalendarDndContext } from './react/dnd';
 import { useStableCallback } from './hooks/useStableCallback';
-import { format, startOfWeek } from 'date-fns';
+import { addDays, format, startOfWeek } from 'date-fns';
 import { useViewSwipe } from './hooks/useSwipeGesture';
 import { dragOverlaySize } from './components/dnd/dragOverlay';
 import { restrictToWindowEdges, snapToGrid } from './components/dnd/modifiers';
@@ -56,6 +59,7 @@ export type {
   SidebarProps,
   EmptyStateProps,
   WorkingHours,
+  CalendarLayout,
   Place,
   PlaceSearch,
 } from './types';
@@ -115,6 +119,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
   reverseTimeAxis,
   workingHours,
   scrollToHour,
+  layout = 'classic',
 }) => {
   const [activeDragEvent, setActiveDragEvent] = useState<CalendarEvent | null>(null);
   const [activeDayDrag, setActiveDayDrag] = useState(false);
@@ -237,9 +242,12 @@ export const Scheduler: React.FC<CalendarProps> = ({
     handleEventDuplicate, handleEventResize, handleDayEventResize, handleMoreClick,
   } = handlers;
   // 1.x: a click calls onEventClick, then opens the event unless readOnly.
+  // Classic opens the event card; Focus and Flow edit at once, in a panel or a sheet (a host's form opens either way).
   const handleEventClickInternal = useStableCallback((event: CalendarEvent) => {
     onEventClick?.(event);
-    if (!readOnly) calendar.openEvent(event.id);
+    if (readOnly) return;
+    if (layout !== 'classic' && !hasCustomForm) calendar.openEditor(event.id);
+    else calendar.openEvent(event.id);
   });
 
   const id = useId();
@@ -335,7 +343,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
     // Events drawn in the grid only: a day or longer is a bar above it and does not push the slot.
     const timed = filteredEvents.filter((e) => !e.allDay && e.end.getTime() - e.start.getTime() < 864e5).map((e) => ({ start: toDisplay(e.start, timezone), end: toDisplay(e.end, timezone) }));
     const start = nextFreeSlot(toDisplay(new Date(), timezone), timed, grid.startHour, grid.endHour);
-    if (view === 'week' || view === 'day') calendar.navigate(start);
+    if (view === 'week' || view === 'day' || layout === 'flow') calendar.navigate(start);
     calendar.openSlot(start, { editor: hasCustomForm });
   });
 
@@ -343,6 +351,37 @@ export const Scheduler: React.FC<CalendarProps> = ({
   const rangeSelectHandler = readOnly ? undefined : handleTimeRangeSelect;
   const allDaySlotClickHandler = readOnly ? undefined : handleAllDaySlotClick;
   const contextMenuHandler = readOnly ? undefined : openContextMenu;
+
+  // Flow: the day's feed from the engine's model, over the events the calendar shows (active calendars).
+  const flowModel = useCallback(
+    (day: Date, at: Date) => selectFlowDay({ ...calendar.getState(), visible: filteredEvents }, { day, now: at, fromHour: dayStartHour ?? 8, toHour: dayEndHour ?? 20 }),
+    [calendar, filteredEvents, dayStartHour, dayEndHour],
+  );
+
+  // Focus: the grid stays live beside the panel; while the form has changes, a guard over the grid
+  // asks first (as the Classic card's backdrop does), so nothing typed is lost to another click.
+  const [editorDirty, setEditorDirty] = useState(false);
+  const [closeRequest, setCloseRequest] = useState(0);
+
+  const builtInEditor = (
+    <EventModal
+      isOpen={isModalOpen}
+      onClose={handleModalClose}
+      event={editorEvent}
+      initialDate={modalInitialDate}
+      onSave={handleEditorSave}
+      onDelete={handleModalDelete}
+      calendars={calendars}
+      eventTypes={eventTypes}
+      translations={t}
+      initialAllDay={modalInitialAllDay}
+      initialValues={modalInitialValues}
+      placeSearch={placeSearch}
+      variant={layout === 'focus' ? 'panel' : layout === 'flow' ? 'sheet' : 'card'}
+      onDirtyChange={setEditorDirty}
+      closeRequest={closeRequest}
+    />
+  );
 
   return (
     <ClassNamesProvider value={classNames}>
@@ -362,8 +401,36 @@ export const Scheduler: React.FC<CalendarProps> = ({
         style={getThemeStyles(theme)}
         data-ck-theme={themePreset(theme)}
         data-ck-mode={colorMode(mode, isDarkMode)}
+        data-ck-layout={layout}
       >
         {injectStyles && <CalendarStyles />}
+        {layout === 'flow' ? (
+          <FlowView
+            date={currentDate}
+            events={filteredEvents}
+            model={flowModel}
+            timezone={timezone}
+            locale={locale}
+            translations={t}
+            onDateChange={handleDateChange}
+            onEventClick={handleEventClickInternal}
+            // An hour at the start of the free time (all of it when shorter).
+            onBook={readOnly ? undefined : (start, end) => handleTimeRangeSelect(start, new Date(Math.min(end.getTime(), start.getTime() + 3600e3)))}
+            onCreate={readOnly ? undefined : handleCreateEvent}
+            toolbar={Toolbar && (
+              <Toolbar
+                date={currentDate}
+                view={view}
+                onPrev={() => handleDateChange(addDays(currentDate, -7))}
+                onNext={() => handleDateChange(addDays(currentDate, 7))}
+                onToday={handleToday}
+                onViewChange={handleViewChange}
+                onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+              />
+            )}
+          />
+        ) : (
+        <>
         {Toolbar ? (
           <Toolbar
             date={currentDate}
@@ -373,6 +440,19 @@ export const Scheduler: React.FC<CalendarProps> = ({
             onToday={handleToday}
             onViewChange={handleViewChange}
             onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+          />
+        ) : layout === 'focus' ? (
+          <FocusBar
+            date={currentDate}
+            view={view}
+            locale={locale}
+            translations={t}
+            hideViewSwitcher={hideViewSwitcher}
+            onPrev={handlePrev}
+            onNext={handleNext}
+            onToday={handleToday}
+            onViewChange={handleViewChange}
+            onCreate={readOnly ? undefined : handleCreateEvent}
           />
         ) : (
         <CalendarHeader
@@ -394,6 +474,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
         )}
         
         <div className="ck:flex ck:flex-1 ck:overflow-hidden">
+            {layout !== 'focus' && (
             <div
                 className="ck:hidden ck:md:block ck:overflow-hidden ck:transition-[width,opacity] ck:duration-300 ck:ease-[cubic-bezier(0.4,0,0.2,1)]"
                 style={{ width: isSidebarOpen ? 256 : 0, opacity: isSidebarOpen ? 1 : 0 }}
@@ -423,8 +504,10 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 />
                 )}
             </div>
+            )}
 
             <div className="ck:flex-1 ck:flex ck:flex-col ck:overflow-hidden ck:relative">
+                {layout === 'focus' && isModalOpen && editorDirty && <div data-ck-guard className="ck:absolute ck:inset-0 ck:z-40" onClick={() => setCloseRequest((n) => n + 1)} />}
                 {isLoading ? (
                     <div className="ck:flex-1 ck:overflow-auto ck:p-0 ck:md:p-4">
                       <div className="ck:h-full ck:min-w-full">
@@ -542,7 +625,11 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 </div>
                 )}
             </div>
+            {/* Focus: the editor docks here, beside the grid. */}
+            {layout === 'focus' && !hasCustomForm && builtInEditor}
         </div>
+        </>
+        )}
         
         {hasCustomForm ? (
             (renderEventForm ?? ((props) => EventEditor && <EventEditor {...props} />))({
@@ -555,20 +642,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 onDelete: handleModalDelete
             })
         ) : (
-            <EventModal
-                isOpen={isModalOpen}
-                onClose={handleModalClose}
-                event={editorEvent}
-                initialDate={modalInitialDate}
-                onSave={handleEditorSave}
-                onDelete={handleModalDelete}
-                calendars={calendars}
-                eventTypes={eventTypes}
-                translations={t}
-                initialAllDay={modalInitialAllDay}
-                initialValues={modalInitialValues}
-                placeSearch={placeSearch}
-            />
+            layout !== 'focus' && builtInEditor
         )}
 
         {popoverEvent && editingId !== undefined && (

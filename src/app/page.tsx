@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Scheduler, CalendarEvent, ViewType, Resource, EventType, ThemePreset, photonPlaces } from "@/index";
+import { Scheduler, CalendarEvent, ViewType, Resource, EventType, ThemePreset, CalendarLayout, photonPlaces } from "@/index";
 
 interface Calendar {
   id: string;
@@ -151,6 +151,7 @@ export default function Home() {
   const [date, setDate] = useState(new Date());
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [theme, setTheme] = useState<ThemePreset>("calm");
+  const [layout, setLayout] = useState<CalendarLayout>("classic");
   const [reverseTimeAxis, setReverseTimeAxis] = useState(false);
   const [language, setLanguage] = useState<"en" | "fr">("en");
   // The demo turns place search on (OpenStreetMap through Photon); a host opts in the same way.
@@ -206,12 +207,21 @@ export default function Home() {
             </select>
           </label>{" "}
           <label className="demo-theme">
+            Layout{" "}
+            <select value={layout} onChange={(e) => setLayout(e.target.value as CalendarLayout)}>
+              <option value="classic">Classic</option>
+              <option value="focus">Focus</option>
+              <option value="flow">Flow</option>
+            </select>
+          </label>{" "}
+          <label className="demo-theme">
             <input type="checkbox" checked={reverseTimeAxis} onChange={(e) => setReverseTimeAxis(e.target.checked)} /> Latest hours on top
           </label>
         </div>
 
         <div className="demo-frame">
           <Scheduler
+            layout={layout}
             events={filteredEvents}
             view={view}
             onViewChange={setView}
