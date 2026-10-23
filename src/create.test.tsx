@@ -37,7 +37,7 @@ describe('Create', () => {
 
   test('in the day view of another day, goes to today first', () => {
     const { container } = render(<Scheduler view="day" defaultEvents={[]} />)
-    act(() => screen.getByRole('button', { name: /next/i }).click())
+    act(() => screen.getByRole('button', { name: 'Next' }).click())
     create()
     expect(screen.getAllByText(/October 15/).length).toBeGreaterThan(0)
     expect(container.querySelector('[data-ck-ghost]')).toBeTruthy()

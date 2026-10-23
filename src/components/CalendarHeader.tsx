@@ -21,6 +21,8 @@ interface CalendarHeaderProps {
   language?: 'en' | 'fr';
   onLanguageChange?: (lang: 'en' | 'fr') => void;
   locale?: Locale;
+  /** Phone layout (spec §8.9): two rows, menu and Today always shown, 44 px targets. */
+  compact?: boolean;
 }
 
 export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
@@ -37,7 +39,8 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   hideViewSwitcher,
   language,
   onLanguageChange,
-  locale
+  locale,
+  compact
 }) => {
   const viewConfig = [
     { key: 'month', icon: CalendarDays },
@@ -47,6 +50,47 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   ] as const;
 
   const classNames = useClassNames();
+  if (compact) {
+    const tap = "ck:inline-flex ck:min-h-11 ck:min-w-11 ck:rounded-xl ck:text-muted-foreground ck:hover:bg-accent/80 ck:hover:text-foreground";
+    return (
+      <div className={cx("ck:flex ck:flex-col ck:gap-1 ck:px-2 ck:py-2", classNames.toolbar)}>
+        <div className="ck:flex ck:items-center ck:gap-1">
+          <Button className={tap} onClick={onMenuClick} aria-label={translations.toggleSidebar}><Menu className="ck:h-5 ck:w-5" /></Button>
+          <h2 className="ck:min-w-0 ck:flex-1 ck:truncate ck:px-1 ck:text-lg ck:font-semibold ck:capitalize ck:tracking-tight ck:text-foreground">{format(currentDate, 'MMM yyyy', { locale })}</h2>
+          <Button onClick={onToday} className="ck:inline-flex ck:min-h-11 ck:rounded-xl ck:border-[0.5px] ck:border-border/60 ck:px-3 ck:text-sm ck:font-medium">{translations.today}</Button>
+          <Button className={tap} onClick={onPrev} aria-label={translations.previous}><ChevronLeft className="ck:h-5 ck:w-5" /></Button>
+          <Button className={tap} onClick={onNext} aria-label={translations.next}><ChevronRight className="ck:h-5 ck:w-5" /></Button>
+        </div>
+        {(!hideViewSwitcher || onThemeToggle || (onLanguageChange && language)) && (
+          <div className="ck:flex ck:items-center ck:gap-1">
+            {onLanguageChange && language && (
+              <Button onClick={() => onLanguageChange(language === 'en' ? 'fr' : 'en')} aria-label={translations.switchLanguage} className={cx(tap, "ck:px-2 ck:text-xs ck:font-semibold ck:uppercase")}>{language}</Button>
+            )}
+            {onThemeToggle && (
+              <Button className={tap} onClick={onThemeToggle} aria-label={translations.toggleTheme}>
+                {isDarkMode ? <Sun className="ck:h-5 ck:w-5 ck:text-warning" /> : <Moon className="ck:h-5 ck:w-5" />}
+              </Button>
+            )}
+            {!hideViewSwitcher && (
+              <div className="ck:ml-auto ck:flex ck:flex-1 ck:rounded-xl ck:bg-muted/50 ck:p-0.5">
+                {viewConfig.map(({ key, icon: Icon }) => (
+                  <Button
+                    key={key}
+                    onClick={() => onViewChange(key)}
+                    aria-pressed={view === key}
+                    aria-label={translations[key]}
+                    className={cx("ck:inline-flex ck:min-h-11 ck:flex-1 ck:rounded-lg", view === key ? "ck:bg-background ck:text-foreground ck:shadow-xs" : "ck:text-muted-foreground")}
+                  >
+                    <Icon className="ck:h-4 ck:w-4" />
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
   return (
     <div className={cx("ck:flex ck:flex-col ck:md:flex-row ck:items-center ck:justify-between ck:px-3 ck:md:px-5 ck:py-3 ck:border-b-[0px] ck:border-border/50 ck:bg-linear-to-r ck:from-background ck:via-background ck:to-muted/20 ck:gap-3 ck:md:gap-0 ck:min-h-[64px]", classNames.toolbar)}>
       {/* Left Section: Menu, Navigation, Title */}

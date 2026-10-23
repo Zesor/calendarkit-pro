@@ -48,7 +48,7 @@ describe('event buttons', () => {
     const onViewChange = vi.fn()
     const onDateChange = vi.fn()
     render(<Scheduler view="month" date={day} events={[]} onViewChange={onViewChange} onDateChange={onDateChange} />)
-    act(() => screen.getByRole('button', { name: 'Thursday 15 October 2026' }).click())
+    act(() => screen.getAllByRole('button', { name: 'Thursday 15 October 2026' }).find((b) => !b.hasAttribute('aria-pressed'))!.click())
     expect(onViewChange).toHaveBeenCalledWith('day')
     expect(onDateChange.mock.calls[0][0].getTime()).toBe(day.getTime())
   })

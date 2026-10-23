@@ -14,12 +14,13 @@ import { EventModal } from './components/EventModal';
 import { MoreEventsDialog } from './components/MoreEventsDialog';
 import { QuickCreate, QuickExtra } from './components/QuickCreate';
 import { EventPopover } from './components/EventPopover';
+import { Drawer } from './components/Drawer';
 import { nextFreeSlot } from './views/nextFreeSlot';
 import { Box } from './components/placement';
 import { UndoToast } from './components/UndoToast';
 import { MonthViewSkeleton, WeekViewSkeleton, DayViewSkeleton, AgendaViewSkeleton } from './components/Skeleton';
 import { EventContextMenu, useEventContextMenu } from './components/ContextMenu';
-import { CalendarProps, CalendarEvent, CalendarClassNames, CalendarComponents } from './types';
+import { CalendarProps, CalendarEvent, CalendarClassNames, CalendarComponents, ViewType } from './types';
 import { cx } from './utils';
 import { colorMode, getThemeStyles, themePreset } from './lib/theme';
 import { resolveTranslations, timeFormats } from './core/format';
@@ -29,6 +30,7 @@ import { useCalendar, useCalendarSelector } from './react/useCalendar';
 import { CalendarDndContext } from './react/dnd';
 import { useStableCallback } from './hooks/useStableCallback';
 import { addDays, format, startOfWeek } from 'date-fns';
+import { useCompact } from './hooks/useCompact';
 import { useViewSwipe } from './hooks/useSwipeGesture';
 import { dragOverlaySize } from './components/dnd/dragOverlay';
 import { restrictToWindowEdges, snapToGrid } from './components/dnd/modifiers';
@@ -199,6 +201,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
     shownIds.current = new Set(expandedEvents.map((e) => e.id));
   }, [expandedEvents]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  // Phone layout: the side panel is a drawer, closed until the menu opens it.
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // The 1.x modal reads the dialog: an event being shown or edited, or a new event at a slot.
   const editingId = dialog?.kind === 'event' || dialog?.kind === 'editor' ? dialog.eventId : undefined;
@@ -212,6 +216,21 @@ export const Scheduler: React.FC<CalendarProps> = ({
   if (dialog?.kind === 'event' && anchor.current.dialog !== dialog) anchor.current = { dialog, at: pointer.current };
   const rootRef = useRef<HTMLDivElement>(null);
   useMissingStylesWarning(rootRef, injectStyles);
+  // Spec §8.9: under 768 px of calendar width, the phone layout. An uncontrolled view starts on the day.
+  const measured = useCompact(rootRef);
+  const compact = measured === true;
+  // Not measured yet (server render, first paint): the window's media queries stand in.
+  const unmeasured = measured === null;
+  const compactViewSet = useRef(false);
+  React.useEffect(() => {
+    if (!compact || compactViewSet.current) return;
+    compactViewSet.current = true;
+    if (controlledView === undefined) calendar.setView('day');
+  }, [compact, controlledView, calendar]);
+  // A drawer left open while the calendar grew does not come back when it narrows again.
+  React.useEffect(() => {
+    if (!compact) setDrawerOpen(false);
+  }, [compact]);
   if (dialog && dialog.kind !== 'more') {
     if (editingId === undefined) lastOpened.current = { event: null };
     else if (lastOpened.current.id !== editingId) lastOpened.current = { id: editingId, event: expandedEvents.find((e) => e.id === editingId) ?? null };
@@ -283,6 +302,38 @@ export const Scheduler: React.FC<CalendarProps> = ({
   });
 
   const id = useId();
+
+  // The side panel's content: a column on a wide calendar, a drawer on a phone (closed after a pick).
+  const sidebarContent = (close?: () => void) => (
+    <>
+      {CustomSidebar ? (
+        <CustomSidebar
+          date={currentDate}
+          onDateChange={(d: Date) => { handleDateChange(d); close?.(); }}
+          onCreate={readOnly ? undefined : () => { close?.(); handleCreateEvent(); }}
+          calendars={calendars}
+          onCalendarToggle={onCalendarToggle}
+        />
+      ) : (
+      <Sidebar
+          currentDate={currentDate}
+          onDateChange={(d: Date) => { handleDateChange(d); close?.(); }}
+          onViewChange={(v: ViewType) => { handleViewChange(v); close?.(); }}
+          onEventCreate={() => { close?.(); handleCreateEvent(); }}
+          timezone={timezone}
+          onTimezoneChange={onTimezoneChange}
+          className="ck:w-full"
+          readOnly={readOnly}
+          calendars={calendars}
+          onCalendarToggle={onCalendarToggle}
+          translations={t}
+          locale={locale}
+      />
+      )}
+    </>
+  );
+  const toggleSidebar = () => (compact ? setDrawerOpen((open) => !open) : setIsSidebarOpen((open) => !open));
+  const closeDrawer = React.useCallback(() => setDrawerOpen(false), []);
 
   // Mobile swipe gesture support
   const swipeRef = useViewSwipe<HTMLDivElement>(handlePrev, handleNext, true);
@@ -412,7 +463,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
       initialAllDay={modalInitialAllDay}
       initialValues={modalInitialValues}
       placeSearch={placeSearch}
-      variant={layout === 'focus' ? 'panel' : layout === 'flow' ? 'sheet' : 'card'}
+      variant={compact || layout === 'flow' ? 'sheet' : layout === 'focus' ? 'panel' : 'card'}
       onDirtyChange={setEditorDirty}
       closeRequest={closeRequest}
     />
@@ -439,6 +490,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
         data-ck-theme={themePreset(theme)}
         data-ck-mode={colorMode(mode, isDarkMode)}
         data-ck-layout={layout}
+        data-ck-compact={compact || undefined}
       >
         {injectStyles && <CalendarStyles />}
         {layout === 'flow' ? (
@@ -462,7 +514,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 onNext={() => handleDateChange(addDays(currentDate, 7))}
                 onToday={handleToday}
                 onViewChange={handleViewChange}
-                onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+                onToggleSidebar={toggleSidebar}
               />
             )}
           />
@@ -476,7 +528,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
             onNext={handleNext}
             onToday={handleToday}
             onViewChange={handleViewChange}
-            onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+            onToggleSidebar={toggleSidebar}
           />
         ) : layout === 'focus' ? (
           <FocusBar
@@ -490,6 +542,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
             onToday={handleToday}
             onViewChange={handleViewChange}
             onCreate={readOnly ? undefined : handleCreateEvent}
+            compact={compact}
           />
         ) : (
         <CalendarHeader
@@ -499,7 +552,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
           onToday={handleToday}
           view={view}
           onViewChange={handleViewChange}
-          onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          onMenuClick={toggleSidebar}
+          compact={compact}
           isDarkMode={colorMode(mode, isDarkMode) === 'dark'}
           onThemeToggle={onThemeToggle}
           translations={t} // Pass translations
@@ -511,35 +565,12 @@ export const Scheduler: React.FC<CalendarProps> = ({
         )}
         
         <div className="ck:flex ck:flex-1 ck:overflow-hidden">
-            {layout !== 'focus' && (
+            {layout !== 'focus' && !compact && (
             <div
-                className="ck:hidden ck:md:block ck:overflow-hidden ck:transition-[width,opacity] ck:duration-300 ck:ease-[cubic-bezier(0.4,0,0.2,1)]"
+                className={cx(unmeasured && "ck:max-md:hidden", "ck:overflow-hidden ck:transition-[width,opacity] ck:duration-300 ck:ease-[cubic-bezier(0.4,0,0.2,1)]")}
                 style={{ width: isSidebarOpen ? 256 : 0, opacity: isSidebarOpen ? 1 : 0 }}
             >
-                {CustomSidebar ? (
-                  <CustomSidebar
-                    date={currentDate}
-                    onDateChange={handleDateChange}
-                    onCreate={readOnly ? undefined : handleCreateEvent}
-                    calendars={calendars}
-                    onCalendarToggle={onCalendarToggle}
-                  />
-                ) : (
-                <Sidebar
-                    currentDate={currentDate}
-                    onDateChange={handleDateChange}
-                    onViewChange={handleViewChange}
-                    onEventCreate={handleCreateEvent}
-                    timezone={timezone}
-                    onTimezoneChange={onTimezoneChange}
-                    className="ck:w-full"
-                    readOnly={readOnly}
-                    calendars={calendars}
-                    onCalendarToggle={onCalendarToggle}
-                    translations={t}
-                    locale={locale}
-                />
-                )}
+                {sidebarContent()}
             </div>
             )}
 
@@ -574,6 +605,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                 onEventContextMenu={contextMenuHandler}
                                 onDayEventResize={handleDayEventResize}
                                 readonly={readOnly}
+                                compact={compact}
                                 />
                             )}
                             {view === 'week' && (
@@ -649,10 +681,11 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 </div>
                 )}
 
-                {/* Mobile Create Button (FAB), hidden in read-only mode (U3) */}
-                {!readOnly && (
-                <div className="ck:md:hidden ck:absolute ck:bottom-6 ck:right-6 ck:z-50">
+                {/* Phone layout: a floating Create (Focus has one in its bar), none read-only (U3). */}
+                {(compact || unmeasured) && layout === 'classic' && !readOnly && (
+                <div className={cx("ck:absolute ck:bottom-6 ck:right-6 ck:z-30", unmeasured && "ck:md:hidden")}>
                     <button
+                        type="button"
                         onClick={handleCreateEvent}
                         aria-label={t.createEvent}
                         className="ck:w-14 ck:h-14 ck:bg-primary ck:rounded-full ck:shadow-lg ck:flex ck:items-center ck:justify-center ck:text-primary-foreground ck:active:scale-90 ck:transition-transform"
@@ -668,6 +701,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
         </>
         )}
         
+        {compact && drawerOpen && layout !== 'focus' && <Drawer label={t.navigationLabel} closeLabel={t.close} onClose={closeDrawer}>{sidebarContent(closeDrawer)}</Drawer>}
+
         {hasCustomForm ? (
             (renderEventForm ?? ((props) => EventEditor && <EventEditor {...props} />))({
                 isOpen: isModalOpen,
@@ -693,6 +728,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 onDuplicate={() => calendar.duplicate(editingId)}
                 onDelete={() => calendar.remove(editingId)}
                 onClose={handleModalClose}
+                docked={compact}
             />
         )}
 
@@ -711,6 +747,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                     setQuickExtra(extra);
                     calendar.openEditor();
                 }}
+                docked={compact}
                 onClose={handleModalClose}
             />
         )}

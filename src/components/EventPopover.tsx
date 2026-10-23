@@ -27,6 +27,8 @@ interface EventPopoverProps {
   onDuplicate: () => void;
   onDelete: () => void;
   onClose: () => void;
+  /** Phone layout (spec §8.9): a bottom sheet over the calendar instead of a card beside the event. */
+  docked?: boolean;
 }
 
 /** The event's real dates in the display zone, as two lines: the day(s), then the times and length. */
@@ -56,7 +58,7 @@ const Row: React.FC<{ icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; 
 );
 
 /** Spec §8.1 (Classic): an event's details beside it, with Edit / Duplicate / Delete. */
-export const EventPopover: React.FC<EventPopoverProps> = ({ event, anchor, timezone, locale, translations: t, onEdit, onDuplicate, onDelete, onClose }) => {
+export const EventPopover: React.FC<EventPopoverProps> = ({ event, anchor, timezone, locale, translations: t, onEdit, onDuplicate, onDelete, onClose, docked }) => {
   const calendars = useCalendars();
   const classNames = useClassNames();
   const titleId = useId();
@@ -83,15 +85,16 @@ export const EventPopover: React.FC<EventPopoverProps> = ({ event, anchor, timez
 
   return (
     <>
-      <div data-ck-backdrop className="ck:fixed ck:inset-0 ck:z-40" onClick={onClose} />
+      <div data-ck-backdrop className={docked ? "ck:absolute ck:inset-0 ck:z-40 ck:bg-black/20 ck:animate-fade-in" : "ck:fixed ck:inset-0 ck:z-40"} onClick={onClose} />
       <div
         ref={ref}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={cx("ck:fixed ck:z-50 ck:flex ck:flex-col ck:overflow-y-auto ck:rounded-2xl ck:border ck:border-border ck:bg-background ck:p-4 ck:shadow-[0_18px_40px_-16px_rgb(0_0_0/0.35),0_2px_6px_-2px_rgb(0_0_0/0.12)] ck:outline-none ck:animate-pop-in", classNames.dialog)}
-        style={{ ...place, width: WIDTH, maxWidth: `calc(100vw - ${2 * MARGIN}px)`, maxHeight: window.innerHeight - 2 * MARGIN }}
+        data-ck-docked={docked || undefined}
+        className={docked ? cx("ck:absolute ck:inset-x-0 ck:bottom-0 ck:z-50 ck:max-h-[85%] ck:overflow-y-auto ck:rounded-t-3xl ck:border-t ck:border-border ck:bg-background ck:p-5 ck:shadow-[0_-20px_50px_-20px_rgb(0_0_0/0.4)] ck:outline-none ck:animate-rise-in", classNames.dialog) : cx("ck:fixed ck:z-50 ck:flex ck:flex-col ck:overflow-y-auto ck:rounded-2xl ck:border ck:border-border ck:bg-background ck:p-4 ck:shadow-[0_18px_40px_-16px_rgb(0_0_0/0.35),0_2px_6px_-2px_rgb(0_0_0/0.12)] ck:outline-none ck:animate-pop-in", classNames.dialog)}
+        style={docked ? undefined : { ...place, width: WIDTH, maxWidth: `calc(100vw - ${2 * MARGIN}px)`, maxHeight: window.innerHeight - 2 * MARGIN }}
       >
         <div className="ck:flex ck:items-start ck:gap-3">
           <span className="ck-dot ck:mt-2 ck:w-3 ck:h-3 ck:rounded-[4px] ck:shrink-0" style={eventColorStyle(resolveEventColor(event, calendars))} aria-hidden="true" />

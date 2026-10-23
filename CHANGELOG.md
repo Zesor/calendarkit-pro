@@ -1,5 +1,20 @@
 # Pro-Scheduler Changelog
 
+## 2.0.0-alpha.11
+
+Pre-release on the `next` dist-tag (`latest` stays on 1.4.x).
+
+### Added
+- Phone layout under 768 px of calendar width (measured on the calendar, not the window): the day view first when `view` is not controlled; a two-row header with Today always shown and 44 px targets; the side panel as a drawer (light scrim, close button, closes after a pick); the event card, the quick card and the full form as bottom sheets with their actions in view (Focus edits in a sheet, and picks its view from a menu); a month of day buttons with a dot per event; one floating Create.
+- Mini-calendar days are named in full ("Thursday 15 October 2026") and say which one is selected.
+
+### Changed
+- The side panel follows the calendar's width instead of the window's: a calendar of 768 px or more shows it (it was hidden below 1024 px of window), a narrower one has the drawer.
+- The floating Create button only appears in the phone layout (it was in the page, hidden by CSS, at every size).
+
+### Fixed
+- The Flow day strip keeps the chosen day in view on a phone.
+
 ## 2.0.0-alpha.10
 
 Pre-release on the `next` dist-tag (`latest` stays on 1.4.x).

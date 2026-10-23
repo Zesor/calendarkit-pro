@@ -20,6 +20,8 @@ type DraftPatch = Partial<Pick<Draft, 'title' | 'start' | 'end' | 'calendarId'>>
 export type QuickExtra = Partial<Pick<CalendarEvent, 'guests' | 'location' | 'place' | 'description'>>;
 
 interface QuickCreateProps {
+  /** Phone layout (spec §8.9): a bottom sheet over the calendar instead of a card beside the ghost. */
+  docked?: boolean;
   draft: Draft;
   /** Visible events, to warn when the new one overlaps another. */
   events: CalendarEvent[];
@@ -65,7 +67,7 @@ const open = (e: React.MouseEvent<HTMLInputElement>) => {
  * for when (edited in place), guests, location, description and calendar. Enter saves; Escape, the
  * close button or a click outside closes, and asks first when something was typed.
  */
-export const QuickCreate: React.FC<QuickCreateProps> = ({ draft, events, calendars, timezone, locale, translations: t, placeSearch, onChange, onSave, onMoreOptions, onClose }) => {
+export const QuickCreate: React.FC<QuickCreateProps> = ({ draft, events, calendars, timezone, locale, translations: t, placeSearch, onChange, onSave, onMoreOptions, onClose, docked }) => {
   const [confirming, setConfirming] = useState(false);
   const classNames = useClassNames();
   const id = useId();
@@ -130,18 +132,19 @@ export const QuickCreate: React.FC<QuickCreateProps> = ({ draft, events, calenda
   const timeText = "ck:relative ck:rounded-md ck:px-1 ck:-mx-1 ck:hover:bg-muted ck:focus-within:bg-muted ck:focus-within:outline-2 ck:focus-within:outline-ring";
 
   return (
-    <div data-ck-layer className="ck:absolute ck:inset-0 ck:z-40" onClick={dismiss}>
+    <div data-ck-layer className={cx("ck:absolute ck:inset-0 ck:z-40", docked && "ck:bg-black/20 ck:animate-fade-in")} onClick={dismiss}>
       <div
         ref={card}
         role="dialog"
         aria-modal="true"
         aria-label={t.newEvent}
-        className={cx(
+        data-ck-docked={docked || undefined}
+        className={docked ? cx("ck:absolute ck:inset-x-0 ck:bottom-0 ck:flex ck:max-h-[85%] ck:flex-col ck:gap-3 ck:overflow-y-auto ck:rounded-t-3xl ck:border-t ck:border-border ck:bg-background ck:px-5 ck:pt-3 ck:pb-5 ck:shadow-[0_-20px_50px_-20px_rgb(0_0_0/0.4)] ck:animate-rise-in", classNames.dialog) : cx(
           "ck:absolute ck:w-[440px] ck:max-w-[calc(100%-1rem)] ck:flex ck:flex-col ck:gap-3 ck:rounded-2xl ck:border ck:border-border ck:bg-background ck:px-5 ck:pt-3 ck:pb-4 ck:shadow-[0_24px_56px_-20px_rgb(0_0_0/0.4),0_2px_8px_-2px_rgb(0_0_0/0.12)] ck:animate-pop-in",
           !place && "ck:left-1/2 ck:top-20 ck:-translate-x-1/2",
           classNames.dialog
         )}
-        style={place ?? undefined}
+        style={docked ? undefined : place ?? undefined}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="ck:flex ck:justify-end">

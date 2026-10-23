@@ -123,7 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const classNames = useClassNames();
   return (
-    <div className={cx("ck:flex-col ck:overflow-x-hidden ck:h-full ck:bg-linear-to-b ck:from-background ck:via-background ck:to-muted/10 ck:pt-4 ck:pb-4 ck:overflow-y-auto ck:hidden ck:lg:flex", className, classNames.sidebar)}>
+    <div className={cx("ck:flex-col ck:overflow-x-hidden ck:h-full ck:bg-linear-to-b ck:from-background ck:via-background ck:to-muted/10 ck:pt-4 ck:pb-4 ck:overflow-y-auto ck:flex", className, classNames.sidebar)}>
       {!readOnly && (
         <div className="ck:px-4 ck:mb-6">
             <Button
