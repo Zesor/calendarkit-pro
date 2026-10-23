@@ -220,7 +220,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   }, [isOpen, editedId, variant]);
 
   // The Focus panel sits beside a grid that stays usable: the focus comes back, but Tab is free.
-  useDialogFocus(card, { open: isOpen, trap: variant !== 'panel' });
+  useDialogFocus(card, { open: isOpen, trap: variant !== 'panel', content: editedId });
 
   const closeRef = useRef(requestClose);
   closeRef.current = requestClose;

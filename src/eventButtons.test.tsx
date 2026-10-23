@@ -14,6 +14,7 @@ const day = new Date(2026, 9, 15)
 const calendars = [{ id: 'w', label: 'Work' }]
 const review: CalendarEvent = { id: 'r', title: 'Design review', start: new Date(2026, 9, 15, 10), end: new Date(2026, 9, 15, 11, 45), calendarId: 'w', location: 'Room B' }
 const offsite: CalendarEvent = { id: 'o', title: 'Offsite', start: new Date(2026, 9, 15), end: new Date(2026, 9, 17), allDay: true }
+const REVIEW_NO_CALENDAR = 'Design review, Thursday 15 October, 10:00 AM to 11:45 AM, Room B'
 const REVIEW = 'Design review, Thursday 15 October, 10:00 AM to 11:45 AM, Work calendar, Room B'
 
 describe('event buttons', () => {
@@ -50,5 +51,11 @@ describe('event buttons', () => {
     act(() => screen.getByRole('button', { name: 'Thursday 15 October 2026' }).click())
     expect(onViewChange).toHaveBeenCalledWith('day')
     expect(onDateChange.mock.calls[0][0].getTime()).toBe(day.getTime())
+  })
+  test('in a day column, Tab reaches its events before its 24 hour slots', () => {
+    render(<Scheduler view="day" date={day} events={[review]} />)
+    const event = screen.getByRole('button', { name: REVIEW_NO_CALENDAR })
+    const midnight = screen.getByRole('button', { name: 'Create an event on Thursday 15 October at 12:00 AM' })
+    expect(event.compareDocumentPosition(midnight) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 })

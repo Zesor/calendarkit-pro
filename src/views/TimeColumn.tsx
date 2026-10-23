@@ -119,6 +119,8 @@ export const TimeColumn: React.FC<TimeColumnProps> = ({
           style={{ ...gridOffset(grid, from, hourHeight), height: `${((to - from) / 60) * hourHeight}px` }}
         />
       ))}
+      {/* Before the slots in the DOM (drawn above them by z-index), so Tab reaches a column's events first. */}
+      <TimeGridEvents dayKey={dayKey} segments={clipSegments(segments, day, grid)} grid={grid} hourHeight={hourHeight} ghost={selection ?? ghost} {...events} />
       {gridHours(grid).map((hour) => (
         <div
           key={hour}
@@ -142,8 +144,6 @@ export const TimeColumn: React.FC<TimeColumnProps> = ({
           })}
         </div>
       ))}
-
-      <TimeGridEvents dayKey={dayKey} segments={clipSegments(segments, day, grid)} grid={grid} hourHeight={hourHeight} ghost={selection ?? ghost} {...events} />
 
       {/* Current Time Indicator */}
       {visibleNow && (

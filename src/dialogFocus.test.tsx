@@ -79,4 +79,26 @@ describe('dialog focus', () => {
     act(() => event.click())
     expect(screen.getByRole('dialog').style.top).toBe('300px')
   })
+  test('Shift+Tab right after opening (focus on the card itself) stays inside the card', () => {
+    render(<Scheduler view="week" date={day} events={[review]} />)
+    open(screen.getByRole('button', { name: /^Design review/ }))
+    const dialog = screen.getByRole('dialog')
+    act(() => dialog.focus())
+    const items = focusables(dialog)
+    press('Tab', true)
+    expect(document.activeElement).toBe(items[items.length - 1])
+    act(() => dialog.focus())
+    press('Tab')
+    expect(document.activeElement).toBe(items[0])
+  })
+
+  test('Focus panel: opening another event moves the focus into the panel again', () => {
+    const other: CalendarEvent = { id: 'o', title: 'Standup', start: new Date(2026, 9, 15, 14), end: new Date(2026, 9, 15, 15) }
+    render(<Scheduler layout="focus" view="week" date={day} events={[review, other]} />)
+    open(screen.getByRole('button', { name: /^Design review/ }))
+    open(screen.getByRole('button', { name: /^Standup/ }))
+    const panel = screen.getByRole('dialog')
+    expect((within(panel).getByLabelText('Add title') as HTMLInputElement).value).toBe('Standup')
+    expect(panel.contains(document.activeElement)).toBe(true)
+  })
 })

@@ -7,9 +7,10 @@ const origins = new WeakMap<Element, HTMLElement>();
 
 /**
  * Spec §8.8: the focus moves into the dialog, Tab stays inside it (`trap`), and on close it goes back
- * to the element the dialog was opened from, unless the user has already put it somewhere else.
+ * to the element the dialog was opened from, unless the user has already put it somewhere else. A new
+ * `content` while open (the Focus panel switching events) brings the focus back in.
  */
-export function useDialogFocus(ref: RefObject<HTMLElement | null>, { open = true, trap = true }: { open?: boolean; trap?: boolean } = {}) {
+export function useDialogFocus(ref: RefObject<HTMLElement | null>, { open = true, trap = true, content }: { open?: boolean; trap?: boolean; content?: unknown } = {}) {
   const origin = useRef<HTMLElement | null>(null);
   const wasOpen = useRef(false);
   // Read while rendering: autoFocus moves the focus during the commit, before any effect runs.
@@ -30,7 +31,9 @@ export function useDialogFocus(ref: RefObject<HTMLElement | null>, { open = true
       if (!trap || e.key !== 'Tab') return;
       const items = [...node.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((el) => !el.closest('[hidden]'));
       const edge = e.shiftKey ? items[0] : items[items.length - 1];
-      if (edge && document.activeElement === edge) {
+      // The card itself (focused on open) counts as an edge both ways.
+      const active = document.activeElement;
+      if (edge && (active === edge || active === node || !node.contains(active))) {
         e.preventDefault();
         (e.shiftKey ? items[items.length - 1] : items[0]).focus();
       }
@@ -45,5 +48,5 @@ export function useDialogFocus(ref: RefObject<HTMLElement | null>, { open = true
         if ((!active || active === document.body) && from?.isConnected && from !== document.body) from.focus();
       });
     };
-  }, [open, trap, ref]);
+  }, [open, trap, ref, content]);
 }
