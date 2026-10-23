@@ -10,6 +10,8 @@ import type { CalendarEvent, CalendarProps } from '../types'
 afterEach(cleanup)
 
 const today = startOfDay(new Date())
+// A wall-clock time `days` after today: right on a DST day too (adding milliseconds is an hour off there).
+const wall = (days: number, hours: number) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + days, Math.floor(hours), (hours % 1) * 60)
 const standup: CalendarEvent = { id: 'su', title: 'Standup', start: new Date(today.getTime() + 9.5 * 3600e3), end: new Date(today.getTime() + 10 * 3600e3) }
 
 // The day view's quarter-hour slots, in order (index 36 = 09:00).
@@ -45,7 +47,7 @@ describe('quick create', () => {
     expect(card()!.textContent).toContain('saved as “Lunch with Lea”')
     expect(card()!.textContent).toContain('1:00 PM – 2:00 PM')
     fireEvent.keyDown(title(), { key: 'Enter' })
-    expect(onEventCreate).toHaveBeenCalledWith(expect.objectContaining({ title: 'Lunch with Lea', start: new Date(addDays(today, 1).getTime() + 13 * 3600e3) }))
+    expect(onEventCreate).toHaveBeenCalledWith(expect.objectContaining({ title: 'Lunch with Lea', start: wall(1, 13) }))
     expect(card()).toBeNull()
   })
 
@@ -73,7 +75,7 @@ describe('quick create', () => {
     fireEvent.change(within(card()!).getByLabelText('Start'), { target: { value: '11:00' } })
     fireEvent.change(within(card()!).getByLabelText('End'), { target: { value: '12:30' } })
     act(() => screen.getByRole('button', { name: 'Save' }).click())
-    expect(onEventCreate).toHaveBeenCalledWith(expect.objectContaining({ start: new Date(addDays(today, 2).getTime() + 11 * 3600e3), end: new Date(addDays(today, 2).getTime() + 12.5 * 3600e3) }))
+    expect(onEventCreate).toHaveBeenCalledWith(expect.objectContaining({ start: wall(2, 11), end: wall(2, 12.5) }))
   })
 
   test('guests, a location and a description are added in place and saved with the event', () => {
