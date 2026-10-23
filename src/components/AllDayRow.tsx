@@ -31,6 +31,7 @@ const AllDayRowImpl: React.FC<AllDayRowProps> = ({
   days,
   dayEvents,
   timezone,
+  locale,
   translations,
   readonly,
   gutterClassName,
@@ -77,6 +78,7 @@ const AllDayRowImpl: React.FC<AllDayRowProps> = ({
               allDayRow
               className={cx("ck:h-full", index > 0 && "ck:border-l-[0.5px] ck:border-border/30")}
               onSlotClick={readonly || !onSlotClick ? undefined : handleSlotClick}
+              label={interpolate(translations?.createAllDayOn ?? '{date}', { date: format(day, 'EEEE d MMMM', { locale }) })}
             />
           ))}
         </div>

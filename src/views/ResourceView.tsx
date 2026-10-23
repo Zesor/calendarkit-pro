@@ -130,6 +130,8 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
                                                 resourceId={resource.id}
                                                 className="ck:h-full ck:flex-1 ck:border-r ck:border-border/10 ck:last:border-border/30 ck:transition-colors"
                                                 onSlotClick={onTimeSlotClick}
+                                                label={onTimeSlotClick && `${interpolate(translations?.createAt ?? '{date} {time}', { date: format(date, 'EEEE d MMMM', { locale }), time: format(date, timeFormats(locale).time, { locale }) })}, ${resource.label}`}
+                                                tabbable={minute === 0}
                                             />
                                         );
                                     })}

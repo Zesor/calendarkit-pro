@@ -30,6 +30,11 @@
 .ck-root :where(button, [role="button"]) {
   cursor: pointer;
 }
+/* Keyboard focus is always visible (spec §8.8), inside the box so grid cells don't overlap. */
+.ck-root :where(:focus-visible) {
+  outline: 2px solid var(--ck-ring);
+  outline-offset: -2px;
+}
 .ck-root :where(:disabled) {
   cursor: default;
 }

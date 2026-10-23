@@ -1,7 +1,8 @@
 import React from 'react';
-import { Locale } from 'date-fns';
+import { format, Locale } from 'date-fns';
 import { CalendarEvent, CalendarTranslations } from '../types';
 import { cx } from '../utils';
+import { interpolate, timeFormats } from '../core/format';
 import { DaySegment } from '../core/events';
 import { DroppableCell } from '../components/dnd/DroppableCell';
 import { type GhostEvent, TimeGridEvents } from './TimeGridEvents';
@@ -50,6 +51,12 @@ interface TimeColumnProps {
 export const TimeColumn: React.FC<TimeColumnProps> = ({
   day, dayKey, segments, grid, hourHeight, nowMinutes, className, onTimeSlotClick, onRangeSelect, ghost, ...events
 }) => {
+  // Slot names, "Create an event on Thursday 15 October at 9:00 AM" (spec §8.8).
+  const { locale, translations } = events;
+  const slotLabel = React.useCallback((date: Date) => interpolate(translations?.createAt ?? '{date} {time}', {
+    date: format(date, 'EEEE d MMMM', { locale }),
+    time: format(date, timeFormats(locale).time, { locale }),
+  }), [locale, translations]);
   const visibleNow = nowMinutes !== undefined && nowMinutes >= grid.startHour * 60 && nowMinutes <= grid.endHour * 60;
   // Minutes since midnight of the first and the current slot of a drag.
   const [range, setRange] = React.useState<{ from: number; to: number } | null>(null);
@@ -63,7 +70,7 @@ export const TimeColumn: React.FC<TimeColumnProps> = ({
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     // Events (resize handles included, even locked ones) and "+N" keep their own gestures.
-    if (!onRangeSelect || e.button !== 0 || e.pointerType === 'touch' || (e.target as HTMLElement).closest('[data-ck-drag], button')) return;
+    if (!onRangeSelect || e.button !== 0 || e.pointerType === 'touch' || (e.target as HTMLElement).closest('[data-ck-drag], button:not([data-ck-slot])')) return;
     const column = e.currentTarget;
     const startY = e.clientY;
     const from = minuteAt(column, startY);
@@ -128,6 +135,8 @@ export const TimeColumn: React.FC<TimeColumnProps> = ({
                 className="ck:w-full ck:absolute ck:left-0 ck:right-0 ck:z-0 ck:transition-colors"
                 style={{ height: `${(grid.slotMinutes / 60) * 100}%`, [grid.reverse ? 'bottom' : 'top']: `${(minute / 60) * 100}%` }}
                 onSlotClick={onTimeSlotClick}
+                label={onTimeSlotClick && slotLabel(cellDate)}
+                tabbable={minute === 0}
               />
             );
           })}
