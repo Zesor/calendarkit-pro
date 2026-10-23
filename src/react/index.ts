@@ -3,5 +3,5 @@ export { useCalendar, useCalendarSelector, useCalendarState } from './useCalenda
 export { CalendarProvider, useCalendarContext } from './context'
 export { getEventProps, getResizeHandleProps, getSlotProps } from './propGetters'
 export type { EventProps, ResizeHandleProps, SlotProps } from './propGetters'
-export { CalendarDndContext, dayAwareCollision, dragEndToMove, useActiveDrag, useDraggableEvent, useDroppableSlot } from './dnd'
+export { CalendarDndContext, dayAwareCollision, dragAnnouncements, dragEndToMove, useActiveDrag, useDraggableEvent, useDroppableSlot } from './dnd'
 export type { DragData, DropData } from './dnd'

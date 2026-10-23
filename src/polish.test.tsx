@@ -5,7 +5,7 @@ import { act, cleanup, render, screen, within } from '@testing-library/react'
 import React from 'react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { Scheduler } from './index'
-import { dragAnnouncements } from './react/dnd'
+import { dragAnnouncements } from './react'
 import { resolveTranslations } from './core/format'
 import type { CalendarEvent, ToolbarProps } from './types'
 

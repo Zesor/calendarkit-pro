@@ -183,7 +183,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
       // The event's button is gone: the focus goes to the hour it was in (its day for an all-day event).
       const gone = shownBefore.current.find((e) => e.id === lastChange.eventId);
       if (!gone) return;
-      const wall = toDisplay(gone.start, zone.current);
+      // All-day dates are calendar dates: they never shift with the display zone.
+      const wall = gone.allDay ? gone.start : toDisplay(gone.start, zone.current);
       const slot = gone.allDay ? `day:${new Date(wall.getFullYear(), wall.getMonth(), wall.getDate()).toISOString()}` : new Date(wall.getFullYear(), wall.getMonth(), wall.getDate(), wall.getHours()).toISOString();
       const frame = requestAnimationFrame(() => rootRef.current?.querySelector<HTMLElement>(`[data-ck-slot="${slot}"]`)?.focus());
       return () => cancelAnimationFrame(frame);

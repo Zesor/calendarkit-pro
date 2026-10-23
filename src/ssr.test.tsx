@@ -12,6 +12,7 @@ const review: CalendarEvent = { id: 'rv', title: 'Design review', start: new Dat
 describe('server rendering', () => {
   test('imports and renders without window or document, in the three layouts and five views, and without a warning (React 18 warns on useLayoutEffect)', async () => {
     const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const others = [vi.spyOn(console, 'warn').mockImplementation(() => {}), vi.spyOn(console, 'log').mockImplementation(() => {})]
     expect(typeof window).toBe('undefined')
     const { Scheduler } = await import('./index')
     for (const layout of ['classic', 'focus', 'flow'] as const) {
@@ -22,5 +23,6 @@ describe('server rendering', () => {
       expect(renderToString(<Scheduler events={[review]} view={view} date={day} resources={[{ id: 'a', label: 'Room A' }]} />)).toContain('ck-root')
     }
     expect(errors.mock.calls.map((c) => String(c[0]))).toEqual([])
+    for (const spy of others) expect(spy).not.toHaveBeenCalled()
   })
 })

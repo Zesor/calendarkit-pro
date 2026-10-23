@@ -63,9 +63,11 @@ describe('time grids', () => {
       </DndContext>
     )
     const { rerender } = render(<Harness tick={0} />)
-    expect(segments).toHaveBeenCalledTimes(1)
+    // Mounting renders twice: without, then with the current time (useNow, for hydration).
+    const mounted = segments.mock.calls.length
+    expect(mounted).toBeLessThanOrEqual(2)
     rerender(<Harness tick={1} />)
-    expect(segments).toHaveBeenCalledTimes(1)
+    expect(segments).toHaveBeenCalledTimes(mounted)
   })
 
   test('the day view renders its events in the display zone', () => {

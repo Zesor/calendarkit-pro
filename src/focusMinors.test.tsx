@@ -52,4 +52,11 @@ describe('focus minors', () => {
     fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
     await vi.waitFor(() => expect(document.activeElement).toBe(menu))
   })
+  test('deleting an all-day event with a display timezone: the focus goes to its own day (all-day dates never shift)', async () => {
+    const offsite: CalendarEvent = { id: 'of', title: 'Offsite', start: new Date(2026, 9, 14), end: new Date(2026, 9, 15), allDay: true }
+    render(<Scheduler view="day" date={day} timezone="America/Los_Angeles" defaultEvents={[offsite]} />)
+    open(screen.getByRole('button', { name: /^Offsite/ }))
+    act(() => within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete' }).click())
+    await vi.waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Create an all-day event on Wednesday 14 October' })))
+  })
 })

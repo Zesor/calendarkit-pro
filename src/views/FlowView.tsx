@@ -11,6 +11,7 @@ import { eventColorStyle, resolveEventColor, useCalendars } from '../components/
 import { useClassNames } from '../components/customize';
 import { useEventLabel } from '../components/eventLabel';
 import { durationLabel } from '../components/duration';
+import { useNow } from '../hooks/useNow';
 
 interface FlowViewProps {
   /** The day shown (wall clock of the display zone). */
@@ -38,12 +39,8 @@ export const FlowView: React.FC<FlowViewProps> = ({ date, events, model, timezon
   const calendars = useCalendars();
   const classNames = useClassNames();
   const labelEvent = useEventLabel();
-  // The current time moves every minute.
-  const [now, setNow] = React.useState(() => new Date());
-  React.useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 60_000);
-    return () => clearInterval(timer);
-  }, []);
+  // The current time moves every minute; null until mounted (hydration: see useNow).
+  const now = useNow();
   const day = startOfDay(date);
   // The chosen day stays in view in the strip (on a phone it scrolls sideways).
   const strip = React.useRef<HTMLDivElement>(null);
@@ -51,10 +48,11 @@ export const FlowView: React.FC<FlowViewProps> = ({ date, events, model, timezon
   React.useEffect(() => {
     strip.current?.querySelector('[aria-pressed="true"]')?.scrollIntoView?.({ block: 'nearest', inline: 'center' });
   }, [dayTime]);
-  const flow = model(day, now);
+  // Before the first mount, a time before the day: no "now" in the feed yet.
+  const flow = model(day, now ?? addDays(day, -1));
   const formats = timeFormats(locale);
   const time = (d: Date) => format(d, formats.time, { locale });
-  const today = startOfDay(toDisplay(now, timezone));
+  const today = now && startOfDay(toDisplay(now, timezone));
   const weekStart = startOfWeek(day, { weekStartsOn: resolveWeekStartsOn(locale, 1) });
   const week = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const covering = (d: Date) => events.filter((e) => toDisplay(e.start, timezone) < addDays(d, 1) && toDisplay(e.end, timezone) > d);
@@ -84,7 +82,7 @@ export const FlowView: React.FC<FlowViewProps> = ({ date, events, model, timezon
               className={cx("ck:flex ck:min-h-[76px] ck:min-w-16 ck:flex-1 ck:flex-col ck:items-center ck:justify-center ck:gap-0.5 ck:rounded-xl ck:text-xs ck:font-semibold ck:uppercase ck:tracking-wide ck:transition-colors", pressed ? "ck:bg-primary ck:text-primary-foreground" : "ck:bg-muted ck:text-muted-foreground ck:hover:bg-accent")}
             >
               {format(d, 'EEE', { locale })}
-              <span className={cx("ck:font-display ck:text-xl ck:font-medium ck:normal-case ck:tracking-normal", !pressed && (isSameDay(d, today) ? "ck:text-primary" : "ck:text-foreground"))}>{format(d, 'd')}</span>
+              <span className={cx("ck:font-display ck:text-xl ck:font-medium ck:normal-case ck:tracking-normal", !pressed && (today && isSameDay(d, today) ? "ck:text-primary" : "ck:text-foreground"))}>{format(d, 'd')}</span>
               <span className="ck:flex ck:h-1.5 ck:gap-0.5" aria-hidden="true">
                 {busy.slice(0, 4).map((e) => <i key={e.id} className={cx("ck:h-1.5 ck:w-1.5 ck:rounded-full", pressed ? "ck:bg-primary-foreground" : "ck-dot")} style={pressed ? undefined : eventColorStyle(resolveEventColor(e, calendars))} />)}
               </span>

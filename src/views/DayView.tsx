@@ -11,6 +11,7 @@ import { useElementWidth } from '../hooks/useElementWidth';
 import { DAY_MAX_COLUMNS, type GhostEvent } from './TimeGridEvents';
 import { TimeColumn } from './TimeColumn';
 import { DEFAULT_GRID, gridHours, gridOffset, gridScrollTop, slotDate, type TimeGrid } from './grid';
+import { useNow } from '../hooks/useNow';
 
 interface DayViewProps {
   currentDate: Date;
@@ -67,12 +68,8 @@ const DayViewImpl: React.FC<DayViewProps> = ({
 
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const [gridRef, gridWidth] = useElementWidth<HTMLDivElement>();
-  const [now, setNow] = React.useState(() => new Date());
-
-  React.useEffect(() => {
-    const interval = setInterval(() => setNow(new Date()), 60000);
-    return () => clearInterval(interval);
-  }, []);
+  // Null until mounted: no "now" in the server's HTML nor in the first client render (hydration).
+  const now = useNow();
 
   // Scroll a few hours above the current time (in the display zone) on mount.
   React.useEffect(() => {
@@ -87,9 +84,9 @@ const DayViewImpl: React.FC<DayViewProps> = ({
   const { dayEvents, timedEvents } = partitionDayEvents(events, timezone);
   const rowDays = React.useMemo(() => [visibleRange.start], [visibleRange]);
   const segments = segmentsByDisplayDay(timedEvents, timezone, visibleRange).get(dayKey) ?? NO_SEGMENTS;
-  const isToday = isSameDay(currentDate, displayToday(timezone, now));
-  const zonedNow = toDisplay(now, timezone);
-  const nowMinutes = minutesSinceDisplayMidnight(now, timezone);
+  const isToday = !!now && isSameDay(currentDate, displayToday(timezone, now));
+  const zonedNow = now && toDisplay(now, timezone);
+  const nowMinutes = now ? minutesSinceDisplayMidnight(now, timezone) : 0;
   const hours = gridHours(grid);
   const formats = timeFormats(locale);
 
@@ -149,7 +146,7 @@ const DayViewImpl: React.FC<DayViewProps> = ({
                              style={gridOffset(grid, nowMinutes, HOUR_HEIGHT)}
                          >
                              <span className={cx("ck:text-[10px] ck:font-bold ck:text-primary-foreground ck:bg-primary ck:px-2 ck:py-1 ck:rounded-lg ck:shadow-md ck:shadow-primary/30", grid.reverse ? "ck:translate-y-1/2" : "ck:-translate-y-1/2")}>
-                                 {format(zonedNow, formats.time, { locale })}
+                                 {zonedNow && format(zonedNow, formats.time, { locale })}
                              </span>
                          </div>
                      )}
