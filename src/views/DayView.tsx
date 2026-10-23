@@ -96,7 +96,7 @@ const DayViewImpl: React.FC<DayViewProps> = ({
   return (
     <div className="ck:flex ck:flex-col ck:h-full ck:bg-background ck:border-[0.5px] ck:border-border/50 ck:rounded-2xl ck:overflow-hidden ck:shadow-xs">
         {/* Header */}
-        <div className="ck:px-6 ck:py-4 ck:border-b-[0.5px] ck:border-border/50 ck:bg-linear-to-r ck:from-muted/20 ck:via-background ck:to-muted/20 ck:text-center ck:shrink-0">
+        <div data-ck-day-header className="ck:px-6 ck:py-4 ck:border-b-[0.5px] ck:border-border/50 ck:bg-linear-to-r ck:from-muted/20 ck:via-background ck:to-muted/20 ck:text-center ck:shrink-0">
             <div className="ck:flex ck:items-center ck:justify-center ck:gap-3">
                 <h2 className="ck:text-xl ck:font-semibold ck:capitalize ck:text-foreground">
                     {format(currentDate, 'EEEE, MMMM d, yyyy', { locale })}

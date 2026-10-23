@@ -456,7 +456,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
       initialAllDay={modalInitialAllDay}
       initialValues={modalInitialValues}
       placeSearch={placeSearch}
-      variant={layout === 'focus' ? 'panel' : layout === 'flow' ? 'sheet' : 'card'}
+      variant={compact || layout === 'flow' ? 'sheet' : layout === 'focus' ? 'panel' : 'card'}
       onDirtyChange={setEditorDirty}
       closeRequest={closeRequest}
     />
@@ -719,6 +719,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 onDuplicate={() => calendar.duplicate(editingId)}
                 onDelete={() => calendar.remove(editingId)}
                 onClose={handleModalClose}
+                docked={compact}
             />
         )}
 
@@ -737,6 +738,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                     setQuickExtra(extra);
                     calendar.openEditor();
                 }}
+                docked={compact}
                 onClose={handleModalClose}
             />
         )}

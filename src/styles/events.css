@@ -50,3 +50,19 @@
 .ck-root .ck-off-hours[data-ck-edge="start"][data-ck-reverse] {
   box-shadow: inset 0 1px 0 var(--ck-off-line);
 }
+
+/* Phone sheets (spec §8.9): every control a finger can hit, at least 44 px. */
+.ck-root :is([data-ck-docked], [data-ck-sheet]) :is(button, select, input:not([type="checkbox"])) {
+  min-height: 44px;
+}
+.ck-root :is([data-ck-docked], [data-ck-sheet]) button {
+  min-width: 44px;
+}
+
+/* Phone layout: the day view's date on one line, under a header that already has Today. */
+.ck-root[data-ck-compact] [data-ck-day-header] {
+  padding: 8px 12px;
+}
+.ck-root[data-ck-compact] [data-ck-day-header] h2 {
+  font-size: 1rem;
+}
