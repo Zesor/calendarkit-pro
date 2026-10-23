@@ -40,12 +40,12 @@ describe('place search in the form', () => {
   test('no result, and a provider that fails, are said plainly; the typed text is kept', async () => {
     open(vi.fn<PlaceSearch>().mockResolvedValue([]))
     fireEvent.change(location(), { target: { value: 'Nowhere' } })
-    expect(await screen.findByText('No places found')).toBeTruthy()
+    await vi.waitFor(() => expect(screen.getByRole('status').textContent).toBe('No places found'))
     cleanup()
     const onSave = open(vi.fn<PlaceSearch>().mockRejectedValue(new Error('down')))
     fireEvent.change(screen.getByLabelText('Add title'), { target: { value: 'Coffee' } })
     fireEvent.change(location(), { target: { value: 'Somewhere' } })
-    expect(await screen.findByText('Place search is unavailable')).toBeTruthy()
+    await vi.waitFor(() => expect(screen.getByRole('status').textContent).toBe('Place search is unavailable'))
     fireEvent.submit(location().closest('form')!)
     expect(onSave.mock.calls[0][0]).toMatchObject({ location: 'Somewhere', place: undefined })
   })
@@ -71,7 +71,7 @@ describe('place search in the form', () => {
     await screen.findByRole('option', { name: /Café de Flore/ })
     fireEvent.change(location(), { target: { value: 'Flore Paris' } })
     expect(screen.queryByRole('option', { name: /Café de Flore/ })).toBeNull()
-    expect(screen.getByText('Searching…')).toBeTruthy()
+    expect(screen.getByRole('status').textContent).toBe('Searching…')
   })
 
   test('a video link is kept as typed and never sent to the provider', async () => {

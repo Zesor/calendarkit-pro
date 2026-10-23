@@ -33,6 +33,7 @@ import { useViewSwipe } from './hooks/useSwipeGesture';
 import { dragOverlaySize } from './components/dnd/dragOverlay';
 import { restrictToWindowEdges, snapToGrid } from './components/dnd/modifiers';
 import { CalendarStyles, useMissingStylesWarning } from './styles/CalendarStyles';
+import { EventLabelProvider, eventLabel } from './components/eventLabel';
 import { EventColorProvider, eventColorStyle, resolveEventColor } from './components/eventColor';
 import { ClassNamesProvider, ComponentsProvider } from './components/customize';
 import { resolveTimeGrid } from './views/grid';
@@ -71,6 +72,11 @@ const NO_CLASSES: CalendarClassNames = {};
 function pressedBox(e: React.PointerEvent): Box {
   const box = (e.target as Element).closest?.('.ck-event, [data-ck-event]')?.getBoundingClientRect();
   return box && box.width > 0 ? box : { left: e.clientX, right: e.clientX, top: e.clientY, bottom: e.clientY };
+}
+/** Enter or Space on an event button: the card opens beside that event (no pointer involved). */
+function keyedBox(e: React.KeyboardEvent): Box | null {
+  const box = (e.target as Element).closest?.('.ck-event, [data-ck-event]')?.getBoundingClientRect();
+  return box && box.width > 0 ? box : null;
 }
 const NO_COMPONENTS: CalendarComponents = {};
 
@@ -158,14 +164,40 @@ export const Scheduler: React.FC<CalendarProps> = ({
   const expandedEvents = useCalendarSelector(calendar, (s) => s.occurrences);
   const dialog = useCalendarSelector(calendar, (s) => s.dialog);
   const lastChange = useCalendarSelector(calendar, (s) => s.lastChange);
-  // The event just created or moved gets a brief outline (spec §8.6).
+  // The event just created or moved gets a brief outline and the focus (spec §8.6).
   const [landedId, setLandedId] = useState<string>();
+  // Events shown before the last change: an event created through a 1.x host comes back under the
+  // host's own id, found like undo finds it (an id not shown before, with the same title).
+  const shownEvents = useRef(expandedEvents);
+  shownEvents.current = expandedEvents;
+  const shownIds = useRef(new Set<string>());
   React.useEffect(() => {
     if (!lastChange || lastChange.kind === 'delete') return setLandedId(undefined);
     setLandedId(lastChange.eventId);
+    const before = shownIds.current;
+    // A frame later, after a closing dialog gave the focus back, and once the key press that saved is over
+    // (it would click the event). Not found (a day not shown): left where it is.
+    const frame = requestAnimationFrame(() => {
+      const all = [...(rootRef.current?.querySelectorAll<HTMLElement>('[data-ck-event-id]') ?? [])];
+      const find = (id: string) => all.find((el) => el.dataset.ckEventId === id);
+      let landed = find(lastChange.eventId);
+      const hostId = !landed && lastChange.kind === 'create' ? shownEvents.current.find((e) => !before.has(e.id) && e.title === lastChange.title)?.id : undefined;
+      if (hostId) {
+        landed = find(hostId);
+        setLandedId(hostId);
+      }
+      (landed?.matches('button') ? landed : landed?.querySelector('button'))?.focus();
+    });
     const timer = setTimeout(() => setLandedId(undefined), 1600);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      cancelAnimationFrame(frame);
+    };
   }, [lastChange]);
+  // After the effect above, which reads the ids shown before the change.
+  React.useEffect(() => {
+    shownIds.current = new Set(expandedEvents.map((e) => e.id));
+  }, [expandedEvents]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // The 1.x modal reads the dialog: an event being shown or edited, or a new event at a slot.
@@ -257,6 +289,9 @@ export const Scheduler: React.FC<CalendarProps> = ({
 
   // Built-in language pack + the consumer's overrides, memoized so children keep stable props (C6).
   const t = useMemo(() => resolveTranslations(language, translations), [language, translations]);
+
+  // Every event surface's accessible name (spec §8.8).
+  const labelEvent = useCallback((e: CalendarEvent) => eventLabel(e, { t, timezone, locale, calendars }), [t, timezone, locale, calendars]);
 
   // Drag ghost times follow the locale's clock convention.
   const overlayTimeFormat = timeFormats(locale).time;
@@ -387,6 +422,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
     <ClassNamesProvider value={classNames}>
     <ComponentsProvider value={components}>
     <EventColorProvider value={calendars}>
+    <EventLabelProvider value={labelEvent}>
     <CalendarDndContext
         calendar={calendar}
         id={id}
@@ -397,6 +433,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
       <div
         ref={rootRef}
         onPointerDownCapture={(e) => { pointer.current = pressedBox(e); }}
+        onKeyDownCapture={(e) => { if (e.key === 'Enter' || e.key === ' ') pointer.current = keyedBox(e); }}
         className={cx("ck-root ck:flex ck:flex-col ck:h-full ck:bg-background ck:text-foreground ck:relative", className, classNames.root)}
         style={getThemeStyles(theme)}
         data-ck-theme={themePreset(theme)}
@@ -756,6 +793,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
 
       </div>
     </CalendarDndContext>
+    </EventLabelProvider>
     </EventColorProvider>
     </ComponentsProvider>
     </ClassNamesProvider>

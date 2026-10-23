@@ -6,6 +6,7 @@ import { useClassNames, useComponents } from './customize';
 import { timeFormats } from '../core/format';
 import { toDisplay } from '../core/timezone';
 import { useEventColorStyle } from './eventColor';
+import { useEventLabel } from './eventLabel';
 
 /** How a block shows its event at a given size in px (spec §8.3). */
 export interface BlockLayout {
@@ -56,11 +57,14 @@ export const EventBlock: React.FC<EventBlockProps> = ({ event, height, width, ti
   const start = format(toDisplay(event.start, timezone), formats.time, { locale });
   const end = format(toDisplay(event.end, timezone), formats.time, { locale });
   const layout = blockLayout(height, width);
+  const label = useEventLabel()(event);
 
   return (
-    <div
+    <button
+      type="button"
+      aria-label={label}
       className={cx(
-        "ck-event ck:h-full ck:w-full ck:rounded-md ck:overflow-hidden ck:text-xs ck:font-semibold ck:leading-tight ck:transition-[filter] ck:hover:drop-shadow-md",
+        "ck-event ck:h-full ck:w-full ck:text-left ck:rounded-md ck:overflow-hidden ck:text-xs ck:font-semibold ck:leading-tight ck:transition-[filter] ck:hover:drop-shadow-md",
         layout.size === 'lg' ? "ck:flex ck:flex-col ck:gap-px ck:py-1" : "ck:flex ck:items-center ck:gap-1.5",
         layout.narrow ? "ck:px-1.5" : "ck:px-2",
         highlight && "ck:animate-landed",
@@ -86,6 +90,6 @@ export const EventBlock: React.FC<EventBlockProps> = ({ event, height, width, ti
           )}
         </>
       )}
-    </div>
+    </button>
   );
 };

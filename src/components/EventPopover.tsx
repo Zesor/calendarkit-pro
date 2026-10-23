@@ -11,6 +11,7 @@ import { eventColorStyle, resolveEventColor, useCalendars } from './eventColor';
 import { useClassNames } from './customize';
 import { durationLabel } from './duration';
 import { Box, placeBeside } from './placement';
+import { useDialogFocus } from './useDialogFocus';
 
 const WIDTH = 340;
 const MARGIN = 8;
@@ -49,8 +50,8 @@ function when(event: CalendarEvent, timezone: string | undefined, locale: Locale
 /** One line of the card: a muted icon, then its content. */
 const Row: React.FC<{ icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; label?: string; children: React.ReactNode }> = ({ icon: Icon, label, children }) => (
   <div className="ck:flex ck:items-start ck:gap-3 ck:py-1 ck:text-sm ck:text-muted-foreground">
-    <Icon className="ck:w-4 ck:h-4 ck:mt-0.5 ck:shrink-0 ck:opacity-80" aria-label={label} aria-hidden={label ? undefined : true} />
-    <div className="ck:min-w-0 ck:flex-1">{children}</div>
+    <Icon className="ck:w-4 ck:h-4 ck:mt-0.5 ck:shrink-0 ck:opacity-80" aria-hidden="true" />
+    <div className="ck:min-w-0 ck:flex-1">{label && <span className="ck:sr-only">{label}</span>}{children}</div>
   </div>
 );
 
@@ -70,6 +71,7 @@ export const EventPopover: React.FC<EventPopoverProps> = ({ event, anchor, timez
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
+  useDialogFocus(ref);
   // Measured once laid out, so a tall card moves up instead of leaving the window.
   useLayoutEffect(() => setHeight(ref.current?.offsetHeight ?? 0), [event]);
 
@@ -85,6 +87,7 @@ export const EventPopover: React.FC<EventPopoverProps> = ({ event, anchor, timez
       <div
         ref={ref}
         role="dialog"
+        aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
         className={cx("ck:fixed ck:z-50 ck:flex ck:flex-col ck:overflow-y-auto ck:rounded-2xl ck:border ck:border-border ck:bg-background ck:p-4 ck:shadow-[0_18px_40px_-16px_rgb(0_0_0/0.35),0_2px_6px_-2px_rgb(0_0_0/0.12)] ck:outline-none ck:animate-pop-in", classNames.dialog)}

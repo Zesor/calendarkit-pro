@@ -9,6 +9,7 @@ import { cx } from '../utils';
 import { ChevronLeft, ChevronRight, Plus } from '../components/icons';
 import { eventColorStyle, resolveEventColor, useCalendars } from '../components/eventColor';
 import { useClassNames } from '../components/customize';
+import { useEventLabel } from '../components/eventLabel';
 import { durationLabel } from '../components/duration';
 
 interface FlowViewProps {
@@ -36,6 +37,7 @@ interface FlowViewProps {
 export const FlowView: React.FC<FlowViewProps> = ({ date, events, model, timezone, locale, translations: t, onDateChange, onEventClick, onBook, onCreate, toolbar }) => {
   const calendars = useCalendars();
   const classNames = useClassNames();
+  const labelEvent = useEventLabel();
   // The current time moves every minute.
   const [now, setNow] = React.useState(() => new Date());
   React.useEffect(() => {
@@ -71,7 +73,7 @@ export const FlowView: React.FC<FlowViewProps> = ({ date, events, model, timezon
               key={d.getTime()}
               type="button"
               aria-pressed={pressed}
-              aria-label={`${format(d, 'EEEE d MMMM', { locale })}, ${interpolate(t.eventsCount, { n: busy.length })}`}
+              aria-label={`${format(d, 'EEEE d MMMM', { locale })}, ${interpolate(busy.length === 1 ? t.eventCount : t.eventsCount, { n: busy.length })}`}
               onClick={() => onDateChange(d)}
               className={cx("ck:flex ck:min-h-[76px] ck:min-w-16 ck:flex-1 ck:flex-col ck:items-center ck:justify-center ck:gap-0.5 ck:rounded-xl ck:text-xs ck:font-semibold ck:uppercase ck:tracking-wide ck:transition-colors", pressed ? "ck:bg-primary ck:text-primary-foreground" : "ck:bg-muted ck:text-muted-foreground ck:hover:bg-accent")}
             >
@@ -89,7 +91,7 @@ export const FlowView: React.FC<FlowViewProps> = ({ date, events, model, timezon
         {flow.allDay.map((event) => (
           <li key={event.id} className="ck:flex ck:items-stretch ck:gap-3.5">
             <span className="ck:w-14 ck:shrink-0 ck:pt-2.5 ck:text-right ck:text-xs ck:text-muted-foreground">{t.allDay}</span>
-            <button type="button" data-ck-event-id={event.id} className={cx(card, classNames.event)} style={eventColorStyle(resolveEventColor(event, calendars))} onClick={() => onEventClick(event)}>
+            <button type="button" aria-label={labelEvent(event)} data-ck-event-id={event.id} className={cx(card, classNames.event)} style={eventColorStyle(resolveEventColor(event, calendars))} onClick={() => onEventClick(event)}>
               <span className="ck:text-sm ck:font-semibold">{event.title || t.noTitle}</span>
             </button>
           </li>
@@ -123,7 +125,7 @@ export const FlowView: React.FC<FlowViewProps> = ({ date, events, model, timezon
           return (
             <li key={`${event.id}-${item.start.getTime()}`} className="ck:flex ck:items-stretch ck:gap-3.5">
               <span className="ck:w-14 ck:shrink-0 ck:pt-3 ck:text-right ck:text-xs ck:text-muted-foreground ck:tabular-nums">{time(item.start)}</span>
-              <button type="button" data-ck-event-id={event.id} className={cx(card, classNames.event)} style={eventColorStyle(resolveEventColor(event, calendars))} onClick={() => onEventClick(event)}>
+              <button type="button" aria-label={labelEvent(event)} data-ck-event-id={event.id} className={cx(card, classNames.event)} style={eventColorStyle(resolveEventColor(event, calendars))} onClick={() => onEventClick(event)}>
                 <span className="ck:min-w-0">
                   <span className="ck:block ck:text-[15px] ck:font-semibold ck:break-words">{event.title || t.noTitle}</span>
                   <span className="ck:mt-0.5 ck:block ck:text-xs ck:opacity-90 ck:tabular-nums">

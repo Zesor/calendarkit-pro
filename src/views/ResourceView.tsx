@@ -7,6 +7,7 @@ import { DraggableEvent } from '../components/dnd/DraggableEvent';
 import { DroppableCell } from '../components/dnd/DroppableCell';
 import { eventColorStyle, resolveEventColor, useCalendars } from '../components/eventColor';
 import { useClassNames } from '../components/customize';
+import { useEventLabel } from '../components/eventLabel';
 import { cx } from '../utils';
 import { DEFAULT_GRID, gridHours, gridSlots, slotDate, type TimeGrid } from './grid';
 
@@ -39,6 +40,7 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const calendars = useCalendars();
   const classNames = useClassNames();
+  const labelEvent = useEventLabel();
   
   const hours = gridHours(grid);
   const hourWidth = 100; // px per hour
@@ -128,6 +130,8 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
                                                 resourceId={resource.id}
                                                 className="ck:h-full ck:flex-1 ck:border-r ck:border-border/10 ck:last:border-border/30 ck:transition-colors"
                                                 onSlotClick={onTimeSlotClick}
+                                                label={onTimeSlotClick && `${interpolate(translations?.createAt ?? '{date} {time}', { date: format(date, 'EEEE d MMMM', { locale }), time: format(date, timeFormats(locale).time, { locale }) })}, ${resource.label}`}
+                                                tabbable={minute === 0}
                                             />
                                         );
                                     })}
@@ -151,7 +155,7 @@ export const ResourceView: React.FC<ResourceViewProps> = ({
                                         ...eventColorStyle(resolveEventColor(event, calendars, resource.color)),
                                     }}
                                 >
-                                    <div className="ck:truncate">{event.title}</div>
+                                    <button type="button" aria-label={labelEvent(event)} className="ck:block ck:w-full ck:h-full ck:text-left ck:truncate">{event.title}</button>
                                 </DraggableEvent>
                             ))}
                         </div>

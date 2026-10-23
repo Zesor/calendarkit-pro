@@ -15,7 +15,7 @@ afterEach(() => {
 
 const day = new Date(2026, 9, 15)
 const at = (hour: number, minute = 0) => new Date(2026, 9, 15, hour, minute)
-const block = (title: string) => screen.getByText(title).closest('[aria-roledescription="draggable"]') as HTMLElement
+const block = (title: string) => screen.getByText(title).closest('[data-ck-drag]') as HTMLElement
 const scrollTopOf = (container: HTMLElement) => (container.querySelector('.ck\\:overflow-y-auto') as HTMLElement).scrollTop
 
 describe('reversed time axis', () => {

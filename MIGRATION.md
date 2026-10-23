@@ -48,3 +48,9 @@ export const cn = (...inputs: ClassValue[]) => twMerge(clsx(inputs))
 **What changes:** **Create** (side panel, mobile button, empty agenda, a custom `Sidebar`'s `onCreate`) opens the quick card at the next free hour instead of the full form; "More options" opens the form. The form is a card beside the event, not a centred dialog. With `renderEventForm` or `components.EventEditor`, your form opens as before, at the time Create picked.
 
 The quick card no longer has duration chips nor a Cancel button: change the times in the card (or drag over the grid), and close it with its close button, Escape or a click outside. The built-in form now shows and saves times in `timezone` (it used the machine's zone); a form of your own still receives instants, as in 1.x.
+
+## Events and slots are buttons
+
+**Why:** spec 2.0 (accessibility): everything reachable with Tab and named in full for screen readers.
+
+**What changes:** events (blocks, all-day bars, month chips, agenda items, resource blocks), time slots and all-day cells are now `<button>` elements, and the drag wrappers around events lose their `role="button"`, `tabindex` and `aria-roledescription` attributes. If your CSS targets `div.ck-event`, or your tests look events up by `[aria-roledescription="draggable"]`, select by `.ck-event`, `[data-ck-event-id]` or the button's accessible name instead. The `continuesBefore` and `continuesAfter` labels are no longer used (the bar's name gives its dates).

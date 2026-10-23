@@ -96,7 +96,7 @@ describe('drag to create', () => {
     const events: CalendarEvent[] = [{ id: 'late', title: 'Late', start: at(17), end: at(19) }]
     const { container } = render(<Scheduler view="day" date={day} events={events} dayEndHour={18} />)
     layout(container)
-    const handle = screen.getByText('Late').closest('[aria-roledescription="draggable"]')!.querySelector<HTMLElement>('.ck\\:h-3')!
+    const handle = screen.getByText('Late').closest('[data-ck-drag]')!.querySelector<HTMLElement>('.ck\\:h-3')!
     expect(handle.className).toContain('ck:cursor-default')
     fireEvent.pointerDown(handle, { clientY: 17 * HOUR + 75, button: 0, pointerType: 'mouse' })
     fireEvent.pointerMove(document, { clientY: 15 * HOUR, pointerType: 'mouse', buttons: 1 })

@@ -3,6 +3,7 @@ import { X } from '../icons';
 import { cx } from '../../utils';
 import { useClassNames } from '../customize';
 import { Button } from './button';
+import { useDialogFocus } from '../useDialogFocus';
 
 interface ModalProps {
   isOpen: boolean;
@@ -35,6 +36,7 @@ export const Modal: React.FC<ModalProps> = ({
     if (isOpen) panelRef.current?.scrollIntoView?.({ block: 'nearest' });
   }, [isOpen]);
   const classNames = useClassNames();
+  useDialogFocus(panelRef, { open: isOpen });
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {

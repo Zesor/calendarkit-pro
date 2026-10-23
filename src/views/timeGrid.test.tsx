@@ -43,7 +43,7 @@ describe('time grids', () => {
       { id: 'n', title: 'Night', start: new Date(2026, 9, 15, 22), end: new Date(2026, 9, 16, 2) },
     ]
     render(<DndContext><WeekView currentDate={new Date(2026, 9, 15)} events={events} /></DndContext>)
-    const block = (title: string) => screen.getAllByText(title).map((el) => el.closest('[aria-roledescription="draggable"]') as HTMLElement)
+    const block = (title: string) => screen.getAllByText(title).map((el) => el.closest('[data-ck-drag]') as HTMLElement)
     expect(block('A')[0].style.width).toBe('calc(50% - 2px)')
     expect(block('B')[0].style.left).toBe('50%')
     expect(block('Night')).toHaveLength(2)
@@ -71,7 +71,7 @@ describe('time grids', () => {
   test('the day view renders its events in the display zone', () => {
     const events: CalendarEvent[] = [{ id: 'a', title: 'Call', start: new Date('2026-10-15T14:00:00Z'), end: new Date('2026-10-15T15:00:00Z') }]
     render(<DndContext><DayView currentDate={new Date(2026, 9, 15)} events={events} timezone="Asia/Tokyo" /></DndContext>)
-    const block = screen.getByText('Call').closest('[aria-roledescription="draggable"]') as HTMLElement
+    const block = screen.getByText('Call').closest('[data-ck-drag]') as HTMLElement
     expect(block.style.top).toBe(`${23 * 80}px`)
   })
 
@@ -100,7 +100,7 @@ describe('time grids', () => {
       { id: 'd', title: 'Later', start: new Date(2026, 9, 15, 10, 30), end: new Date(2026, 9, 15, 11) },
     ]
     render(<DndContext><WeekView currentDate={new Date(2026, 9, 15)} events={events} /></DndContext>)
-    const block = (title: string) => screen.getByText(title).closest('[aria-roledescription="draggable"]') as HTMLElement
+    const block = (title: string) => screen.getByText(title).closest('[data-ck-drag]') as HTMLElement
     expect(block('Half').style.width).toMatch(/^calc\(33\.33+\d*% - 2px\)$/)
     expect(block('Later').style.left).toMatch(/^33\.33+\d*%$/)
     expect(block('Later').style.width).toMatch(/^calc\(66\.66+\d*% - 2px\)$/)

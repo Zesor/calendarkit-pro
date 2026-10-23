@@ -17,6 +17,10 @@ interface DroppableCellProps {
   onClick?: () => void;
   /** Stable alternative to `onClick` for time slots: called with the cell's date and resource. */
   onSlotClick?: (date: Date, resourceId?: string) => void;
+  /** With `onSlotClick`, the cell is a button with this name (spec §8.8)… */
+  label?: string;
+  /** …and a tab stop, or reachable by pointer only (one stop per hour, not per slot). */
+  tabbable?: boolean;
 }
 
 // Primary tints, a touch stronger each quarter of the hour.
@@ -48,20 +52,24 @@ export function droppableCellClasses({ className, idleClassName, date, isOver, c
   return cx(className, !isOver && idleClassName, QUARTER_HOVER[quarter], isOver && QUARTER_ACTIVE[quarter], clickable && "ck:cursor-pointer");
 }
 
-const DroppableCellImpl: React.FC<DroppableCellProps> = ({ id, date, resourceId, allDayRow, children, className, idleClassName, style, onClick, onSlotClick }) => {
+const DroppableCellImpl: React.FC<DroppableCellProps> = ({ id, date, resourceId, allDayRow, children, className, idleClassName, style, onClick, onSlotClick, label, tabbable = true }) => {
   const classNames = useClassNames();
   const { isOver, setNodeRef } = useDroppable({
     id: id,
     data: { date, resourceId, allDayRow },
   });
 
+  const cellClassName = cx(droppableCellClasses({ className, idleClassName, date, isOver, clickable: !!onSlotClick }), classNames.slot);
+  // A slot that creates is a button (read-only grids and month cells stay plain cells).
+  if (onSlotClick) {
+    return (
+      <button type="button" ref={setNodeRef} data-ck-slot="" aria-label={label} tabIndex={tabbable ? 0 : -1} className={cellClassName} style={style} onClick={() => onSlotClick(date, resourceId)}>
+        {children}
+      </button>
+    );
+  }
   return (
-    <div
-      ref={setNodeRef}
-      className={cx(droppableCellClasses({ className, idleClassName, date, isOver, clickable: !!onSlotClick }), classNames.slot)}
-      style={style}
-      onClick={onSlotClick ? () => onSlotClick(date, resourceId) : onClick}
-    >
+    <div ref={setNodeRef} className={cellClassName} style={style} onClick={onClick}>
       {children}
     </div>
   );
@@ -87,5 +95,7 @@ export const DroppableCell = React.memo(
     prev.idleClassName === next.idleClassName &&
     prev.onClick === next.onClick &&
     prev.onSlotClick === next.onSlotClick &&
+    prev.label === next.label &&
+    prev.tabbable === next.tabbable &&
     shallowEqualStyle(prev.style, next.style),
 );

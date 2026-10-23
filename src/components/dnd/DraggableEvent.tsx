@@ -15,7 +15,8 @@ interface DraggableEventProps extends React.HTMLAttributes<HTMLDivElement> {
 
 const DraggableEventImpl: React.FC<DraggableEventProps> = ({ event, dragId, grabOffsetMs, children, className, style: propStyle, ...props }) => {
   const dragDisabled = isEventDragDisabled(event);
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+  // Pointer drag only: the wrapper is not a tab stop, the event button inside it is (spec §8.8).
+  const { listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: dragId ?? event.id,
     data: { event, grabOffsetMs },
     disabled: dragDisabled,
@@ -32,9 +33,9 @@ const DraggableEventImpl: React.FC<DraggableEventProps> = ({ event, dragId, grab
   return (
     <div
       ref={setNodeRef}
+      data-ck-drag=""
       style={style}
       {...listeners}
-      {...attributes}
       {...props}
       className={cx(!dragDisabled && "ck:touch-none", className)}
     >

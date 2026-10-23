@@ -11,7 +11,7 @@ afterEach(cleanup)
 
 const allDay = (id: string, from: Date, toExclusive: Date): CalendarEvent => ({ id, title: id, start: from, end: toExclusive, allDay: true })
 const timed = (id: string, day: number, hour: number): CalendarEvent => ({ id, title: id, start: new Date(2026, 9, day, hour), end: new Date(2026, 9, day, hour, 30) })
-const bars = (title: string) => screen.queryAllByText(title).map((el) => el.closest('[role="button"]') as HTMLElement)
+const bars = (title: string) => screen.queryAllByText(title).map((el) => el.closest('[data-ck-drag]') as HTMLElement)
 
 describe('month view all-day bars', () => {
   test('a Mon–Wed event is one continuous bar (3/7 of the week)', () => {
