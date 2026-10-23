@@ -9,7 +9,7 @@ import { layoutDayRow, partitionDayEvents } from '../core/allDay';
 import { AllDayBar } from '../components/AllDayBar';
 import { displayToday } from '../core/timezone';
 import { getMonthGrid, getWeekDays, resolveWeekStartsOn } from '../core/week';
-import { useEventColorStyle } from '../components/eventColor';
+import { eventColorStyle, resolveEventColor, useCalendars, useEventColorStyle } from '../components/eventColor';
 import { TODAY_MARK } from '../components/todayMark';
 import { useEventLabel } from '../components/eventLabel';
 import { DraggableEvent } from '../components/dnd/DraggableEvent';
@@ -26,6 +26,8 @@ interface MonthViewProps {
   onEventContextMenu?: (event: CalendarEvent, e: React.MouseEvent) => void;
   onDayEventResize?: (event: CalendarEvent, newLastDay: Date) => void;
   readonly?: boolean;
+  /** Phone layout (spec §8.9): each day is one button with a dot per event. */
+  compact?: boolean;
 }
 
 interface EventItemProps {
@@ -65,6 +67,7 @@ const EventItem = React.memo(({ event, onEventClick, onEventContextMenu }: Event
 EventItem.displayName = 'EventItem';
 
 const ROW_HEIGHT = 130; // px per week row (unchanged)
+const COMPACT_ROW_HEIGHT = 64; // phone layout: number and dots
 const LANE_HEIGHT = 20;
 const MAX_LANES = 3; // all-day lanes shown per week before "+N more"
 const MAX_ITEMS = 3; // timed chips per day, then "+N more" (spec §8.4)
@@ -90,8 +93,10 @@ export const MonthView: React.FC<MonthViewProps> = ({
   translations,
   onEventContextMenu,
   onDayEventResize,
-  readonly
+  readonly,
+  compact
 }) => {
+  const calendars = useCalendars();
   // Week start follows the locale (historical Monday fallback). The same value drives the grid
   // AND the weekday header row.
   const weekStartsOn = resolveWeekStartsOn(locale, 1);
@@ -108,7 +113,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
   const today = displayToday(timezone);
 
   return (
-    <div className="ck:flex ck:flex-col ck:h-full ck:bg-background ck:border-[0.5px] ck:border-border/50 ck:rounded-2xl ck:overflow-hidden ck:min-w-[800px] ck:md:min-w-0 ck:shadow-xs">
+    <div className={cx("ck:flex ck:flex-col ck:h-full ck:bg-background ck:border-[0.5px] ck:border-border/50 ck:rounded-2xl ck:overflow-hidden ck:shadow-xs", compact ? "ck:min-w-0" : "ck:min-w-[800px] ck:md:min-w-0")}>
       <div className="ck:overflow-y-auto ck:flex-1 ck:relative">
         {/* Sticky Header */}
         <div className="ck:grid ck:grid-cols-7 ck:border-b-[0.5px] ck:border-border/50 ck:bg-linear-to-r ck:from-muted/30 ck:via-muted/40 ck:to-muted/30 ck:sticky ck:top-0 ck:z-20 ck:backdrop-blur-xs">
@@ -126,11 +131,26 @@ export const MonthView: React.FC<MonthViewProps> = ({
           const visibleLanes = Math.min(laneCount, MAX_LANES);
 
           return (
-          <div key={week[0].toISOString()} className="ck:relative ck:grid ck:grid-cols-7" style={{ height: ROW_HEIGHT }}>
+          <div key={week[0].toISOString()} className="ck:relative ck:grid ck:grid-cols-7" style={{ height: compact ? COMPACT_ROW_HEIGHT : ROW_HEIGHT }}>
             {week.map((day, column) => {
               const dayKey = format(day, 'yyyy-MM-dd');
               const dayTimed = eventsByDay.get(dayKey) || [];
               const barsOnDay = segments.filter((s) => column >= s.startCol && column < s.startCol + s.span);
+              if (compact) {
+                // No room for chips: the day number, a dot per event (bars first), the count in the name.
+                const onDay = [...barsOnDay.map((s) => s.event), ...dayTimed];
+                const count = onDay.length ? `, ${interpolate((onDay.length === 1 ? translations?.eventCount : translations?.eventsCount) || '{n} events', { n: onDay.length })}` : '';
+                return (
+                  <DroppableCell key={day.toISOString()} id={day.toISOString()} date={day} className={cx("ck:h-full ck:border-b-[0.5px] ck:border-r-[0.5px] ck:border-border/30 ck:last:border-r-0", !isSameMonth(day, currentDate) && "ck:text-muted-foreground/60")}>
+                    <button type="button" aria-label={`${format(day, 'EEEE d MMMM yyyy', { locale })}${count}`} onClick={() => onDateClick?.(day)} className="ck:flex ck:h-full ck:min-h-10 ck:w-full ck:flex-col ck:items-center ck:gap-1 ck:pt-1.5">
+                      <span className={cx("ck:flex ck:h-7 ck:w-7 ck:items-center ck:justify-center ck:text-sm ck:font-semibold ck:tabular-nums", isSameDay(day, today) && TODAY_MARK)}>{format(day, 'd', { locale })}</span>
+                      <span className="ck:flex ck:flex-wrap ck:justify-center ck:gap-0.5 ck:px-1" aria-hidden="true">
+                        {onDay.slice(0, 4).map((e) => <i key={e.id} data-ck-dot className="ck-dot ck:h-1.5 ck:w-1.5 ck:rounded-full" style={eventColorStyle(resolveEventColor(e, calendars))} />)}
+                      </span>
+                    </button>
+                  </DroppableCell>
+                );
+              }
               const hiddenBars = barsOnDay.filter((s) => s.lane >= MAX_LANES).length;
               const shown = timedSlots(visibleLanes, dayTimed.length);
               const hidden = hiddenBars + dayTimed.length - shown;
@@ -196,7 +216,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
             })}
 
             {/* All-day bars spanning the week */}
-            <div className="ck:absolute ck:inset-x-0 ck:pointer-events-none" style={{ top: BARS_TOP, height: visibleLanes * LANE_HEIGHT }}>
+            {!compact && <div className="ck:absolute ck:inset-x-0 ck:pointer-events-none" style={{ top: BARS_TOP, height: visibleLanes * LANE_HEIGHT }}>
               {segments.filter((s) => s.lane < MAX_LANES).map((segment) => (
                 <div key={`${segment.event.id}-${week[0].toISOString()}`} className="ck:pointer-events-auto">
                   <AllDayBar
@@ -211,7 +231,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
                   />
                 </div>
               ))}
-            </div>
+            </div>}
           </div>
           );
         })}

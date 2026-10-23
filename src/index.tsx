@@ -598,6 +598,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                                 onEventContextMenu={contextMenuHandler}
                                 onDayEventResize={handleDayEventResize}
                                 readonly={readOnly}
+                                compact={compact}
                                 />
                             )}
                             {view === 'week' && (
