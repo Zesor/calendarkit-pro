@@ -204,7 +204,6 @@ export const MonthView: React.FC<MonthViewProps> = ({
                     rowDays={week}
                     laneHeight={LANE_HEIGHT}
                     timezone={timezone}
-                    translations={translations}
                     readonly={readonly}
                     onEventClick={onEventClick}
                     onEventContextMenu={onEventContextMenu}

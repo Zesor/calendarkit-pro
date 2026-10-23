@@ -50,8 +50,8 @@ function when(event: CalendarEvent, timezone: string | undefined, locale: Locale
 /** One line of the card: a muted icon, then its content. */
 const Row: React.FC<{ icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; label?: string; children: React.ReactNode }> = ({ icon: Icon, label, children }) => (
   <div className="ck:flex ck:items-start ck:gap-3 ck:py-1 ck:text-sm ck:text-muted-foreground">
-    <Icon className="ck:w-4 ck:h-4 ck:mt-0.5 ck:shrink-0 ck:opacity-80" aria-label={label} aria-hidden={label ? undefined : true} />
-    <div className="ck:min-w-0 ck:flex-1">{children}</div>
+    <Icon className="ck:w-4 ck:h-4 ck:mt-0.5 ck:shrink-0 ck:opacity-80" aria-hidden="true" />
+    <div className="ck:min-w-0 ck:flex-1">{label && <span className="ck:sr-only">{label}</span>}{children}</div>
   </div>
 );
 

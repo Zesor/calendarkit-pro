@@ -69,6 +69,7 @@ export const PlaceField: React.FC<PlaceFieldProps> = ({ id, value, place, search
 
   const listId = `${id}-places`;
   const showList = open && status !== 'idle' && typed.current.trim().length >= MIN_LENGTH && !isLink(typed.current);
+  const message = status === 'searching' ? t.placeSearching : status === 'error' ? t.placeUnavailable : status === 'done' && results.length === 0 ? t.placeNone : '';
   return (
     <div>
       <div className="ck:relative">
@@ -111,11 +112,11 @@ export const PlaceField: React.FC<PlaceFieldProps> = ({ id, value, place, search
             }
           }}
         />
-        {showList && (
-          <div className="ck:absolute ck:left-0 ck:right-0 ck:top-full ck:z-10 ck:mt-1 ck:rounded-xl ck:border ck:border-border ck:bg-background ck:p-1 ck:shadow-xl">
-            {status === 'searching' && <p role="status" className="ck:px-3 ck:py-2 ck:text-sm ck:text-muted-foreground">{t.placeSearching}</p>}
-            {status === 'error' && <p role="status" className="ck:px-3 ck:py-2 ck:text-sm ck:text-muted-foreground">{t.placeUnavailable}</p>}
-            {status === 'done' && results.length === 0 && <p role="status" className="ck:px-3 ck:py-2 ck:text-sm ck:text-muted-foreground">{t.placeNone}</p>}
+        {/* One live region, always there, so each new state is announced (a region added with its text is not). */}
+        <p role="status" className="ck:sr-only">{showList ? message : ''}</p>
+        {/* Always in the document, so `aria-controls` points at something even while closed. */}
+        <div hidden={!showList} className="ck:absolute ck:left-0 ck:right-0 ck:top-full ck:z-10 ck:mt-1 ck:rounded-xl ck:border ck:border-border ck:bg-background ck:p-1 ck:shadow-xl">
+            {message && <p aria-hidden="true" className="ck:px-3 ck:py-2 ck:text-sm ck:text-muted-foreground">{message}</p>}
             <ul id={listId} role="listbox" aria-label={t.placesLabel} hidden={status !== 'done' || results.length === 0}>
               {results.map((result, i) => (
                 <li
@@ -136,8 +137,7 @@ export const PlaceField: React.FC<PlaceFieldProps> = ({ id, value, place, search
                 </li>
               ))}
             </ul>
-          </div>
-        )}
+        </div>
       </div>
       {place && (
         <div className="ck:mt-2 ck:flex ck:items-center ck:gap-3 ck:rounded-xl ck:bg-muted ck:p-2.5">

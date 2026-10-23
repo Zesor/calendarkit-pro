@@ -73,7 +73,7 @@ export const FlowView: React.FC<FlowViewProps> = ({ date, events, model, timezon
               key={d.getTime()}
               type="button"
               aria-pressed={pressed}
-              aria-label={`${format(d, 'EEEE d MMMM', { locale })}, ${interpolate(t.eventsCount, { n: busy.length })}`}
+              aria-label={`${format(d, 'EEEE d MMMM', { locale })}, ${interpolate(busy.length === 1 ? t.eventCount : t.eventsCount, { n: busy.length })}`}
               onClick={() => onDateChange(d)}
               className={cx("ck:flex ck:min-h-[76px] ck:min-w-16 ck:flex-1 ck:flex-col ck:items-center ck:justify-center ck:gap-0.5 ck:rounded-xl ck:text-xs ck:font-semibold ck:uppercase ck:tracking-wide ck:transition-colors", pressed ? "ck:bg-primary ck:text-primary-foreground" : "ck:bg-muted ck:text-muted-foreground ck:hover:bg-accent")}
             >

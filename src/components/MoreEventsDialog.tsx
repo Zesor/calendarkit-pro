@@ -37,7 +37,7 @@ export const MoreEventsDialog: React.FC<MoreEventsDialogProps> = ({ events, onCl
     <Modal
       isOpen={events.length > 0}
       onClose={onClose}
-      title={interpolate(translations?.eventsCount || '{n} events', { n: events.length })}
+      title={interpolate((events.length === 1 ? translations?.eventCount : translations?.eventsCount) || '{n} events', { n: events.length })}
       closeLabel={translations?.close}
     >
       <div className="ck:p-2 ck:flex ck:flex-col ck:gap-0.5 ck:overflow-y-auto">

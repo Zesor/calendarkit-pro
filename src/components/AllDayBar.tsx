@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { addDays, differenceInCalendarDays, format } from 'date-fns';
-import { CalendarEvent, CalendarTranslations } from '../types';
+import { CalendarEvent } from '../types';
 import { cx, isEventDragDisabled, isEventResizeDisabled } from '../utils';
 import { useClassNames, useComponents } from './customize';
 import { dayEventSpan, DaySpanSegment } from '../core/allDay';
@@ -15,7 +15,6 @@ interface AllDayBarProps {
   rowDays: Date[];
   laneHeight: number;
   timezone?: string;
-  translations?: Partial<CalendarTranslations>;
   readonly?: boolean;
   onEventClick?: (event: CalendarEvent) => void;
   onEventContextMenu?: (event: CalendarEvent, e: React.MouseEvent) => void;
@@ -27,7 +26,6 @@ const AllDayBarImpl: React.FC<AllDayBarProps> = ({
   rowDays,
   laneHeight,
   timezone,
-  translations,
   readonly,
   onEventClick,
   onEventContextMenu,
@@ -137,9 +135,9 @@ const AllDayBarImpl: React.FC<AllDayBarProps> = ({
         style={colorStyle}
         data-ck-event-id={event.id}
       >
-        {continuesBefore && <span aria-label={translations?.continuesBefore}>‹</span>}
+        {continuesBefore && <span aria-hidden="true">‹</span>}
         {EventContent ? <EventContent event={event} variant="bar" /> : <span className="ck:truncate">{event.title}</span>}
-        {continuesAfter && <span className="ck:ml-auto" aria-label={translations?.continuesAfter}>›</span>}
+        {continuesAfter && <span className="ck:ml-auto" aria-hidden="true">›</span>}
         {canResize && (
           <div
             data-testid="all-day-resize"
