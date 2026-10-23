@@ -1,5 +1,20 @@
 # Pro-Scheduler Changelog
 
+## 2.0.0-alpha.10
+
+Pre-release on the `next` dist-tag (`latest` stays on 1.4.x).
+
+### Added
+- Keyboard and screen reader support (no shortcuts: Tab, Enter, Space, Escape). Events, all-day bars, month chips, agenda items, resource blocks and Flow cards are native buttons with a full name (title, date, times, calendar, place); time slots and all-day cells are buttons that say what they create, one tab stop per hour; month day numbers open the day. A visible focus ring everywhere.
+- Dialogs keep Tab inside them and give the focus back to what opened them when they close (an editor opened from the event card goes back to the event); the Focus panel gives it back without trapping Tab. The event just created, duplicated or moved takes the focus.
+
+### Changed
+- The drag wrappers around events are no longer tab stops (the event button inside them is): dragging stays a pointer gesture, with the event form as the alternative.
+
+### Fixed
+- Place search: its list stays in the document while closed (`aria-controls` always resolves) and one live region announces searching, no result and unavailable.
+- Event card: the row icons no longer carry names that repeat the content; "1 event" instead of "1 events".
+
 ## 2.0.0-alpha.9
 
 Pre-release on the `next` dist-tag (`latest` stays on 1.4.x).

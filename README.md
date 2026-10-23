@@ -379,6 +379,15 @@ All interface texts (views, event form, sidebar, accessible labels) come from th
 
 Right-click an event to edit, duplicate or delete it (disabled in `readOnly`).
 
+## Accessibility
+
+Everything works with Tab, Enter, Space and Escape; there are no other keyboard shortcuts to learn.
+
+- Events, all-day bars, month chips, agenda items and Flow cards are buttons named in full: "Design review, Thursday 15 October, 10:00 AM to 11:45 AM, Work calendar, Room B", so the calendar never rests on colour alone.
+- Time slots and all-day cells are buttons too ("Create an event on Thursday 15 October at 9:00 AM"), one tab stop per hour; in the month view, each day number opens that day.
+- Dialogs take the focus, keep Tab inside them and give it back to what opened them on close (the Focus panel leaves Tab free, since the grid beside it stays usable). The event you create, duplicate or move takes the focus.
+- Every move and resize can also be done in the event form (WCAG 2.5.7).
+
 ## Theming
 
 Three built-in themes, each in light and dark: `calm` (default, neutral), `vivid` (saturated, the closest to 1.x) and `editorial` (warm tones, serif titles).
