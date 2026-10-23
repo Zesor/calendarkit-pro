@@ -54,4 +54,11 @@ describe('phone layout', () => {
     rerender(<Scheduler view="day" date={day} events={[]} readOnly />)
     expect(screen.queryByRole('button', { name: 'Create Event' })).toBeNull()
   })
+  test('before the first measure (server render, first paint) the viewport media queries still hide the side panel and show Create on small screens', () => {
+    vi.restoreAllMocks()
+    const { container } = render(<Scheduler view="day" date={day} events={[]} />)
+    expect(container.querySelector('.ck-root')!.hasAttribute('data-ck-compact')).toBe(false)
+    expect(container.querySelector('.ck\\:max-md\\:hidden')).not.toBeNull()
+    expect(container.querySelector('.ck\\:md\\:hidden button[aria-label="Create Event"]')).not.toBeNull()
+  })
 })

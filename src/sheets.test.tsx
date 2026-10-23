@@ -58,4 +58,14 @@ describe('bottom sheets on a phone', () => {
     expect(getComputedStyle(close).minHeight).toBe('44px')
     expect(getComputedStyle(close).minWidth).toBe('44px')
   })
+  test('small controls that are not finger targets on their own (colour swatches, chip remove buttons) keep their size', () => {
+    render(<Scheduler view="day" date={day} events={[{ ...review, guests: ['a@b.co'] }]} />)
+    act(() => screen.getByRole('button', { name: /^Design review/ }).click())
+    act(() => within(screen.getByRole('dialog')).getByRole('button', { name: 'Edit' }).click())
+    const editor = screen.getByRole('dialog')
+    expect(getComputedStyle(within(editor).getByRole('button', { name: /a@b\.co/ })).minHeight).not.toBe('44px')
+    act(() => within(editor).getByRole('button', { name: 'Event color' }).click())
+    const swatch = editor.querySelector('button[aria-pressed]') as HTMLElement
+    expect(getComputedStyle(swatch).minHeight).not.toBe('44px')
+  })
 })

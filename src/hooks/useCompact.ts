@@ -4,10 +4,11 @@ const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : us
 
 /**
  * Spec §8.9: whether the element is narrower than `below` px (the phone layout). Measured before the
- * first paint and kept up to date; unmeasured (server, no layout) counts as wide.
+ * first paint and kept up to date; `null` until measured (server render, no layout), when the
+ * caller falls back to the window's media queries.
  */
-export function useCompact(ref: RefObject<HTMLElement | null>, below = 768): boolean {
-  const [compact, setCompact] = useState(false);
+export function useCompact(ref: RefObject<HTMLElement | null>, below = 768): boolean | null {
+  const [compact, setCompact] = useState<boolean | null>(null);
   useIsomorphicLayoutEffect(() => {
     const element = ref.current;
     if (!element) return;

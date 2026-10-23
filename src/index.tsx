@@ -217,13 +217,20 @@ export const Scheduler: React.FC<CalendarProps> = ({
   const rootRef = useRef<HTMLDivElement>(null);
   useMissingStylesWarning(rootRef, injectStyles);
   // Spec §8.9: under 768 px of calendar width, the phone layout. An uncontrolled view starts on the day.
-  const compact = useCompact(rootRef);
+  const measured = useCompact(rootRef);
+  const compact = measured === true;
+  // Not measured yet (server render, first paint): the window's media queries stand in.
+  const unmeasured = measured === null;
   const compactViewSet = useRef(false);
   React.useEffect(() => {
     if (!compact || compactViewSet.current) return;
     compactViewSet.current = true;
     if (controlledView === undefined) calendar.setView('day');
   }, [compact, controlledView, calendar]);
+  // A drawer left open while the calendar grew does not come back when it narrows again.
+  React.useEffect(() => {
+    if (!compact) setDrawerOpen(false);
+  }, [compact]);
   if (dialog && dialog.kind !== 'more') {
     if (editingId === undefined) lastOpened.current = { event: null };
     else if (lastOpened.current.id !== editingId) lastOpened.current = { id: editingId, event: expandedEvents.find((e) => e.id === editingId) ?? null };
@@ -560,7 +567,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
         <div className="ck:flex ck:flex-1 ck:overflow-hidden">
             {layout !== 'focus' && !compact && (
             <div
-                className="ck:overflow-hidden ck:transition-[width,opacity] ck:duration-300 ck:ease-[cubic-bezier(0.4,0,0.2,1)]"
+                className={cx(unmeasured && "ck:max-md:hidden", "ck:overflow-hidden ck:transition-[width,opacity] ck:duration-300 ck:ease-[cubic-bezier(0.4,0,0.2,1)]")}
                 style={{ width: isSidebarOpen ? 256 : 0, opacity: isSidebarOpen ? 1 : 0 }}
             >
                 {sidebarContent()}
@@ -675,8 +682,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 )}
 
                 {/* Phone layout: a floating Create (Focus has one in its bar), none read-only (U3). */}
-                {compact && layout === 'classic' && !readOnly && (
-                <div className="ck:absolute ck:bottom-6 ck:right-6 ck:z-30">
+                {(compact || unmeasured) && layout === 'classic' && !readOnly && (
+                <div className={cx("ck:absolute ck:bottom-6 ck:right-6 ck:z-30", unmeasured && "ck:md:hidden")}>
                     <button
                         type="button"
                         onClick={handleCreateEvent}

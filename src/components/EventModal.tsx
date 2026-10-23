@@ -534,6 +534,7 @@ export const EventModal: React.FC<EventModalProps> = ({
                 {email}
                 <button
                   type="button"
+                  data-ck-small
                   onClick={() => removeGuest(email)}
                   className="ck:flex ck:w-6 ck:h-6 ck:items-center ck:justify-center ck:rounded-full ck:text-muted-foreground ck:hover:bg-background ck:hover:text-foreground"
                   aria-label={interpolate(t.removeGuest, { email })}
@@ -576,6 +577,7 @@ export const EventModal: React.FC<EventModalProps> = ({
                 {reminderLabel(reminder.time, t)}
                 <button
                   type="button"
+                  data-ck-small
                   onClick={() => removeReminder(reminder.id)}
                   className="ck:flex ck:w-6 ck:h-6 ck:items-center ck:justify-center ck:rounded-full ck:text-muted-foreground ck:hover:bg-background ck:hover:text-foreground"
                   aria-label={t.removeReminder}

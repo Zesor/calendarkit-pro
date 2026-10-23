@@ -56,4 +56,16 @@ describe('side panel drawer', () => {
     expect(screen.getByRole('button', { name: 'Create' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Thursday 15 October 2026', pressed: true })).toBeTruthy()
   })
+  test('a drawer left open when the calendar grows does not come back by itself when it narrows again', () => {
+    const observers: ResizeObserverCallback[] = []
+    const resize = (w: number) => observers.forEach((cb) => cb([{ contentRect: { width: w } } as ResizeObserverEntry], {} as ResizeObserver))
+    vi.stubGlobal('ResizeObserver', class { constructor(cb: ResizeObserverCallback) { observers.push(cb) } observe() {} disconnect() {} })
+    render(<Scheduler view="day" date={day} events={[]} />)
+    act(() => screen.getByRole('button', { name: 'Toggle sidebar' }).click())
+    expect(screen.getByRole('dialog')).toBeTruthy()
+    act(() => resize(1024))
+    act(() => resize(375))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    vi.unstubAllGlobals()
+  })
 })

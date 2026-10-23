@@ -51,11 +51,12 @@
   box-shadow: inset 0 1px 0 var(--ck-off-line);
 }
 
-/* Phone sheets (spec §8.9): every control a finger can hit, at least 44 px. */
-.ck-root :is([data-ck-docked], [data-ck-sheet]) :is(button, select, input:not([type="checkbox"])) {
+/* Phone sheets (spec §8.9): every control a finger can hit, at least 44 px. Colour swatches and the
+   remove buttons inside chips keep their size (the chip is the target; swatches would not fit). */
+.ck-root :is([data-ck-docked], [data-ck-sheet]) :is(button:not([aria-pressed], [data-ck-small]), select, input:not([type="checkbox"], [type="radio"], [type="color"], [type="range"])) {
   min-height: 44px;
 }
-.ck-root :is([data-ck-docked], [data-ck-sheet]) button {
+.ck-root :is([data-ck-docked], [data-ck-sheet]) button:not([aria-pressed], [data-ck-small]) {
   min-width: 44px;
 }
 
