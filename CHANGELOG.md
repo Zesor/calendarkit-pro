@@ -10,6 +10,7 @@ Pre-release on the `next` dist-tag (`latest` stays on 1.4.x).
 
 ### Changed
 - The drag wrappers around events are no longer tab stops (the event button inside them is): dragging stays a pointer gesture, with the event form as the alternative.
+- Scheduler budget: 58 kB brotli (was 56 kB).
 
 ### Fixed
 - Place search: its list stays in the document while closed (`aria-controls` always resolves) and one live region announces searching, no result and unavailable.
