@@ -164,14 +164,40 @@ export const Scheduler: React.FC<CalendarProps> = ({
   const expandedEvents = useCalendarSelector(calendar, (s) => s.occurrences);
   const dialog = useCalendarSelector(calendar, (s) => s.dialog);
   const lastChange = useCalendarSelector(calendar, (s) => s.lastChange);
-  // The event just created or moved gets a brief outline (spec §8.6).
+  // The event just created or moved gets a brief outline and the focus (spec §8.6).
   const [landedId, setLandedId] = useState<string>();
+  // Events shown before the last change: an event created through a 1.x host comes back under the
+  // host's own id, found like undo finds it (an id not shown before, with the same title).
+  const shownEvents = useRef(expandedEvents);
+  shownEvents.current = expandedEvents;
+  const shownIds = useRef(new Set<string>());
   React.useEffect(() => {
     if (!lastChange || lastChange.kind === 'delete') return setLandedId(undefined);
     setLandedId(lastChange.eventId);
+    const before = shownIds.current;
+    // A frame later, after a closing dialog gave the focus back, and once the key press that saved is over
+    // (it would click the event). Not found (a day not shown): left where it is.
+    const frame = requestAnimationFrame(() => {
+      const all = [...(rootRef.current?.querySelectorAll<HTMLElement>('[data-ck-event-id]') ?? [])];
+      const find = (id: string) => all.find((el) => el.dataset.ckEventId === id);
+      let landed = find(lastChange.eventId);
+      const hostId = !landed && lastChange.kind === 'create' ? shownEvents.current.find((e) => !before.has(e.id) && e.title === lastChange.title)?.id : undefined;
+      if (hostId) {
+        landed = find(hostId);
+        setLandedId(hostId);
+      }
+      (landed?.matches('button') ? landed : landed?.querySelector('button'))?.focus();
+    });
     const timer = setTimeout(() => setLandedId(undefined), 1600);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      cancelAnimationFrame(frame);
+    };
   }, [lastChange]);
+  // After the effect above, which reads the ids shown before the change.
+  React.useEffect(() => {
+    shownIds.current = new Set(expandedEvents.map((e) => e.id));
+  }, [expandedEvents]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // The 1.x modal reads the dialog: an event being shown or edited, or a new event at a slot.
