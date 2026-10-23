@@ -45,6 +45,12 @@ export const FlowView: React.FC<FlowViewProps> = ({ date, events, model, timezon
     return () => clearInterval(timer);
   }, []);
   const day = startOfDay(date);
+  // The chosen day stays in view in the strip (on a phone it scrolls sideways).
+  const strip = React.useRef<HTMLDivElement>(null);
+  const dayTime = day.getTime();
+  React.useEffect(() => {
+    strip.current?.querySelector('[aria-pressed="true"]')?.scrollIntoView?.({ block: 'nearest', inline: 'center' });
+  }, [dayTime]);
   const flow = model(day, now);
   const formats = timeFormats(locale);
   const time = (d: Date) => format(d, formats.time, { locale });
@@ -64,7 +70,7 @@ export const FlowView: React.FC<FlowViewProps> = ({ date, events, model, timezon
         </div>
       )}
 
-      <div role="group" aria-label={t.daysOfWeek} className="ck:flex ck:gap-2 ck:overflow-x-auto ck:px-5 ck:pt-2 ck:pb-3.5">
+      <div ref={strip} role="group" aria-label={t.daysOfWeek} className="ck:flex ck:gap-2 ck:overflow-x-auto ck:px-5 ck:pt-2 ck:pb-3.5">
         {week.map((d) => {
           const busy = covering(d);
           const pressed = isSameDay(d, day);

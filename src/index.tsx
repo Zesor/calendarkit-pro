@@ -535,6 +535,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
             onToday={handleToday}
             onViewChange={handleViewChange}
             onCreate={readOnly ? undefined : handleCreateEvent}
+            compact={compact}
           />
         ) : (
         <CalendarHeader
