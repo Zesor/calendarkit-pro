@@ -50,3 +50,23 @@ export function useDialogFocus(ref: RefObject<HTMLElement | null>, { open = true
     };
   }, [open, trap, ref, content]);
 }
+
+/**
+ * The focus return of `useDialogFocus` alone, for a dialog whose DOM is not ours (a host's
+ * `renderEventForm`): what had the focus when it opened gets it back when it closes.
+ */
+export function useFocusReturn(open: boolean) {
+  const origin = useRef<HTMLElement | null>(null);
+  const wasOpen = useRef(false);
+  if (open && !wasOpen.current && typeof document !== 'undefined') origin.current = document.activeElement as HTMLElement | null;
+  wasOpen.current = open;
+  useEffect(() => {
+    const from = origin.current;
+    if (open || !from) return;
+    origin.current = null;
+    requestAnimationFrame(() => {
+      const active = document.activeElement;
+      if ((!active || active === document.body) && from.isConnected && from !== document.body) from.focus();
+    });
+  }, [open]);
+}

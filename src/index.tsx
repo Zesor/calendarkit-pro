@@ -15,6 +15,7 @@ import { MoreEventsDialog } from './components/MoreEventsDialog';
 import { QuickCreate, QuickExtra } from './components/QuickCreate';
 import { EventPopover } from './components/EventPopover';
 import { Drawer } from './components/Drawer';
+import { useFocusReturn } from './components/useDialogFocus';
 import { nextFreeSlot } from './views/nextFreeSlot';
 import { Box } from './components/placement';
 import { UndoToast } from './components/UndoToast';
@@ -172,11 +173,23 @@ export const Scheduler: React.FC<CalendarProps> = ({
   // host's own id, found like undo finds it (an id not shown before, with the same title).
   const shownEvents = useRef(expandedEvents);
   shownEvents.current = expandedEvents;
-  const shownIds = useRef(new Set<string>());
+  const shownBefore = useRef<CalendarEvent[]>([]);
+  const zone = useRef(timezone);
+  zone.current = timezone;
   React.useEffect(() => {
-    if (!lastChange || lastChange.kind === 'delete') return setLandedId(undefined);
+    if (!lastChange) return setLandedId(undefined);
+    if (lastChange.kind === 'delete') {
+      setLandedId(undefined);
+      // The event's button is gone: the focus goes to the hour it was in (its day for an all-day event).
+      const gone = shownBefore.current.find((e) => e.id === lastChange.eventId);
+      if (!gone) return;
+      const wall = toDisplay(gone.start, zone.current);
+      const slot = gone.allDay ? `day:${new Date(wall.getFullYear(), wall.getMonth(), wall.getDate()).toISOString()}` : new Date(wall.getFullYear(), wall.getMonth(), wall.getDate(), wall.getHours()).toISOString();
+      const frame = requestAnimationFrame(() => rootRef.current?.querySelector<HTMLElement>(`[data-ck-slot="${slot}"]`)?.focus());
+      return () => cancelAnimationFrame(frame);
+    }
     setLandedId(lastChange.eventId);
-    const before = shownIds.current;
+    const before = new Set(shownBefore.current.map((e) => e.id));
     // A frame later, after a closing dialog gave the focus back, and once the key press that saved is over
     // (it would click the event). Not found (a day not shown): left where it is.
     const frame = requestAnimationFrame(() => {
@@ -196,9 +209,9 @@ export const Scheduler: React.FC<CalendarProps> = ({
       cancelAnimationFrame(frame);
     };
   }, [lastChange]);
-  // After the effect above, which reads the ids shown before the change.
+  // After the effect above, which reads the events shown before the change.
   React.useEffect(() => {
-    shownIds.current = new Set(expandedEvents.map((e) => e.id));
+    shownBefore.current = expandedEvents;
   }, [expandedEvents]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   // Phone layout: the side panel is a drawer, closed until the menu opens it.
@@ -263,6 +276,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
   const ghostDraft = quickDraft ?? (dialog?.kind === 'editor' && dialog.eventId === undefined && !hasCustomForm ? dialog.draft : undefined);
   const popoverEvent = dialog?.kind === 'event' && !hasCustomForm ? selectedEvent : null;
   const isModalOpen = dialog !== null && dialog.kind !== 'more' && dialog.kind !== 'quick' && !popoverEvent;
+  // A host's own form: its DOM is not ours to trap, but the focus still comes back when it closes.
+  useFocusReturn(hasCustomForm && isModalOpen);
   const handlers = useMemo(() => ({
     handleViewChange: calendar.setView,
     handleDateChange: (date: Date) => calendar.navigate(date),
