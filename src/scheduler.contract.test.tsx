@@ -53,7 +53,7 @@ describe('Scheduler 1.x contract', () => {
   test('the create button opens an empty form; saving calls onEventCreate', () => {
     const onEventCreate = vi.fn()
     const form = setup({ onEventCreate })
-    act(() => screen.getAllByRole('button', { name: 'Create Event' })[0].click())
+    act(() => screen.getByRole('button', { name: 'Create', hidden: true }).click())
     expect(form.current).toMatchObject({ isOpen: true, event: null })
     expect(form.current!.initialDate).toBeInstanceOf(Date)
     act(() => form.current!.onSave({ title: 'Call', start: new Date(2026, 9, 15, 9), end: new Date(2026, 9, 15, 10) }))
@@ -124,7 +124,7 @@ describe('review fixes (A2)', () => {
   test('I4: onEventCreate receives the form fields without an id the engine generated (1.x payload)', () => {
     const onEventCreate = vi.fn()
     const form = setup({ onEventCreate })
-    act(() => screen.getAllByRole('button', { name: 'Create Event' })[0].click())
+    act(() => screen.getByRole('button', { name: 'Create', hidden: true }).click())
     act(() => form.current!.onSave({ title: 'Call', start: new Date(2026, 9, 15, 9), end: new Date(2026, 9, 15, 10) }))
     expect(onEventCreate).toHaveBeenCalledWith({ title: 'Call', start: new Date(2026, 9, 15, 9), end: new Date(2026, 9, 15, 10) })
   })

@@ -29,6 +29,7 @@ import { useCalendar, useCalendarSelector } from './react/useCalendar';
 import { CalendarDndContext } from './react/dnd';
 import { useStableCallback } from './hooks/useStableCallback';
 import { addDays, format, startOfWeek } from 'date-fns';
+import { useCompact } from './hooks/useCompact';
 import { useViewSwipe } from './hooks/useSwipeGesture';
 import { dragOverlaySize } from './components/dnd/dragOverlay';
 import { restrictToWindowEdges, snapToGrid } from './components/dnd/modifiers';
@@ -212,6 +213,14 @@ export const Scheduler: React.FC<CalendarProps> = ({
   if (dialog?.kind === 'event' && anchor.current.dialog !== dialog) anchor.current = { dialog, at: pointer.current };
   const rootRef = useRef<HTMLDivElement>(null);
   useMissingStylesWarning(rootRef, injectStyles);
+  // Spec §8.9: under 768 px of calendar width, the phone layout. An uncontrolled view starts on the day.
+  const compact = useCompact(rootRef);
+  const compactViewSet = useRef(false);
+  React.useEffect(() => {
+    if (!compact || compactViewSet.current) return;
+    compactViewSet.current = true;
+    if (controlledView === undefined) calendar.setView('day');
+  }, [compact, controlledView, calendar]);
   if (dialog && dialog.kind !== 'more') {
     if (editingId === undefined) lastOpened.current = { event: null };
     else if (lastOpened.current.id !== editingId) lastOpened.current = { id: editingId, event: expandedEvents.find((e) => e.id === editingId) ?? null };
@@ -439,6 +448,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
         data-ck-theme={themePreset(theme)}
         data-ck-mode={colorMode(mode, isDarkMode)}
         data-ck-layout={layout}
+        data-ck-compact={compact || undefined}
       >
         {injectStyles && <CalendarStyles />}
         {layout === 'flow' ? (
@@ -500,6 +510,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
           view={view}
           onViewChange={handleViewChange}
           onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          compact={compact}
           isDarkMode={colorMode(mode, isDarkMode) === 'dark'}
           onThemeToggle={onThemeToggle}
           translations={t} // Pass translations
@@ -511,9 +522,9 @@ export const Scheduler: React.FC<CalendarProps> = ({
         )}
         
         <div className="ck:flex ck:flex-1 ck:overflow-hidden">
-            {layout !== 'focus' && (
+            {layout !== 'focus' && !compact && (
             <div
-                className="ck:hidden ck:md:block ck:overflow-hidden ck:transition-[width,opacity] ck:duration-300 ck:ease-[cubic-bezier(0.4,0,0.2,1)]"
+                className="ck:overflow-hidden ck:transition-[width,opacity] ck:duration-300 ck:ease-[cubic-bezier(0.4,0,0.2,1)]"
                 style={{ width: isSidebarOpen ? 256 : 0, opacity: isSidebarOpen ? 1 : 0 }}
             >
                 {CustomSidebar ? (
@@ -649,10 +660,11 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 </div>
                 )}
 
-                {/* Mobile Create Button (FAB), hidden in read-only mode (U3) */}
-                {!readOnly && (
-                <div className="ck:md:hidden ck:absolute ck:bottom-6 ck:right-6 ck:z-50">
+                {/* Phone layout: a floating Create (Focus has one in its bar), none read-only (U3). */}
+                {compact && layout === 'classic' && !readOnly && (
+                <div className="ck:absolute ck:bottom-6 ck:right-6 ck:z-30">
                     <button
+                        type="button"
                         onClick={handleCreateEvent}
                         aria-label={t.createEvent}
                         className="ck:w-14 ck:h-14 ck:bg-primary ck:rounded-full ck:shadow-lg ck:flex ck:items-center ck:justify-center ck:text-primary-foreground ck:active:scale-90 ck:transition-transform"

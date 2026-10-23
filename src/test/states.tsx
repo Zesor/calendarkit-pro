@@ -27,7 +27,7 @@ export const SCHEDULER_STATES: Array<[string, () => void]> = [
   }],
   ['new event dialog', () => {
     render(<Scheduler {...props} view="week" />)
-    act(() => screen.getAllByRole('button', { name: 'Create Event' })[0].click())
+    act(() => screen.getByRole('button', { name: 'Create', hidden: true }).click())
   }],
   ['more events list', () => {
     const crowd: CalendarEvent[] = ['A', 'B', 'C', 'D', 'E'].map((title) => ({ id: title, title, start: new Date(2026, 9, 14, 9), end: new Date(2026, 9, 14, 10) }))
