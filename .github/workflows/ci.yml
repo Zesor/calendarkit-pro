@@ -28,3 +28,19 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run ci
+
+  # Spec §3: React 18 and 19. The suite again with React 18 (the package's other supported major).
+  react18:
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm install --no-save react@18.3.1 react-dom@18.3.1
+      - run: npm run css
+      - run: npx vitest run

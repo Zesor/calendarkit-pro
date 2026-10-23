@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useId, useInsertionEffect, useLayoutEffect, useRef } from 'react';
+import React, { useState, useEffect, useId, useInsertionEffect, useRef } from 'react';
 import { useClassNames } from './customize';
 import { placeBeside } from './placement';
 import { useDialogFocus } from './useDialogFocus';
@@ -11,6 +11,7 @@ import { cx } from '../utils';
 import { DiscardPrompt } from './DiscardPrompt';
 import { interpolate } from '../core/format';
 import { dayEventSpan } from '../core/allDay';
+import { useIsomorphicLayoutEffect } from '../hooks/useIsomorphicLayoutEffect';
 
 interface EventModalProps {
   isOpen: boolean;
@@ -207,7 +208,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   }, [closeRequest]);
   // A card beside what it edits (no overlay): the event's block, or the new event's ghost.
   const editedId = event?.id;
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const el = card.current;
     if (!isOpen || !el || variant !== 'card') return;
     const root = el.closest('.ck-root');

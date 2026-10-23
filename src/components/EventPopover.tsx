@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { addDays, differenceInMinutes, format, isSameDay, Locale } from 'date-fns';
 import { CalendarEvent, CalendarTranslations } from '../types';
 import { timeFormats } from '../core/format';
@@ -12,6 +12,7 @@ import { useClassNames } from './customize';
 import { durationLabel } from './duration';
 import { Box, placeBeside } from './placement';
 import { useDialogFocus } from './useDialogFocus';
+import { useIsomorphicLayoutEffect } from '../hooks/useIsomorphicLayoutEffect';
 
 const WIDTH = 340;
 const MARGIN = 8;
@@ -75,7 +76,7 @@ export const EventPopover: React.FC<EventPopoverProps> = ({ event, anchor, timez
   }, [onClose]);
   useDialogFocus(ref);
   // Measured once laid out, so a tall card moves up instead of leaving the window.
-  useLayoutEffect(() => setHeight(ref.current?.offsetHeight ?? 0), [event]);
+  useIsomorphicLayoutEffect(() => setHeight(ref.current?.offsetHeight ?? 0), [event]);
 
   const viewport = { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
   const place = anchor

@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { addDays, format, Locale } from 'date-fns';
 import { CalendarEvent, CalendarProps, CalendarTranslations, Place, PlaceSearch } from '../types';
 import { cx } from '../utils';
@@ -13,6 +13,7 @@ import { useDialogFocus } from './useDialogFocus';
 import { DiscardPrompt } from './DiscardPrompt';
 import { PlaceField } from './PlaceField';
 import { EMAIL } from './EventModal';
+import { useIsomorphicLayoutEffect } from '../hooks/useIsomorphicLayoutEffect';
 
 type DraftPatch = Partial<Pick<Draft, 'title' | 'start' | 'end' | 'calendarId'>>;
 
@@ -95,7 +96,7 @@ export const QuickCreate: React.FC<QuickCreateProps> = ({ draft, events, calenda
 
   useDialogFocus(card);
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const el = card.current;
     const ghostEl = el?.closest('.ck-root')?.querySelector('[data-ck-ghost]');
     // Opened from "Create", the ghost may be outside the scrolled grid: bring it into view first.
