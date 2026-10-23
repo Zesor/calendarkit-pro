@@ -8,6 +8,7 @@ import { timeFormats, uses24HourClock } from '../core/format';
 import { displayToday, toDisplay } from '../core/timezone';
 import { AgendaEmptyState } from '../components/EmptyState';
 import { eventColorStyle, resolveEventColor, useCalendars } from '../components/eventColor';
+import { useEventLabel } from '../components/eventLabel';
 import { Clock, Users, Paperclip, Bell } from '../components/icons';
 
 interface AgendaViewProps {
@@ -52,6 +53,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
   onEventContextMenu,
 }) => {
   const classNames = useClassNames();
+  const labelEvent = useEventLabel();
   const { EmptyState } = useComponents();
   // Times follow the locale's clock convention (e.g. 24h for pt-BR/fr); the
   // historical 12h format stays the default without a locale.
@@ -126,14 +128,16 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                     {/* Events List */}
                     <div className="ck:py-4 ck:space-y-3">
                         {group.events.map((event) => (
-                            <div
+                            <button
+                                type="button"
+                                aria-label={labelEvent(event)}
                                 key={event.id}
                                 data-ck-event
                                 data-ck-event-id={event.id}
                                 onClick={() => onEventClick?.(event)}
                                 onContextMenu={onEventContextMenu ? (e) => onEventContextMenu(event, e) : undefined}
                                 className={cx(
-                                  "ck:group ck:relative ck:flex ck:gap-4 ck:p-4 ck:rounded-2xl ck:border ck:border-border/40",
+                                  "ck:group ck:relative ck:flex ck:w-full ck:text-left ck:gap-4 ck:p-4 ck:rounded-2xl ck:border ck:border-border/40",
                                   "ck:hover:border-primary/40 ck:hover:shadow-lg ck:hover:shadow-primary/5",
                                   "ck:transition-all ck:duration-200 ck:cursor-pointer ck:hover:scale-[1.01] ck:hover:-translate-y-0.5",
                                   "ck:bg-linear-to-br ck:from-card ck:via-card ck:to-card/80",
@@ -228,7 +232,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                                     <path d="M9 18l6-6-6-6" />
                                   </svg>
                                 </div>
-                            </div>
+                            </button>
                         ))}
                     </div>
                 </div>

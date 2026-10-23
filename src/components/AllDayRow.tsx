@@ -31,7 +31,6 @@ const AllDayRowImpl: React.FC<AllDayRowProps> = ({
   days,
   dayEvents,
   timezone,
-  locale,
   translations,
   readonly,
   gutterClassName,
@@ -89,7 +88,6 @@ const AllDayRowImpl: React.FC<AllDayRowProps> = ({
                 rowDays={days}
                 laneHeight={LANE_HEIGHT}
                 timezone={timezone}
-                locale={locale}
                 translations={translations}
                 readonly={readonly}
                 onEventClick={onEventClick}

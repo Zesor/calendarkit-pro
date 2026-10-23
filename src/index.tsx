@@ -33,6 +33,7 @@ import { useViewSwipe } from './hooks/useSwipeGesture';
 import { dragOverlaySize } from './components/dnd/dragOverlay';
 import { restrictToWindowEdges, snapToGrid } from './components/dnd/modifiers';
 import { CalendarStyles, useMissingStylesWarning } from './styles/CalendarStyles';
+import { EventLabelProvider, eventLabel } from './components/eventLabel';
 import { EventColorProvider, eventColorStyle, resolveEventColor } from './components/eventColor';
 import { ClassNamesProvider, ComponentsProvider } from './components/customize';
 import { resolveTimeGrid } from './views/grid';
@@ -258,6 +259,9 @@ export const Scheduler: React.FC<CalendarProps> = ({
   // Built-in language pack + the consumer's overrides, memoized so children keep stable props (C6).
   const t = useMemo(() => resolveTranslations(language, translations), [language, translations]);
 
+  // Every event surface's accessible name (spec §8.8).
+  const labelEvent = useCallback((e: CalendarEvent) => eventLabel(e, { t, timezone, locale, calendars }), [t, timezone, locale, calendars]);
+
   // Drag ghost times follow the locale's clock convention.
   const overlayTimeFormat = timeFormats(locale).time;
 
@@ -387,6 +391,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
     <ClassNamesProvider value={classNames}>
     <ComponentsProvider value={components}>
     <EventColorProvider value={calendars}>
+    <EventLabelProvider value={labelEvent}>
     <CalendarDndContext
         calendar={calendar}
         id={id}
@@ -756,6 +761,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
 
       </div>
     </CalendarDndContext>
+    </EventLabelProvider>
     </EventColorProvider>
     </ComponentsProvider>
     </ClassNamesProvider>

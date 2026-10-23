@@ -63,7 +63,7 @@ export const TimeColumn: React.FC<TimeColumnProps> = ({
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     // Events (resize handles included, even locked ones) and "+N" keep their own gestures.
-    if (!onRangeSelect || e.button !== 0 || e.pointerType === 'touch' || (e.target as HTMLElement).closest('[aria-roledescription="draggable"], button')) return;
+    if (!onRangeSelect || e.button !== 0 || e.pointerType === 'touch' || (e.target as HTMLElement).closest('[data-ck-drag], button')) return;
     const column = e.currentTarget;
     const startY = e.clientY;
     const from = minuteAt(column, startY);

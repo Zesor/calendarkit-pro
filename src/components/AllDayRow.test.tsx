@@ -22,7 +22,7 @@ describe('AllDayRow', () => {
     expect(screen.getByText('Toute la journée')).toBeTruthy()
     cleanup()
     renderRow([allDay('Conférence', 12, 15)])
-    expect(screen.getByRole('button', { name: /Conférence, 12 oct\. – 14 oct\./ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Conférence' })).toBeTruthy()
   })
 
   test('collapses beyond 2 lanes with "+N", and expands / collapses back', () => {
@@ -66,7 +66,7 @@ describe('AllDayRow', () => {
     const onEventClick = vi.fn()
     renderRow([allDay('Salon', 14, 15)], { onDayEventResize: () => {}, onEventClick })
     const handle = screen.getByTestId('all-day-resize')
-    const bar = handle.closest('[role="button"]') as HTMLElement
+    const bar = handle.closest('[data-ck-drag]') as HTMLElement
     ;(handle.parentElement as HTMLElement).getBoundingClientRect = () => ({ width: 100, height: 18, left: 0, top: 0, right: 100, bottom: 18, x: 0, y: 0, toJSON: () => ({}) })
     fireEvent.pointerDown(handle, { clientX: 100 })
     fireEvent.pointerMove(document, { clientX: 300 })
@@ -88,7 +88,7 @@ describe('AllDayRow', () => {
     fireEvent.pointerCancel(document)
     fireEvent.pointerUp(document)
     expect(onDayEventResize).not.toHaveBeenCalled()
-    expect(parseFloat((handle.closest('[role="button"]') as HTMLElement).style.width)).toBeCloseTo((1 / 7) * 100, 3)
+    expect(parseFloat((handle.closest('[data-ck-drag]') as HTMLElement).style.width)).toBeCloseTo((1 / 7) * 100, 3)
   })
 
   test('no resize handle in readOnly or when resizable is false', () => {

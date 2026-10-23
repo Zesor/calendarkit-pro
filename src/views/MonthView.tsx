@@ -11,6 +11,7 @@ import { displayToday } from '../core/timezone';
 import { getMonthGrid, getWeekDays, resolveWeekStartsOn } from '../core/week';
 import { useEventColorStyle } from '../components/eventColor';
 import { TODAY_MARK } from '../components/todayMark';
+import { useEventLabel } from '../components/eventLabel';
 import { DraggableEvent } from '../components/dnd/DraggableEvent';
 import { DroppableCell } from '../components/dnd/DroppableCell';
 
@@ -38,10 +39,13 @@ const EventItem = React.memo(({ event, onEventClick, onEventContextMenu }: Event
     const colorStyle = useEventColorStyle(event);
     const classNames = useClassNames();
     const { EventContent } = useComponents();
+    const label = useEventLabel()(event);
     return (
     <DraggableEvent event={event}>
-        <div
-            className={cx("ck:flex ck:items-center ck:gap-1.5 ck:text-xs ck:px-1.5 ck:py-0.5 ck:rounded-md ck:cursor-pointer ck:text-foreground ck:hover:bg-muted ck:transition-colors", classNames.event)}
+        <button
+            type="button"
+            aria-label={label}
+            className={cx("ck:flex ck:w-full ck:text-left ck:items-center ck:gap-1.5 ck:text-xs ck:px-1.5 ck:py-0.5 ck:rounded-md ck:cursor-pointer ck:text-foreground ck:hover:bg-muted ck:transition-colors", classNames.event)}
             title={event.title}
             data-ck-event
             data-ck-event-id={event.id}
@@ -53,7 +57,7 @@ const EventItem = React.memo(({ event, onEventClick, onEventContextMenu }: Event
         >
             <span className="ck-dot ck:w-2 ck:h-2 ck:rounded-[3px] ck:shrink-0" style={colorStyle} aria-hidden="true" />
             {EventContent ? <EventContent event={event} variant="chip" /> : <span className="ck:font-medium ck:truncate">{event.title}</span>}
-        </div>
+        </button>
     </DraggableEvent>
     );
 });
@@ -151,12 +155,19 @@ export const MonthView: React.FC<MonthViewProps> = ({
                   onClick={() => onDateClick?.(day)}
                 >
                   <div className="ck:flex ck:justify-between ck:items-start">
-                    <div className={cx(
+                    <button
+                      type="button"
+                      aria-label={format(day, 'EEEE d MMMM yyyy', { locale })}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDateClick?.(day);
+                      }}
+                      className={cx(
                       "ck:text-sm ck:font-semibold ck:w-7 ck:h-7 ck:flex ck:items-center ck:justify-center ck:tabular-nums ck:transition-colors ck:duration-200",
                       isSameDay(day, today) ? TODAY_MARK : "ck:rounded-full ck:group-hover:bg-accent"
                     )}>
                       {format(day, 'd', { locale })}
-                    </div>
+                    </button>
                     {hidden > 0 && (
                         // "+N more" counts hidden bars and hidden timed events, and opens the day.
                         <button
@@ -193,7 +204,6 @@ export const MonthView: React.FC<MonthViewProps> = ({
                     rowDays={week}
                     laneHeight={LANE_HEIGHT}
                     timezone={timezone}
-                    locale={locale}
                     translations={translations}
                     readonly={readonly}
                     onEventClick={onEventClick}
