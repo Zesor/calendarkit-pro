@@ -110,6 +110,9 @@ export const MiniCalendar: React.FC<MiniCalendarProps> = ({
           return (
             <button
               key={day.toISOString()}
+              type="button"
+              aria-label={format(day, 'EEEE d MMMM yyyy', { locale })}
+              aria-pressed={isSelected}
               onClick={() => handleDateClick(day)}
               className={cx(
                 "ck:h-8 ck:w-8 ck:mx-auto ck:flex ck:items-center ck:justify-center ck:text-xs ck:rounded-xl ck:transition-all ck:duration-200 ck:font-medium",

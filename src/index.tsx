@@ -14,12 +14,13 @@ import { EventModal } from './components/EventModal';
 import { MoreEventsDialog } from './components/MoreEventsDialog';
 import { QuickCreate, QuickExtra } from './components/QuickCreate';
 import { EventPopover } from './components/EventPopover';
+import { Drawer } from './components/Drawer';
 import { nextFreeSlot } from './views/nextFreeSlot';
 import { Box } from './components/placement';
 import { UndoToast } from './components/UndoToast';
 import { MonthViewSkeleton, WeekViewSkeleton, DayViewSkeleton, AgendaViewSkeleton } from './components/Skeleton';
 import { EventContextMenu, useEventContextMenu } from './components/ContextMenu';
-import { CalendarProps, CalendarEvent, CalendarClassNames, CalendarComponents } from './types';
+import { CalendarProps, CalendarEvent, CalendarClassNames, CalendarComponents, ViewType } from './types';
 import { cx } from './utils';
 import { colorMode, getThemeStyles, themePreset } from './lib/theme';
 import { resolveTranslations, timeFormats } from './core/format';
@@ -200,6 +201,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
     shownIds.current = new Set(expandedEvents.map((e) => e.id));
   }, [expandedEvents]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  // Phone layout: the side panel is a drawer, closed until the menu opens it.
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // The 1.x modal reads the dialog: an event being shown or edited, or a new event at a slot.
   const editingId = dialog?.kind === 'event' || dialog?.kind === 'editor' ? dialog.eventId : undefined;
@@ -292,6 +295,38 @@ export const Scheduler: React.FC<CalendarProps> = ({
   });
 
   const id = useId();
+
+  // The side panel's content: a column on a wide calendar, a drawer on a phone (closed after a pick).
+  const sidebarContent = (close?: () => void) => (
+    <>
+      {CustomSidebar ? (
+        <CustomSidebar
+          date={currentDate}
+          onDateChange={(d: Date) => { handleDateChange(d); close?.(); }}
+          onCreate={readOnly ? undefined : () => { close?.(); handleCreateEvent(); }}
+          calendars={calendars}
+          onCalendarToggle={onCalendarToggle}
+        />
+      ) : (
+      <Sidebar
+          currentDate={currentDate}
+          onDateChange={(d: Date) => { handleDateChange(d); close?.(); }}
+          onViewChange={(v: ViewType) => { handleViewChange(v); close?.(); }}
+          onEventCreate={() => { close?.(); handleCreateEvent(); }}
+          timezone={timezone}
+          onTimezoneChange={onTimezoneChange}
+          className="ck:w-full"
+          readOnly={readOnly}
+          calendars={calendars}
+          onCalendarToggle={onCalendarToggle}
+          translations={t}
+          locale={locale}
+      />
+      )}
+    </>
+  );
+  const toggleSidebar = () => (compact ? setDrawerOpen((open) => !open) : setIsSidebarOpen((open) => !open));
+  const closeDrawer = React.useCallback(() => setDrawerOpen(false), []);
 
   // Mobile swipe gesture support
   const swipeRef = useViewSwipe<HTMLDivElement>(handlePrev, handleNext, true);
@@ -472,7 +507,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 onNext={() => handleDateChange(addDays(currentDate, 7))}
                 onToday={handleToday}
                 onViewChange={handleViewChange}
-                onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+                onToggleSidebar={toggleSidebar}
               />
             )}
           />
@@ -486,7 +521,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
             onNext={handleNext}
             onToday={handleToday}
             onViewChange={handleViewChange}
-            onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+            onToggleSidebar={toggleSidebar}
           />
         ) : layout === 'focus' ? (
           <FocusBar
@@ -509,7 +544,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
           onToday={handleToday}
           view={view}
           onViewChange={handleViewChange}
-          onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          onMenuClick={toggleSidebar}
           compact={compact}
           isDarkMode={colorMode(mode, isDarkMode) === 'dark'}
           onThemeToggle={onThemeToggle}
@@ -527,30 +562,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 className="ck:overflow-hidden ck:transition-[width,opacity] ck:duration-300 ck:ease-[cubic-bezier(0.4,0,0.2,1)]"
                 style={{ width: isSidebarOpen ? 256 : 0, opacity: isSidebarOpen ? 1 : 0 }}
             >
-                {CustomSidebar ? (
-                  <CustomSidebar
-                    date={currentDate}
-                    onDateChange={handleDateChange}
-                    onCreate={readOnly ? undefined : handleCreateEvent}
-                    calendars={calendars}
-                    onCalendarToggle={onCalendarToggle}
-                  />
-                ) : (
-                <Sidebar
-                    currentDate={currentDate}
-                    onDateChange={handleDateChange}
-                    onViewChange={handleViewChange}
-                    onEventCreate={handleCreateEvent}
-                    timezone={timezone}
-                    onTimezoneChange={onTimezoneChange}
-                    className="ck:w-full"
-                    readOnly={readOnly}
-                    calendars={calendars}
-                    onCalendarToggle={onCalendarToggle}
-                    translations={t}
-                    locale={locale}
-                />
-                )}
+                {sidebarContent()}
             </div>
             )}
 
@@ -680,6 +692,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
         </>
         )}
         
+        {compact && drawerOpen && layout !== 'focus' && <Drawer label={t.navigationLabel} closeLabel={t.close} onClose={closeDrawer}>{sidebarContent(closeDrawer)}</Drawer>}
+
         {hasCustomForm ? (
             (renderEventForm ?? ((props) => EventEditor && <EventEditor {...props} />))({
                 isOpen: isModalOpen,
