@@ -1,5 +1,24 @@
 # Pro-Scheduler Changelog
 
+## 2.0.0-beta.1
+
+Pre-release on the `next` dist-tag (`latest` stays on 1.4.x). The API is complete: from here to 2.0.0, fixes only.
+
+### Added
+- `ToolbarProps.compact`: a custom `components.Toolbar` knows when the calendar is in its phone layout.
+- Drag announcements in the calendar's language (new keys `dragStart`, `dragEnd`, `dragCancel`), and no English keyboard instructions left for screen readers (dragging is a pointer gesture; the event form is the keyboard way).
+- Colour swatches named by colour (new keys `colorBlue` … `colorIndigo`).
+
+### Fixed
+- After a delete, the focus goes to the hour the event was in (its day for an all-day event) instead of being lost.
+- A host's own form (`renderEventForm`, `components.EventEditor`) gives the focus back to what opened it when it closes.
+- Time zone choices in the side panel are buttons, reachable with the keyboard; the current one is marked.
+- React 18 server rendering no longer warns about `useLayoutEffect`.
+- The phone layout leaves room under the floating Create, so the last events are not hidden behind it.
+
+### Internal
+- Every example of the 1.4.1 README runs as a test (the 1.x contract); server rendering is tested without a DOM, hydration without warnings; CI runs the suite with React 18 too, and on both 2026 clock changes (`npm run test:dst`).
+
 ## 2.0.0-alpha.11
 
 Pre-release on the `next` dist-tag (`latest` stays on 1.4.x).
