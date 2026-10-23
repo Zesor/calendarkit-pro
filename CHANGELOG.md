@@ -13,8 +13,11 @@ Pre-release on the `next` dist-tag (`latest` stays on 1.4.x). The API is complet
 - After a delete, the focus goes to the hour the event was in (its day for an all-day event) instead of being lost.
 - A host's own form (`renderEventForm`, `components.EventEditor`) gives the focus back to what opened it when it closes.
 - Time zone choices in the side panel are buttons, reachable with the keyboard; the current one is marked.
-- React 18 server rendering no longer warns about `useLayoutEffect`.
+- React 18 server rendering no longer warns about `useLayoutEffect`, and a day or week view of today hydrates without a mismatch (the current-time line appears once mounted).
 - The phone layout leaves room under the floating Create, so the last events are not hidden behind it.
+
+### Changed
+- Scheduler budget: 59 kB brotli (was 58 kB).
 
 ### Internal
 - Every example of the 1.4.1 README runs as a test (the 1.x contract); server rendering is tested without a DOM, hydration without warnings; CI runs the suite with React 18 too, and on both 2026 clock changes (`npm run test:dst`).
