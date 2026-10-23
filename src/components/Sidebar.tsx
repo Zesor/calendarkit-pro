@@ -224,10 +224,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <div className="ck:fixed ck:inset-0 ck:z-40" onClick={() => setTimezoneOpen(false)} />
                         <div className="ck:absolute ck:bottom-full ck:left-0 ck:w-full ck:mb-2 ck:bg-background ck:rounded-xl ck:shadow-2xl ck:z-50 ck:max-h-[260px] ck:overflow-y-auto ck:p-1.5 ck:duration-200 ck:backdrop-blur-none">
                             {timezones.map(tz => (
-                                <div
+                                <button
+                                    type="button"
                                     key={tz.value}
+                                    aria-pressed={(timezone || '') === tz.value}
                                     className={cx(
-                                        "ck:px-3 ck:py-2.5 ck:text-sm ck:rounded-lg ck:cursor-pointer ck:transition-all ck:duration-200",
+                                        "ck:block ck:w-full ck:text-left ck:px-3 ck:py-2.5 ck:text-sm ck:rounded-lg ck:cursor-pointer ck:transition-all ck:duration-200",
                                         (timezone || '') === tz.value
                                             ? "ck:bg-primary ck:text-primary-foreground ck:font-semibold"
                                             : "ck:text-foreground ck:hover:bg-accent/80"
@@ -238,7 +240,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                     }}
                                 >
                                     {formatTzLabel(tz)}
-                                </div>
+                                </button>
                             ))}
                         </div>
                     </>

@@ -28,7 +28,7 @@ import { resolveTranslations, timeFormats } from './core/format';
 import { fromDisplay, toDisplay } from './core/timezone';
 import { resolveWeekStartsOn } from './core/week';
 import { useCalendar, useCalendarSelector } from './react/useCalendar';
-import { CalendarDndContext } from './react/dnd';
+import { CalendarDndContext, dragAnnouncements } from './react/dnd';
 import { useStableCallback } from './hooks/useStableCallback';
 import { addDays, format, startOfWeek } from 'date-fns';
 import { useCompact } from './hooks/useCompact';
@@ -359,6 +359,8 @@ export const Scheduler: React.FC<CalendarProps> = ({
   // Every event surface's accessible name (spec §8.8).
   const labelEvent = useCallback((e: CalendarEvent) => eventLabel(e, { t, timezone, locale, calendars }), [t, timezone, locale, calendars]);
 
+  const announcements = useMemo(() => dragAnnouncements(t), [t]);
+
   // Drag ghost times follow the locale's clock convention.
   const overlayTimeFormat = timeFormats(locale).time;
 
@@ -495,6 +497,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
         onDragStart={handleDragStart}
         onDragEnd={onDragEndWrapper}
         modifiers={modifiers}
+        announcements={announcements}
     >
       <div
         ref={rootRef}
@@ -530,6 +533,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                 onToday={handleToday}
                 onViewChange={handleViewChange}
                 onToggleSidebar={toggleSidebar}
+                compact={compact}
               />
             )}
           />
@@ -544,6 +548,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
             onToday={handleToday}
             onViewChange={handleViewChange}
             onToggleSidebar={toggleSidebar}
+            compact={compact}
           />
         ) : layout === 'focus' ? (
           <FocusBar
@@ -602,7 +607,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
                       </div>
                     </div>
                 ) : (
-                <div ref={swipeRef} className="ck:flex-1 ck:overflow-auto ck:p-0 ck:md:p-4 ck:touch-pan-y">
+                <div ref={swipeRef} className={cx("ck:flex-1 ck:overflow-auto ck:p-0 ck:md:p-4 ck:touch-pan-y", compact && layout === 'classic' && !readOnly && "ck:pb-24")}>
                   <div className="ck:h-full ck:min-w-full">
                         <div
                             key={`${view}-${periodKey}-${timezone || 'local'}`}

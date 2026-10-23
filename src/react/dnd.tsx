@@ -50,7 +50,21 @@ export function dragEndToMove(drag: Pick<DragEndEvent, 'active' | 'over'>): { ev
  * dnd-kit context wired to a calendar store: drops call `calendar.move`, all-day bars target the
  * day under the pointer, and dragging is off in `readOnly`.
  */
-export function CalendarDndContext({ calendar, children, id, modifiers, sensors, onDragStart, onDragEnd }: {
+/**
+ * What a screen reader hears during a pointer drag, in the calendar's language (dnd-kit's defaults
+ * are English and name the drag id). Moving over targets says nothing: the end says where it went.
+ */
+export function dragAnnouncements(t: { dragStart: string; dragEnd: string; dragCancel: string }) {
+  const say = (text: string, active: { data: { current?: unknown } }) => text.replace('{title}', (active.data.current as DragData | undefined)?.event.title ?? '')
+  return {
+    onDragStart: ({ active }: { active: { data: { current?: unknown } } }) => say(t.dragStart, active),
+    onDragOver: (_moving?: unknown) => undefined,
+    onDragEnd: ({ active, over }: { active: { data: { current?: unknown } }; over: unknown }) => say(over ? t.dragEnd : t.dragCancel, active),
+    onDragCancel: ({ active }: { active: { data: { current?: unknown } } }) => say(t.dragCancel, active),
+  }
+}
+
+export function CalendarDndContext({ calendar, children, id, modifiers, sensors, onDragStart, onDragEnd, announcements }: {
   calendar: CalendarStore
   children?: React.ReactNode
   id?: string
@@ -58,6 +72,8 @@ export function CalendarDndContext({ calendar, children, id, modifiers, sensors,
   sensors?: SensorDescriptor<SensorOptions>[]
   onDragStart?: (event: DragStartEvent) => void
   onDragEnd?: (event: DragEndEvent) => void
+  /** Drag announcements (`dragAnnouncements(t)`); without them, dnd-kit's English defaults. */
+  announcements?: ReturnType<typeof dragAnnouncements>
 }) {
   const readOnly = useCalendarSelector(calendar, (s) => s.readOnly)
   const defaults = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
@@ -67,6 +83,8 @@ export function CalendarDndContext({ calendar, children, id, modifiers, sensors,
       sensors={readOnly ? [] : sensors ?? defaults}
       modifiers={modifiers}
       collisionDetection={dayAwareCollision}
+      // Pointer drags only (no keyboard sensor): no keyboard instructions to read out.
+      accessibility={announcements && { announcements, screenReaderInstructions: { draggable: '' } }}
       onDragStart={onDragStart}
       onDragEnd={(event) => {
         onDragEnd?.(event)

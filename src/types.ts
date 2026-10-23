@@ -162,8 +162,10 @@ export interface ToolbarProps {
   onNext: () => void;
   onToday: () => void;
   onViewChange: (view: ViewType) => void;
-  /** Shows or hides the side panel. */
+  /** Shows or hides the side panel (a drawer in the phone layout). */
   onToggleSidebar: () => void;
+  /** The calendar is in its phone layout (under 768 px of width). */
+  compact?: boolean;
 }
 
 /** Props of `components.Sidebar`. `onCreate` is undefined in read-only mode. */
