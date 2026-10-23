@@ -73,6 +73,11 @@ function pressedBox(e: React.PointerEvent): Box {
   const box = (e.target as Element).closest?.('.ck-event, [data-ck-event]')?.getBoundingClientRect();
   return box && box.width > 0 ? box : { left: e.clientX, right: e.clientX, top: e.clientY, bottom: e.clientY };
 }
+/** Enter or Space on an event button: the card opens beside that event (no pointer involved). */
+function keyedBox(e: React.KeyboardEvent): Box | null {
+  const box = (e.target as Element).closest?.('.ck-event, [data-ck-event]')?.getBoundingClientRect();
+  return box && box.width > 0 ? box : null;
+}
 const NO_COMPONENTS: CalendarComponents = {};
 
 
@@ -402,6 +407,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
       <div
         ref={rootRef}
         onPointerDownCapture={(e) => { pointer.current = pressedBox(e); }}
+        onKeyDownCapture={(e) => { if (e.key === 'Enter' || e.key === ' ') pointer.current = keyedBox(e); }}
         className={cx("ck-root ck:flex ck:flex-col ck:h-full ck:bg-background ck:text-foreground ck:relative", className, classNames.root)}
         style={getThemeStyles(theme)}
         data-ck-theme={themePreset(theme)}

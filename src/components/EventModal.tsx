@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useId, useInsertionEffect, useLayoutEffect, useRef } from 'react';
 import { useClassNames } from './customize';
 import { placeBeside } from './placement';
+import { useDialogFocus } from './useDialogFocus';
 import { CalendarEvent, CalendarTranslations, EventType, EventReminder, PlaceSearch } from '../types';
 import { PlaceField } from './PlaceField';
 import { addDays, differenceInCalendarDays, format, differenceInMinutes, startOfDay } from 'date-fns';
@@ -217,6 +218,9 @@ export const EventModal: React.FC<EventModalProps> = ({
     const viewport = { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
     setPlace(box && box.width > 0 ? placeBeside(box, { width: Math.min(WIDTH, window.innerWidth - 2 * MARGIN), height: el.offsetHeight }, viewport) : null);
   }, [isOpen, editedId, variant]);
+
+  // The Focus panel sits beside a grid that stays usable: the focus comes back, but Tab is free.
+  useDialogFocus(card, { open: isOpen, trap: variant !== 'panel' });
 
   const closeRef = useRef(requestClose);
   closeRef.current = requestClose;
@@ -662,7 +666,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   if (variant === 'panel') {
     // Focus: docked in the calendar's row, beside the grid, which stays usable (no overlay).
     return (
-      <div data-ck-panel role="dialog" aria-labelledby={`${id}-heading`} className={cx("ck:flex ck:h-full ck:w-[440px] ck:max-w-full ck:shrink-0 ck:flex-col ck:border-l ck:border-border ck:bg-background ck:animate-fade-in", classNames.dialog)}>
+      <div ref={card} data-ck-panel role="dialog" aria-labelledby={`${id}-heading`} className={cx("ck:flex ck:h-full ck:w-[440px] ck:max-w-full ck:shrink-0 ck:flex-col ck:border-l ck:border-border ck:bg-background ck:animate-fade-in", classNames.dialog)}>
         {renderEditMode()}
       </div>
     );
@@ -672,7 +676,7 @@ export const EventModal: React.FC<EventModalProps> = ({
     return (
       <>
         <div data-ck-backdrop className="ck:absolute ck:inset-0 ck:z-40 ck:bg-black/20 ck:animate-fade-in" onClick={requestClose} />
-        <div data-ck-sheet role="dialog" aria-modal="true" aria-labelledby={`${id}-heading`} className={cx("ck:absolute ck:inset-x-0 ck:bottom-0 ck:z-50 ck:mx-auto ck:flex ck:max-h-[85%] ck:w-full ck:max-w-[720px] ck:flex-col ck:overflow-hidden ck:rounded-t-3xl ck:bg-background ck:shadow-[0_-20px_50px_-20px_rgb(0_0_0/0.4)] ck:animate-rise-in", classNames.dialog)}>
+        <div ref={card} data-ck-sheet role="dialog" aria-modal="true" aria-labelledby={`${id}-heading`} className={cx("ck:absolute ck:inset-x-0 ck:bottom-0 ck:z-50 ck:mx-auto ck:flex ck:max-h-[85%] ck:w-full ck:max-w-[720px] ck:flex-col ck:overflow-hidden ck:rounded-t-3xl ck:bg-background ck:shadow-[0_-20px_50px_-20px_rgb(0_0_0/0.4)] ck:animate-rise-in", classNames.dialog)}>
           <span aria-hidden="true" className="ck:mx-auto ck:mt-2.5 ck:h-1.5 ck:w-11 ck:shrink-0 ck:rounded-full ck:bg-muted-foreground/30" />
           {renderEditMode()}
         </div>

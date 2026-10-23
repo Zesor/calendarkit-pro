@@ -11,6 +11,7 @@ import { eventColorStyle, resolveEventColor, useCalendars } from './eventColor';
 import { useClassNames } from './customize';
 import { durationLabel } from './duration';
 import { Box, placeBeside } from './placement';
+import { useDialogFocus } from './useDialogFocus';
 
 const WIDTH = 340;
 const MARGIN = 8;
@@ -70,6 +71,7 @@ export const EventPopover: React.FC<EventPopoverProps> = ({ event, anchor, timez
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
+  useDialogFocus(ref);
   // Measured once laid out, so a tall card moves up instead of leaving the window.
   useLayoutEffect(() => setHeight(ref.current?.offsetHeight ?? 0), [event]);
 
@@ -85,6 +87,7 @@ export const EventPopover: React.FC<EventPopoverProps> = ({ event, anchor, timez
       <div
         ref={ref}
         role="dialog"
+        aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
         className={cx("ck:fixed ck:z-50 ck:flex ck:flex-col ck:overflow-y-auto ck:rounded-2xl ck:border ck:border-border ck:bg-background ck:p-4 ck:shadow-[0_18px_40px_-16px_rgb(0_0_0/0.35),0_2px_6px_-2px_rgb(0_0_0/0.12)] ck:outline-none ck:animate-pop-in", classNames.dialog)}

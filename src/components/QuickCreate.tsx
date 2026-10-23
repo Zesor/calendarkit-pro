@@ -9,6 +9,7 @@ import { toDisplay } from '../core/timezone';
 import { AlignLeft, Calendar, Clock, MapPin, Sparkles, Users, X } from './icons';
 import { eventColorStyle } from './eventColor';
 import { placeBeside } from './placement';
+import { useDialogFocus } from './useDialogFocus';
 import { DiscardPrompt } from './DiscardPrompt';
 import { PlaceField } from './PlaceField';
 import { EMAIL } from './EventModal';
@@ -89,6 +90,8 @@ export const QuickCreate: React.FC<QuickCreateProps> = ({ draft, events, calenda
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [dirty, onClose]);
+
+  useDialogFocus(card);
 
   useLayoutEffect(() => {
     const el = card.current;
