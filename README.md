@@ -10,7 +10,7 @@
 [![types](https://img.shields.io/npm/types/calendarkit-pro)](docs/api.md)
 [![license](https://img.shields.io/npm/l/calendarkit-pro)](LICENSE)
 
-[Guide](docs/guide.md) · [API reference](docs/api.md) · [Changelog](CHANGELOG.md) · [Migrating from 1.x](MIGRATION.md)
+[Website and live demo](https://calendarkit.io) · [Guide](docs/guide.md) · [API reference](docs/api.md) · [Changelog](CHANGELOG.md) · [Migrating from 1.x](MIGRATION.md)
 
 <img src="docs/images/week.png" alt="CalendarKit Pro week view: a side panel with a mini calendar and calendar toggles, an all-day row with multi-day bars, and a week grid with colour-coded events and hatched off-hours" width="100%" />
 

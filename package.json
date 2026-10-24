@@ -1,7 +1,7 @@
 {
   "name": "calendarkit-pro",
   "version": "2.0.0",
-  "description": "Professional React calendar with drag-drop, recurring events, timezone support, resource scheduling, and i18n",
+  "description": "A complete, accessible React calendar and scheduler: month, week, day, agenda and resource views, drag and drop, recurring events, time zones. Free and MIT licensed.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -83,7 +83,13 @@
     "events",
     "typescript",
     "ui-component",
-    "calendarkit"
+    "calendarkit",
+    "react-calendar",
+    "react-scheduler",
+    "calendar-component",
+    "event-calendar",
+    "nextjs",
+    "accessibility"
   ],
   "author": "CalendarKit Team",
   "license": "MIT",
