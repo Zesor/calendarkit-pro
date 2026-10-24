@@ -22,6 +22,11 @@ const SHOTS = [
   { name: 'flow', url: '?tz=local&layout=flow&theme=vivid&day=2', w: 1100, h: 900 },
   { name: 'phone', url: '?tz=local&hour=8&view=day&day=1', w: 390, h: 844, mobile: true },
   { name: 'phone-sheet', url: '?tz=local&hour=8&view=day&day=1', w: 390, h: 844, mobile: true, act: [click(byLabel('/^Project Review/'))] },
+  ...['calm', 'vivid', 'editorial'].flatMap((t) => [
+    { name: `theme-${t}`, url: `?tz=local&hour=8&theme=${t}`, w: 1440, h: 900 },
+    { name: `theme-${t}-dark`, url: `?tz=local&hour=8&theme=${t}&dark=1`, w: 1440, h: 900 },
+  ]),
+  { name: 'undo-toast', url: '?tz=local&hour=8', w: 1440, h: 900, act: [click(byLabel('/^Code Review/')), click("[...document.querySelectorAll('[role=dialog] button')].find((b) => /^Delete$/.test(b.textContent.trim()))")] },
 ]
 
 const profile = join(tmpdir(), `ck-shots-${Date.now()}`)
