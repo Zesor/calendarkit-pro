@@ -58,7 +58,7 @@
 npm install calendarkit-pro
 ```
 
-React 18 or 19 is the only requirement. The 2.0 beta is published under the `next` tag: `npm install calendarkit-pro@next`.
+React 18 or 19 is the only requirement. Upgrading from 1.x? See [MIGRATION.md](MIGRATION.md).
 
 ## Quick start
 
