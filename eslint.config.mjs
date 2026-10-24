@@ -5,7 +5,7 @@ import react from 'eslint-plugin-react'
 import globals from 'globals'
 
 export default tseslint.config(
-  { ignores: ['dist/**', '.next/**', 'node_modules/**', 'docs/**', 'next-env.d.ts', 'src/styles/css.generated.ts'] },
+  { ignores: ['dist/**', '.next/**', 'node_modules/**', 'docs/**', 'video/**', 'next-env.d.ts', 'src/styles/css.generated.ts'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
