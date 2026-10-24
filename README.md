@@ -1,25 +1,56 @@
+<div align="center">
+
 # CalendarKit Pro
 
-A professional, feature-rich React calendar component with drag-and-drop, recurring events, timezone support, resource scheduling, and internationalization.
+**A complete, accessible calendar for React: week, month, day, agenda and resource views, drag and drop, recurring events, time zones, three layouts and a phone layout. One component, its own styles, no setup.**
 
-[![npm version](https://badge.fury.io/js/calendarkit-pro.svg)](https://www.npmjs.com/package/calendarkit-pro)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![npm](https://img.shields.io/npm/v/calendarkit-pro?label=npm)](https://www.npmjs.com/package/calendarkit-pro)
+[![next](https://img.shields.io/npm/v/calendarkit-pro/next?label=next&color=7c3aed)](https://www.npmjs.com/package/calendarkit-pro?activeTab=versions)
+[![downloads](https://img.shields.io/npm/dw/calendarkit-pro)](https://www.npmjs.com/package/calendarkit-pro)
+[![types](https://img.shields.io/npm/types/calendarkit-pro)](docs/api.md)
+[![license](https://img.shields.io/npm/l/calendarkit-pro)](LICENSE)
+
+[Guide](docs/guide.md) · [API reference](docs/api.md) · [Changelog](CHANGELOG.md) · [Migrating from 1.x](MIGRATION.md)
+
+<img src="docs/images/week.png" alt="CalendarKit Pro week view: a side panel with a mini calendar and calendar toggles, an all-day row with multi-day bars, and a week grid with colour-coded events and hatched off-hours" width="100%" />
+
+</div>
 
 ## Features
 
-- **5 Views** - Month, Week, Day, Agenda, and Resource views
-- **Drag & Drop** - Move events with smooth animations and grid snapping
-- **Event Resize** - Drag event edges to adjust duration
-- **All-day & Multi-day Events** - Continuous bars, collapsible all-day row, move by days and stretch
-- **Recurring Events** - Daily, weekly, monthly, yearly with RRule support
-- **Timezone Support** - Full IANA timezone handling
-- **i18n Ready** - Built-in English/French, fully customizable
-- **Resource Scheduling** - Schedule across rooms, people, or equipment
-- **Themes** - Calm, Vivid and Editorial, each in light and dark, with WCAG AA text contrast on theme colours
-- **Zero setup** - Ships its own compiled CSS: no Tailwind, no stylesheet to import
-- **Mobile Friendly** - Touch gestures and responsive layout
-- **TypeScript** - Full type definitions included
-- **High Performance** - Handles 10,000+ events
+- **Five views.** Month, week, day, agenda and resource timeline, with all-day and multi-day bars and overlapping events laid out side by side.
+- **Create in place.** Click or drag over free time and type a sentence ("Lunch with Lea tomorrow 1pm for 2h"): the quick card understands it, in English and French. Every change can be undone.
+- **Drag and drop.** Move events across days and resources, stretch them, snap to your slot size.
+- **Recurring events.** Daily to yearly rules, single occurrences removed, wall-clock times kept across daylight saving.
+- **Time zones.** Any IANA zone for display, all-day events never shifted.
+- **Three layouts.** Classic, Focus (the grid under a floating toolbar, editing in a side panel) and Flow (a day feed with free slots to book).
+- **Phones and narrow columns.** Under 768 px of calendar width: day view, drawer, bottom sheets, 44 px targets.
+- **Accessible.** Every event and slot is a named button; dialogs trap and return the focus; no keyboard shortcuts to learn.
+- **Themes.** Calm, Vivid and Editorial, light and dark, every colour a CSS variable, WCAG AA contrast on event colours.
+- **Place search.** Optional Location suggestions from OpenStreetMap, or any provider.
+- **Zero setup.** Ships its compiled, scoped stylesheet: no Tailwind, no CSS to import, nothing leaks into your page.
+- **Built for real apps.** TypeScript types, server rendering (React 18 and 19), 10,000 events, a headless core for custom UIs.
+
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/event-card.png" alt="Event card opened beside an event, with its date, calendar, Edit, Duplicate and Delete" /><br /><sub><b>Event card</b>, beside the event it belongs to</sub></td>
+    <td width="50%"><img src="docs/images/quick-create.png" alt="Quick card next to a new event in the grid, with title, times, guests, location, description and calendar rows" /><br /><sub><b>Quick create</b>, in place, from a click or a drag</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/month-dark.png" alt="Month view in the dark Editorial theme, with multi-day bars and event chips" /><br /><sub><b>Month</b>, Editorial theme in dark mode</sub></td>
+    <td><img src="docs/images/focus.png" alt="Focus layout: a floating toolbar above the week grid and the event editor docked on the right" /><br /><sub><b>Focus layout</b>, editing in a docked panel</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/flow.png" alt="Flow layout in the Vivid theme: a strip of the week's days and the day as a feed of events and free slots to book" /><br /><sub><b>Flow layout</b>, the day as a feed, Vivid theme</sub></td>
+    <td>
+      <img src="docs/images/phone.png" alt="Phone layout: day view with a two-row header and a floating Create button" width="48%" />
+      <img src="docs/images/phone-sheet.png" alt="Phone layout: the event card as a bottom sheet" width="48%" />
+      <br /><sub><b>Phone layout</b>, with bottom sheets</sub>
+    </td>
+  </tr>
+</table>
 
 ## Installation
 
@@ -27,552 +58,152 @@ A professional, feature-rich React calendar component with drag-and-drop, recurr
 npm install calendarkit-pro
 ```
 
-## Requirements
+React 18 or 19 is the only requirement. The 2.0 beta is published under the `next` tag: `npm install calendarkit-pro@next`.
 
-React 18 or 19, nothing else: the calendar brings its own stylesheet and adds it to the page once. The Tailwind `content` entry that 1.x needed can be removed (see [Styles and Content-Security-Policy](#styles-and-content-security-policy) to load the CSS as a file instead).
+## Quick start
 
-Server rendering (Next.js, Remix…) works with both: nothing touches `window` at import or during the server render, and the page hydrates without a warning. The phone layout switches after the first measure in the browser, before the first paint; until then the window's media queries stand in.
-
-## Quick Start
+Give the calendar its events and let it keep them. That is the whole setup: the styles come with the component.
 
 ```tsx
 import { Scheduler } from 'calendarkit-pro';
-import type { CalendarEvent, ViewType } from 'calendarkit-pro';
-import { useState } from 'react';
 
-function MyCalendar() {
+const events = [
+  { id: '1', title: 'Design review', start: new Date(2026, 9, 15, 10), end: new Date(2026, 9, 15, 11) },
+  { id: '2', title: 'Offsite', start: new Date(2026, 9, 19), end: new Date(2026, 9, 21), allDay: true },
+];
+
+export function MyCalendar() {
+  return (
+    <div style={{ height: 720 }}>
+      <Scheduler defaultEvents={events} onEventsChange={(next) => save(next)} />
+    </div>
+  );
+}
+```
+
+The calendar fills its parent: give the parent a height. `onEventsChange` receives the full list after every create, edit, move, resize, duplicate, delete or undo.
+
+### Keeping the events in your state
+
+To own the list (to sync it with an API, for example), pass `events` and update it from the callbacks:
+
+```tsx
+import { useState } from 'react';
+import { Scheduler, type CalendarEvent } from 'calendarkit-pro';
+
+export function MyCalendar() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [view, setView] = useState<ViewType>('week');
-  const [date, setDate] = useState(new Date());
 
   return (
     <Scheduler
       events={events}
-      view={view}
-      onViewChange={setView}
-      date={date}
-      onDateChange={setDate}
-      onEventCreate={(event) => {
-        setEvents([...events, { ...event, id: crypto.randomUUID() } as CalendarEvent]);
-      }}
-      onEventUpdate={(event) => {
-        setEvents(events.map(e => e.id === event.id ? event : e));
-      }}
-      onEventDelete={(id) => {
-        setEvents(events.filter(e => e.id !== id));
-      }}
+      onEventCreate={(event) => setEvents((list) => [...list, { ...event, id: crypto.randomUUID() } as CalendarEvent])}
+      onEventUpdate={(event) => setEvents((list) => list.map((e) => (e.id === event.id ? event : e)))}
+      onEventDelete={(id) => setEvents((list) => list.filter((e) => e.id !== id))}
     />
   );
 }
 ```
 
-Or let the calendar keep the list itself (uncontrolled), and save it when it changes:
+### Next.js and server rendering
 
-```tsx
-<Scheduler defaultEvents={initialEvents} onEventsChange={(events) => save(events)} />
-```
+`calendarkit-pro` is marked `"use client"`, so it can be imported from a Server Component page. It renders on the server without touching `window`, and the page hydrates without a warning. Under a strict Content-Security-Policy, see [Styles and Content-Security-Policy](docs/guide.md#styles-and-content-security-policy).
 
-## Props
+## Usage
 
-| Prop | Type | Description |
-|------|------|-------------|
-| `events` | `CalendarEvent[]` | Events to display (controlled: you update the list from the callbacks) |
-| `defaultEvents` | `CalendarEvent[]` | Starting events, uncontrolled: the calendar keeps the list (ignored with `events`) |
-| `onEventsChange` | `(events: CalendarEvent[]) => void` | The whole list after every change (create, edit, move, resize, duplicate, delete, undo) |
-| `view` | `ViewType` | Current view: `'month'` \| `'week'` \| `'day'` \| `'agenda'` \| `'resource'` |
-| `date` | `Date` | Currently focused date |
-| `onViewChange` | `(view: ViewType) => void` | View change callback |
-| `onDateChange` | `(date: Date) => void` | Date change callback |
-| `onEventCreate` | `(event: Partial<CalendarEvent>) => void` | Event creation callback |
-| `onEventUpdate` | `(event: CalendarEvent) => void` | Event update callback |
-| `onEventDelete` | `(eventId: string) => void` | Event deletion callback |
-| `onEventDrop` | `(event, start, end) => void` | Called when an event is dropped (with the event before the move and its new dates), alongside `onEventUpdate` |
-| `onEventResize` | `(event, start, end) => void` | Called when an event is resized, alongside `onEventUpdate` (both fire, so update your state in only one of them) |
-| `onOccurrenceDelete` | `(occurrence, updatedSeries) => void` | Delete a single occurrence of a recurring event: persist `updatedSeries` (it has the date in `recurrence.exdates`). Without it, deleting an occurrence deletes the series |
-| `calendars` | `Calendar[]` | Multiple calendar support |
-| `resources` | `Resource[]` | Resources for resource view |
-| `eventTypes` | `EventType[]` | Pre-defined event types |
-| `dayStartHour` | `number` | First hour of the week, day and resource grids (0 to 23, default 0, see [Time grid](#time-grid)) |
-| `dayEndHour` | `number` | Hour those grids end at (1 to 24, default 24) |
-| `slotDuration` | `number` | Slot length in minutes: 5, 10, 15 (default), 20, 30 or 60 |
-| `reverseTimeAxis` | `boolean` | Week and day views: the latest hours on top |
-| `workingHours` | `WorkingHours` | Week and day views: shade the time outside `{ start, end, days? }` |
-| `scrollToHour` | `number` | Week and day views: the hour at the top when the grid opens (default: a few hours before now) |
-| `timezone` | `string` | IANA timezone (e.g., `'America/New_York'`) |
-| `onTimezoneChange` | `(tz: string) => void` | Timezone change callback |
-| `language` | `'en'` \| `'fr'` | UI language |
-| `translations` | `Partial<CalendarTranslations>` | Custom translations |
-| `locale` | `Locale` | date-fns locale for formatting |
-| `theme` | `'calm'` \| `'vivid'` \| `'editorial'` \| `CalendarTheme` | Built-in theme or theme object (default `'calm'`, see [Theming](#theming)) |
-| `mode` | `'light'` \| `'dark'` \| `'system'` | Color mode. Without `mode` nor `isDarkMode`, a `.dark` ancestor turns the calendar dark |
-| `isDarkMode` | `boolean` | Dark mode (alias of `mode="dark"` / `mode="light"`) |
-| `onThemeToggle` | `() => void` | Dark mode toggle callback |
-| `injectStyles` | `boolean` | Adds the stylesheet to the page (default `true`) |
-| `readOnly` | `boolean` | Disable editing |
-| `isLoading` | `boolean` | Show loading skeletons |
-| `hideViewSwitcher` | `boolean` | Hide view switcher |
-| `renderEventForm` | `(props) => ReactNode` | Custom event form (same as `components.EventEditor`) |
-| `classNames` | `CalendarClassNames` | Extra classes for `root`, `toolbar`, `sidebar`, `event`, `slot`, `allDayBar`, `dialog` (see [Customizing](#customizing)) |
-| `layout` | `'classic'` \| `'focus'` \| `'flow'` | How the calendar is laid out (default `'classic'`, see [Layouts](#layouts)) |
-| `placeSearch` | `(query, { signal }) => Promise<Place[]>` | Place suggestions in the form's Location field, off by default (see [Places](#places)) |
-| `components` | `CalendarComponents` | Your own `EventContent`, `EventEditor`, `Toolbar`, `Sidebar`, `EmptyState` (see [Customizing](#customizing)) |
+### Events
 
-## Types
-
-### CalendarEvent
-
-```typescript
+```ts
 interface CalendarEvent {
   id: string;
   title: string;
-  start: Date;
-  end: Date;
-  description?: string;
-  color?: string;
+  start: Date;          // also accepts ISO strings and timestamps
+  end: Date;            // all-day events: exclusive (midnight after the last day)
   allDay?: boolean;
-  calendarId?: string;
-  resourceId?: string;
-  type?: string;
-  guests?: string[];
-  attachments?: EventAttachment[];
-  reminders?: EventReminder[];
-  recurrence?: {
-    freq: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
-    interval?: number;
-    count?: number;
-    until?: Date;
-    byweekday?: number[]; // 0 = Monday … 6 = Sunday
-    exdates?: Date[];     // occurrence starts excluded from the series
-  };
-}
-```
-
-### Resource
-
-```typescript
-interface Resource {
-  id: string;
-  label: string;
+  calendarId?: string;  // takes the calendar's colour
+  resourceId?: string;  // row in the resource view
   color?: string;
-  avatar?: string;
+  location?: string;
+  recurrence?: { freq: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY'; interval?: number; count?: number; until?: Date };
+  // … description, guests, reminders, attachments, place: see the API reference
 }
 ```
 
-### CalendarTheme
-
-```typescript
-interface CalendarTheme {
-  preset?: 'calm' | 'vivid' | 'editorial'; // default 'calm'
-  colors?: {
-    primary?: string;
-    primaryForeground?: string;
-    secondary?: string;
-    background?: string;
-    foreground?: string;
-    border?: string;
-    muted?: string;
-    mutedForeground?: string;
-    accent?: string;
-    destructive?: string;
-    ring?: string;
-  };
-  fontFamily?: string;
-  borderRadius?: string; // base radius, the others scale from it
-}
-```
-
-## Views
-
-### Month View
-Full month grid. All-day and multi-day events are continuous bars across their days; up to three timed events per day show as chips with their colour, then "+N more" opens the day. Click a date to switch to day view.
-
-### Week View
-7-day view with hourly time slots and an all-day row on top. Drag events to reschedule, resize from bottom edge. Each event shows as much as its size allows: the title alone for 15 minutes, "Title · 9:00" for 30 minutes, then the title over up to three lines and the times. Overlapping events sit side by side and stretch into free columns; past 2 or 3 columns (75 px each at least), the rest collapse into a "+N" button that lists them.
-
-### Day View
-Single day with time slots (15 minutes by default) and the all-day row, up to 4 overlapping events side by side. Ideal for detailed scheduling.
-
-### Agenda View
-Chronological list of upcoming events for 30 days. Shows event details and metadata.
-
-### Resource View
-Horizontal timeline for scheduling across resources (rooms, people, equipment).
-
-## Time grid
-
-The week, day and resource views share one time grid:
+### Views, layouts and the time grid
 
 ```tsx
 <Scheduler
+  view="week"                       // 'month' | 'week' | 'day' | 'agenda' | 'resource'
+  layout="focus"                    // 'classic' | 'focus' | 'flow'
   dayStartHour={7}
   dayEndHour={20}
   slotDuration={30}
-  workingHours={{ start: 9, end: 17.5 }} // Monday to Friday by default; `days: [1, 2, 3, 4]` (0 is Sunday)
-  scrollToHour={8}
-  reverseTimeAxis
+  workingHours={{ start: 9, end: 18 }}
 />
 ```
 
-- `dayStartHour` / `dayEndHour` set the hours drawn. Events that run past them are cut at the edge; events entirely outside are not drawn in the grid (they stay in the agenda and the month view).
-- `slotDuration` sets the slot length: a click, a drop, a resize and a drag selection snap to it.
-- `reverseTimeAxis` puts the latest hours on top: the day runs upward, and an event's end is its top edge (the resize handle sits there). The resource view keeps its left-to-right timeline.
-- `workingHours` shades the time outside working hours, and whole days that are not working days. Shaded time can still be clicked and dropped on.
-- `scrollToHour` is the hour at the top of the grid when it opens (on a reversed grid too).
-- Drag over free time with a mouse or a pen to create an event over that range: the quick card opens with it. On touch screens a drag scrolls, and a tap creates as before.
-
-## All-day and Multi-day Events
-
-```tsx
-const events = [
-  // All-day: the end is exclusive, this offsite covers 12–14 October
-  { id: 'offsite', title: 'Offsite', start: new Date(2026, 9, 12), end: new Date(2026, 9, 15), allDay: true },
-  // Timed events of 24 hours or more are shown with the all-day events
-  { id: 'flight', title: 'Flight', start: new Date(2026, 9, 14, 22), end: new Date(2026, 9, 16, 4) },
-];
-```
-
-- All-day events are calendar dates: `timezone` never shifts them. The end is exclusive (midnight after the last day); an end at 23:59 on the same day, or equal to the start, means one day. Date-only values such as `new Date('2026-10-12')` keep their date in every timezone.
-- The week and day views show them in a collapsible row above the grid (2 lanes, then "+N more"). The month view draws continuous bars (up to 3 lanes per week); its "+N more" counts the hidden bars and events of the day.
-- Drag a bar to move it by whole days, or stretch its right edge to change its last day. `onEventDrop` / `onEventResize` then `onEventUpdate` fire as for timed events; `draggable: false`, `resizable: false` and `readOnly` apply.
-- Click an empty day of the all-day row to create an all-day event. The event form has an All Day switch and shows the last day included.
-
-## Layouts
-
-```tsx
-<Scheduler layout="focus" />
-```
-
-- `classic` (default): header, side panel, a card beside each event you click.
-- `focus`: the grid takes the whole calendar, under a floating toolbar (period, Today, previous / next, views, Create). A click on an event edits it in a panel docked beside the grid.
-- `flow`: the week's days as a strip (dots show how busy each day is) and the chosen day as a feed of cards: events in order, free slots with **Book** (an hour at their start), the current time, and a floating **Create**. The full form opens as a sheet from the bottom.
-
-A custom `components.Toolbar` replaces the Focus toolbar and Flow's top bar too; `renderEventForm` keeps your form in every layout. Focus and Flow have no side panel (so no `components.Sidebar` nor calendar toggles there: hide calendars with `calendars[].active`), and Flow shows the week strip and the day feed whatever `view` is (no loading skeleton, `EmptyState` nor `EventContent` there). In Focus, while the panel has changes, a click on the grid asks before anything else opens.
-
-## Creating and undoing
-
-- A click on a free slot, or a drag over free time, opens a quick card beside the new event, which is drawn in its column. The title is a sentence the calendar understands, in English or French (`language`): "Lunch with Lea tomorrow 1pm for 2h" moves the event to tomorrow 13:00–15:00 and saves it as "Lunch with Lea". Enter saves. Under the title, one row each: the date and times (click them to change them), guests, location (with place search when `placeSearch` is set), description and calendar; an overlap is announced. "More options" opens the full form with everything the card already has. **Create** opens the same card at the next free hour today (events of a day or longer, drawn as bars, do not count).
-- Every change (create, edit, move, resize, duplicate, delete) shows a toast with **Undo** for 6 seconds, so deleting asks no confirmation. The event just moved or edited is outlined briefly.
-- The full form opens as a card beside the event (or the new event), without covering the calendar. It has one labelled row per part (When, Calendar, Location, Guests, Reminders, Description), keeps Save in view, and shows times in the calendar's `timezone`.
-- Closing the card or the form with changes asks first ("Discard changes?").
-- New events get no colour and no reminder you did not choose: they take their calendar's colour.
-- With `renderEventForm`, a slot click opens your form as before.
-- A click on an event opens a small card beside it (it never covers the event): its date and time, calendar, location (a link to a maps search), guests, reminders, attachments and description, with **Edit**, **Duplicate** and **Delete**. Edit opens the full form. With `renderEventForm`, a click opens your form as before.
-
-## Places
-
-Place suggestions in the form's Location field are off by default: what is typed there goes to the provider. Turn them on with `placeSearch`, for example with the built-in OpenStreetMap adapter (Photon, no key):
-
-```tsx
-import { Scheduler, photonPlaces } from 'calendarkit-pro';
-
-const placeSearch = photonPlaces({ lang: 'en' }); // once, outside the component
-
-<Scheduler placeSearch={placeSearch} />
-```
-
-`lang` is one of `en`, `de`, `fr`, `it`. The public Photon server has a fair-use policy: for heavy traffic, run your own and pass its URL as `endpoint`.
-
-A chosen place is saved as `event.place` (`{ name, address, lat, lon }`) with its text in `location`, and the event card links to Maps and to directions. A video link is kept as typed. Any provider fits: `placeSearch` is `(query, { signal }) => Promise<Place[]>`.
-
-## Customizing
-
-`classNames` adds your classes next to the built-in ones:
-
-```tsx
-<Scheduler classNames={{ root: 'my-calendar', event: 'shadow-none', dialog: 'my-dialog' }} />
-```
-
-Keys: `root`, `toolbar`, `sidebar`, `event` (blocks, all-day bars, month chips, agenda and resource items), `slot` (time slots, all-day slots, month days), `allDayBar`, `dialog` (quick card, event card, form, "+N" list).
-
-`components` replaces parts with your own:
-
-```tsx
-import type { EventContentProps, ToolbarProps } from 'calendarkit-pro';
-
-const EventContent = ({ event }: EventContentProps) => <strong>{event.title}</strong>;
-const Toolbar = ({ date, onPrev, onNext, onToday }: ToolbarProps) => (
-  <header>
-    <button onClick={onPrev}>Previous</button>
-    <button onClick={onToday}>{date.toDateString()}</button>
-    <button onClick={onNext}>Next</button>
-  </header>
-);
-
-<Scheduler components={{ EventContent, Toolbar }} />
-```
-
-| Component | Props | Replaces |
-|-----------|-------|----------|
-| `EventContent` | `{ event, variant: 'block' \| 'bar' \| 'chip' }` | The inside of event blocks, all-day bars and month chips |
-| `EventEditor` | the `renderEventForm` props | The event form (`renderEventForm` still works) |
-| `Toolbar` | `{ date, view, onPrev, onNext, onToday, onViewChange, onToggleSidebar }` | The header |
-| `Sidebar` | `{ date, onDateChange, onCreate?, calendars?, onCalendarToggle? }` | The side panel |
-| `EmptyState` | `{ onCreate? }` | The empty agenda |
-
-`onCreate` is undefined in read-only mode.
-
-## Recurring Events
-
-```tsx
-const recurringEvent: CalendarEvent = {
-  id: '1',
-  title: 'Weekly Standup',
-  start: new Date(),
-  end: new Date(Date.now() + 3600000),
-  recurrence: {
-    freq: 'WEEKLY',
-    interval: 1,
-    count: 10, // or use 'until' for end date
-  },
-};
-```
-
-Occurrences keep their wall-clock time across daylight-saving changes, in the `timezone` prop's zone (or the browser's).
-
-Moving, resizing or editing one occurrence updates the whole series by the same amount (`onEventUpdate` receives the recurring event). To delete a single occurrence, handle `onOccurrenceDelete`:
+### Calendars, resources and time zones
 
 ```tsx
 <Scheduler
-  events={events}
-  onOccurrenceDelete={(occurrence, updatedSeries) => {
-    setEvents(events.map(e => (e.id === updatedSeries.id ? updatedSeries : e)));
-  }}
-/>
-```
-
-### Invalid data
-
-Dates may be `Date` objects, ISO strings or timestamps. Events with an invalid date or an end before their start are skipped, with a warning in development. Event ids must be unique (duplicates are rendered but warned about, and break drag & drop).
-
-Treat events as immutable: to change an event, pass a new object (`events.map(e => e.id === id ? { ...e, title } : e)`). Computations are cached per event object, so mutating an event in place may not be reflected.
-
-## Timezone Support
-
-```tsx
-<Scheduler
+  calendars={[
+    { id: 'work', label: 'Work', color: '#3b82f6', active: true },
+    { id: 'home', label: 'Personal', color: '#10b981', active: true },
+  ]}
+  resources={[{ id: 'room-a', label: 'Room A' }]}
   timezone="Europe/Paris"
-  onTimezoneChange={(tz) => console.log('Timezone:', tz)}
 />
 ```
 
-## Internationalization
+### Theming
 
 ```tsx
-import { fr } from 'date-fns/locale';
-
-const frenchTranslations = {
-  today: "Aujourd'hui",
-  month: 'Mois',
-  week: 'Semaine',
-  day: 'Jour',
-  agenda: 'Agenda',
-  createEvent: 'Créer un événement',
-  // ... more translations
-};
-
-<Scheduler
-  language="fr"
-  locale={fr}
-  translations={frenchTranslations}
-/>
+<Scheduler theme="editorial" mode="system" />
 ```
-
-All interface texts (views, event form, sidebar, accessible labels) come from the language pack selected by `language`; `translations` overrides individual keys. Calendars are only listed in the sidebar when you pass `calendars`.
-
-Right-click an event to edit, duplicate or delete it (disabled in `readOnly`).
-
-## Phones and narrow calendars
-
-Under 768 px of **calendar** width (a phone, or a calendar in a narrow column), the calendar switches to its phone layout by itself:
-
-- The day view first (when you don't control `view`), a header on two rows with Today always there, and 44 px touch targets.
-- The side panel becomes a drawer, opened by the menu button and closed after a pick.
-- The event card, the quick card and the full form are bottom sheets, their actions always in view; Focus edits in a sheet instead of its side panel and picks its view from a menu.
-- The month shows each day as one button with a dot per event; it opens the day.
-- One floating Create button (Classic; Focus and Flow have their own).
-
-## Accessibility
-
-Everything works with Tab, Enter, Space and Escape; there are no other keyboard shortcuts to learn.
-
-- Events, all-day bars, month chips, agenda items and Flow cards are buttons named in full: "Design review, Thursday 15 October, 10:00 AM to 11:45 AM, Work calendar, Room B", so the calendar never rests on colour alone.
-- Time slots and all-day cells are buttons too ("Create an event on Thursday 15 October at 9:00 AM"), one tab stop per hour; in the month view, each day number opens that day.
-- Dialogs take the focus, keep Tab inside them and give it back to what opened them on close (the Focus panel leaves Tab free, since the grid beside it stays usable). The event you create, duplicate or move takes the focus.
-- Every move and resize can also be done in the event form (WCAG 2.5.7).
-
-## Theming
-
-Three built-in themes, each in light and dark: `calm` (default, neutral), `vivid` (saturated, the closest to 1.x) and `editorial` (warm tones, serif titles).
-
-```tsx
-<Scheduler theme="vivid" mode="system" />
-
-// Adjust a preset (a 1.x theme object keeps working: it applies on top of `calm`)
-<Scheduler
-  theme={{ preset: 'editorial', colors: { primary: '#0b7285' }, borderRadius: '8px' }}
-  mode={darkMode ? 'dark' : 'light'}
-  onThemeToggle={() => setDarkMode(!darkMode)}
-/>
-```
-
-- `mode` is `'light'`, `'dark'` or `'system'` (follows the operating system). `isDarkMode` still works as an alias. Without either, the calendar turns dark inside a `.dark` element, as in 1.x.
-- Every colour is a CSS variable on `.ck-root`, so plain CSS can override any of them: `--ck-background`, `--ck-foreground`, `--ck-muted`, `--ck-muted-foreground`, `--ck-accent`, `--ck-border`, `--ck-primary`, `--ck-primary-foreground`, `--ck-ring`, `--ck-destructive`, `--ck-destructive-foreground`, `--ck-warning`, `--ck-event` (events without a colour) with `--ck-event-ink-light` and `--ck-event-ink-dark`, and `--ck-radius`, `--ck-font`, `--ck-font-display`.
-- Events are drawn per theme: a tint with coloured text (calm), the solid colour with white text (vivid), a card with a coloured top edge (editorial). Today's date is a rounded square, a circle or an underline.
 
 ```css
-.ck-root { --ck-primary: #0b7285; --ck-ring: #0b7285; }
-.ck-root[data-ck-mode="dark"] { --ck-primary: #66d9e8; }
+.ck-root { --ck-primary: #0b7285; --ck-radius: 10px; }
 ```
 
-- The themes name their fonts (Instrument Sans, Plus Jakarta Sans, Newsreader) but do not download them, so the calendar never calls a font service: load them yourself (Google Fonts, Fontsource) or the system font takes over.
-
-### Styles and Content-Security-Policy
-
-The `<Scheduler>` adds its stylesheet to the page once, as an inline `<style>` (hoisted into `<head>` on React 19). With a Content-Security-Policy that forbids inline styles, to cache the CSS as a file, or to avoid unstyled content before hydration on React 18 server rendering, turn the injection off and import the same stylesheet:
-
-```tsx
-import 'calendarkit-pro/styles.css'
-
-<Scheduler injectStyles={false} />
-```
-
-Every class is prefixed with `ck:` and the reset only applies inside `.ck-root`: the calendar never restyles your page, and works the same with Tailwind 3, Tailwind 4 or no Tailwind at all.
-
-Size or space the calendar with `className` (`className="h-[600px] rounded-xl"`): the stylesheet comes first in `<head>`, so your classes win ties. Its classes are not in a cascade layer, so on a Tailwind 4 page (utilities in `@layer utilities`) use the important modifier (`h-[600px]!`) or size a wrapper element instead.
-
-## Resource Scheduling
-
-```tsx
-const resources: Resource[] = [
-  { id: 'room-a', label: 'Conference Room A', color: '#3b82f6' },
-  { id: 'room-b', label: 'Conference Room B', color: '#10b981' },
-];
-
-<Scheduler
-  view="resource"
-  resources={resources}
-  events={events}
-/>
-```
-
-## Multiple Calendars
-
-```tsx
-const calendars = [
-  { id: 'work', label: 'Work', color: '#3b82f6', active: true },
-  { id: 'personal', label: 'Personal', color: '#10b981', active: true },
-];
-
-<Scheduler
-  calendars={calendars}
-  onCalendarToggle={(id, active) => {
-    // Toggle calendar visibility
-  }}
-/>
-```
-
-An event takes its own `color`, else the colour of its calendar (`calendarId`), else its resource's in the resource view, else the theme's. Hex and `rgb()` colours are adjusted so that every text reaches 4.5:1 contrast: white on the solid colour, a dark ink on the light tint, a light ink on the dark one. Other colour syntaxes are used as they are.
-
-## Custom Event Form
+### Customizing
 
 ```tsx
 <Scheduler
-  renderEventForm={({ isOpen, onClose, event, onSave, onDelete }) => (
-    <MyCustomForm
-      open={isOpen}
-      onClose={onClose}
-      event={event}
-      onSave={onSave}
-      onDelete={onDelete}
-    />
-  )}
+  classNames={{ event: 'my-event', dialog: 'my-dialog' }}
+  components={{ EventContent: ({ event }) => <strong>{event.title}</strong> }}
+  renderEventForm={(props) => <MyEventForm {...props} />}
+  language="fr"
 />
 ```
 
-`initialAllDay` is `true` when the form is opened from the all-day row.
+## Documentation
 
-## Headless core (2.0 preview)
+| | |
+|---|---|
+| [Guide](docs/guide.md) | Views, time grid, all-day and recurring events, layouts, creating and undoing, places, customizing, theming, time zones, i18n, resources, phones, accessibility, headless core |
+| [API reference](docs/api.md) | Every prop, the exported types and entry points |
+| [Migrating from 1.x](MIGRATION.md) | What changed in 2.0 and what to do about it |
+| [Changelog](CHANGELOG.md) | Every release |
 
-The 2.0 engine ships ahead of the new UI as `calendarkit-pro/core`: no React, no DOM, usable on the server and from any framework. Install the 2.0 beta with `npm install calendarkit-pro@next`; the API no longer changes before 2.0.0, unless a beta bug requires it.
+The package has four entry points: `calendarkit-pro` (the `<Scheduler>`), `calendarkit-pro/core` (the framework-free engine), `calendarkit-pro/react` (hooks and helpers to build your own calendar UI on it) and `calendarkit-pro/styles.css` (the stylesheet as a file).
 
-```ts
-import { createCalendar, selectTimeGrid } from 'calendarkit-pro/core'
+## Browser support
 
-const calendar = createCalendar({ defaultEvents: events, onEventsChange: save })
-calendar.subscribe(() => draw(selectTimeGrid(calendar.getState(), { maxColumns: 3 })))
+The latest versions of Chrome, Edge, Firefox and Safari, on desktop and mobile.
 
-calendar.openSlot(new Date(2026, 9, 15, 14))
-calendar.updateDraft({ title: 'Lunch with Lea tomorrow 1pm for 2h' }) // moves the draft
-calendar.saveDraft() // creates "Lunch with Lea", then calls onEventsChange
-calendar.undo()
+## Contributing
+
+Issues and pull requests are welcome on [GitHub](https://github.com/Zesor/calendarkit-pro/issues).
+
+```bash
+npm install
+npm run dev        # the demo on http://localhost:3000
+npm test           # unit tests (Vitest)
+npm run ci         # typecheck, lint, tests, build, package checks, bundle size
 ```
 
-- `createCalendar` keeps the view, the date, the events (controlled with `events`, or uncontrolled with `defaultEvents`), dialogs and drafts. Moving, resizing, deleting and duplicating call the 1.x callbacks, then `onEventsChange` with the full list; `undo()` reverts the last change.
-- `selectTimeGrid`, `selectMonth`, `selectAgenda`, `selectFlowDay` and `selectResources` turn a state into plain data ready to render (overlaps laid out, extra events grouped into "+N").
-- `parseEventSentence` reads dates, times, durations and repetition in a title, in English and French.
-
-### React bindings
-
-`calendarkit-pro/react` connects the engine to React (the `<Scheduler>` itself now runs on it):
-
-```tsx
-import { useCalendar, useCalendarSelector, getEventProps, CalendarDndContext } from 'calendarkit-pro/react'
-import { selectTimeGrid } from 'calendarkit-pro/core'
-
-function MyWeek({ events, onEventsChange }) {
-  const calendar = useCalendar({ events, onEventsChange })
-  const grid = useCalendarSelector(calendar, (s) => selectTimeGrid(s, { maxColumns: 3 }))
-  return (
-    <CalendarDndContext calendar={calendar}>
-      {grid.columns.map((column) => column.blocks.map((b) => <button key={b.event.id} {...getEventProps(calendar, b.event)}>{b.event.title}</button>))}
-    </CalendarDndContext>
-  )
-}
-```
-
-- `useCalendar(options)` creates the store once and keeps it in sync with your props; `useCalendarSelector` re-renders only when the selected slice changes. `CalendarProvider` / `useCalendarContext` share the store without passing it down.
-- `getEventProps`, `getSlotProps` and `getResizeHandleProps` return the props of an accessible event button, an empty slot and a resize handle.
-- `CalendarDndContext`, `useDraggableEvent`, `useDroppableSlot` and `useActiveDrag` wire dnd-kit to the store (drops call `calendar.move`, dragging is off in `readOnly`).
-
-## Exports
-
-```typescript
-// Components
-export { Scheduler } from 'calendarkit-pro';
-
-// Types
-export type {
-  CalendarEvent,
-  CalendarProps,
-  CalendarTheme,
-  CalendarTranslations,
-  ViewType,
-  EventType,
-  Resource,
-  EventReminder,
-  EventAttachment,
-  ThemeColors,
-  ThemePreset,
-  ColorMode,
-} from 'calendarkit-pro';
-
-// Stylesheet, for `injectStyles={false}`
-import 'calendarkit-pro/styles.css';
-```
-
-## Browser Support
-
-- Chrome (latest)
-- Firefox (latest)
-- Safari (latest)
-- Edge (latest)
+`npm run test:dst` runs the suite on both clock changes of the year, and `node scripts/screenshots.mjs docs/images` refreshes these screenshots from the demo.
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
-
-## Links
-
-- [GitHub](https://github.com/Zesor/calendarkit-pro)
-- [Issues](https://github.com/Zesor/calendarkit-pro/issues)
-- [CalendarKit](https://calendarkit.io)
+[MIT](LICENSE)
