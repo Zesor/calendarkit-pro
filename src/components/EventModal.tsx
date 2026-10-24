@@ -1,17 +1,17 @@
-import React, { useState, useEffect, useInsertionEffect, useRef } from 'react';
-import { Modal } from './ui/Modal';
-import { CalendarEvent, CalendarTranslations, EventType, EventAttachment, EventReminder } from '../types';
-import { addDays, differenceInCalendarDays, format, differenceInMinutes, Locale, startOfDay } from 'date-fns';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-    Clock, MapPin, AlignLeft, Trash2, X, Edit2,
-    Users, Paperclip, File, Calendar, ChevronDown, Check, Download,
-    Bell, BellRing, Plus, Repeat, Tag,
-    ExternalLink
-  } from 'lucide-react';
-import { cn } from '../utils';
-import { interpolate, timeFormats } from '../core/format';
-import { dayEventSpan, isDayEvent } from '../core/allDay';
+import React, { useState, useEffect, useId, useInsertionEffect, useRef } from 'react';
+import { useClassNames } from './customize';
+import { placeBeside } from './placement';
+import { useDialogFocus } from './useDialogFocus';
+import { CalendarEvent, CalendarTranslations, EventType, EventReminder, PlaceSearch } from '../types';
+import { PlaceField } from './PlaceField';
+import { addDays, differenceInCalendarDays, format, differenceInMinutes, startOfDay } from 'date-fns';
+import { AlignLeft, Bell, Calendar, Clock, MapPin, Plus, Trash2, Users, X } from './icons';
+import { eventColorStyle } from './eventColor';
+import { cx } from '../utils';
+import { DiscardPrompt } from './DiscardPrompt';
+import { interpolate } from '../core/format';
+import { dayEventSpan } from '../core/allDay';
+import { useIsomorphicLayoutEffect } from '../hooks/useIsomorphicLayoutEffect';
 
 interface EventModalProps {
   isOpen: boolean;
@@ -23,29 +23,39 @@ interface EventModalProps {
   calendars?: { id: string; label: string; color?: string }[];
   eventTypes?: EventType[];
   translations: CalendarTranslations;
-  locale?: Locale;
   /** Opens the create form preset to an all-day event (click in the all-day row). */
   initialAllDay?: boolean;
+  /** Fields of a new event already chosen (quick create's "More options"). */
+  initialValues?: Partial<CalendarEvent>;
+  /** Place suggestions in the Location field (spec §8.7); plain text without. */
+  placeSearch?: PlaceSearch;
+  /** A card beside what it edits (Classic), a panel docked beside the grid (Focus), or a bottom sheet (Flow). */
+  variant?: 'card' | 'panel' | 'sheet';
+  /** Told when the form starts or stops having changes (the Focus grid then asks before opening anything else). */
+  onDirtyChange?: (dirty: boolean) => void;
+  /** Each new value asks to close, as Cancel does (a press on the guarded Focus grid). */
+  closeRequest?: number;
 }
 
 // Predefined reminder offsets, in minutes before the event
 const REMINDER_OPTIONS = [0, 5, 10, 15, 30, 60, 120, 1440, 2880, 10080];
 
 // Color palette for events
+// Each colour with the key of its name (swatches are named by colour, not by hex code).
 const COLOR_PALETTE = [
-  '#3b82f6', // Blue
-  '#ef4444', // Red
-  '#10b981', // Emerald
-  '#f59e0b', // Amber
-  '#8b5cf6', // Violet
-  '#ec4899', // Pink
-  '#06b6d4', // Cyan
-  '#84cc16', // Lime
-  '#f97316', // Orange
-  '#6366f1', // Indigo
-];
+  ['#3b82f6', 'colorBlue'],
+  ['#ef4444', 'colorRed'],
+  ['#10b981', 'colorEmerald'],
+  ['#f59e0b', 'colorAmber'],
+  ['#8b5cf6', 'colorViolet'],
+  ['#ec4899', 'colorPink'],
+  ['#06b6d4', 'colorCyan'],
+  ['#84cc16', 'colorLime'],
+  ['#f97316', 'colorOrange'],
+  ['#6366f1', 'colorIndigo'],
+] as const;
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** Appends emails not already present, comparing case-insensitively and keeping the first spelling. */
 const mergeGuests = (current: string[], added: string[]): string[] => {
@@ -74,10 +84,22 @@ export const reminderLabel = (minutes: number, t: CalendarTranslations): string 
 /** Stable avatar hue derived from the email (no fake guest list needed). */
 const avatarHue = (email: string) => [...email].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % 360, 7);
 
-const mapsUrl = (location: string) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
+const WIDTH = 440;
+const MARGIN = 8;
+const LABEL = "ck:flex ck:items-center ck:gap-2 ck:text-sm ck:font-semibold ck:text-muted-foreground ck:sm:min-h-10";
+const INPUT = "ck:min-h-10 ck:rounded-lg ck:border ck:border-transparent ck:bg-muted ck:px-3 ck:text-sm ck:text-foreground ck:placeholder:text-muted-foreground ck:transition-colors ck:focus:border-ring ck:focus:bg-background ck:focus:outline-hidden";
+const CHIP = "ck:inline-flex ck:items-center ck:gap-1.5 ck:min-h-8 ck:rounded-full ck:bg-muted ck:text-xs ck:font-medium ck:text-foreground";
 
-/** Only http(s), mailto, blob and relative URLs become links (no `javascript:` and the like). */
-const isSafeUrl = (url: string) => /^(https?:|mailto:|blob:|\/|\.\/|\.\.\/|[^:]*$)/i.test(url.trim());
+/** One labelled row of the form (spec §8.5): the label and its icon on the left, the controls on the right. */
+const Field: React.FC<{ icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; label: string; htmlFor?: string; labelId?: string; children: React.ReactNode }> = ({ icon: Icon, label, htmlFor, labelId, children }) => {
+  const content = <><Icon className="ck:w-4 ck:h-4 ck:shrink-0 ck:opacity-80" aria-hidden="true" />{label}</>;
+  return (
+    <div className="ck:grid ck:gap-1.5 ck:sm:grid-cols-[7.5rem_minmax(0,1fr)] ck:sm:gap-3 ck:items-start">
+      {htmlFor ? <label htmlFor={htmlFor} className={LABEL}>{content}</label> : <span id={labelId} className={LABEL}>{content}</span>}
+      <div className="ck:min-w-0">{children}</div>
+    </div>
+  );
+};
 
 export const EventModal: React.FC<EventModalProps> = ({
   isOpen,
@@ -88,15 +110,22 @@ export const EventModal: React.FC<EventModalProps> = ({
   onDelete,
   calendars,
   translations: t,
-  locale,
-  initialAllDay
+  initialAllDay,
+  initialValues,
+  placeSearch,
+  variant = 'card',
+  onDirtyChange,
+  closeRequest,
 }) => {
-  const [mode, setMode] = useState<'view' | 'edit' | 'create'>('create');
-  // Read through a ref so a new translations object (e.g. an inline prop) does not reset the form.
-  const translationsRef = useRef(t);
+  const [mode, setMode] = useState<'edit' | 'create'>('create');
+  // Read through a ref so a new initialValues object (an inline prop) does not reset the form.
+  const initialValuesRef = useRef(initialValues);
   useInsertionEffect(() => {
-    translationsRef.current = t;
+    initialValuesRef.current = initialValues;
   });
+  // The form as it opened: closing with changes asks first (spec §8.5).
+  const openedAs = useRef('');
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false);
 
   const [formData, setFormData] = useState<Partial<CalendarEvent>>({
     title: '',
@@ -105,7 +134,6 @@ export const EventModal: React.FC<EventModalProps> = ({
     start: new Date(),
     end: new Date(),
     allDay: false,
-    color: '#3b82f6',
     calendarId: calendars?.[0]?.id,
     type: undefined,
     recurrence: undefined,
@@ -113,27 +141,34 @@ export const EventModal: React.FC<EventModalProps> = ({
     reminders: [],
   });
 
-  const [isCalendarDropdownOpen, setIsCalendarDropdownOpen] = useState(false);
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [isReminderDropdownOpen, setIsReminderDropdownOpen] = useState(false);
   const [guestInput, setGuestInput] = useState('');
   const [guestError, setGuestError] = useState(false);
+  const id = useId();
+  const classNames = useClassNames();
+  const card = useRef<HTMLDivElement>(null);
+  const [place, setPlace] = useState<{ left: number; top: number } | null>(null);
 
   useEffect(() => {
-    const defaultReminders = (): EventReminder[] => [{ id: '1', type: 'notification', time: 30, label: reminderLabel(30, translationsRef.current) }];
     if (isOpen) {
       setGuestInput('');
       setGuestError(false);
+      setConfirmingDiscard(false);
+      // No made-up defaults (spec §8.5): no reminder, no colour (the calendar's colour applies).
+      let opened: Partial<CalendarEvent>;
+      // What a dirty check compares with: the blank form, so values carried in from the quick card count as input.
+      let pristine: Partial<CalendarEvent> | undefined;
       if (event) {
-        setMode('view');
-        setFormData({
+        setMode('edit');
+        opened = {
           ...event,
           start: new Date(event.start),
           end: new Date(event.end),
           attachments: event.attachments || [],
-          reminders: event.reminders || defaultReminders(),
+          reminders: event.reminders || [],
           guests: event.guests || [],
-        });
+        };
       } else {
         setMode('create');
         const base = initialDate || new Date();
@@ -141,22 +176,63 @@ export const EventModal: React.FC<EventModalProps> = ({
         const start = initialAllDay ? startOfDay(base) : base;
         const end = initialAllDay ? addDays(start, 1) : new Date(base.getTime() + 60 * 60 * 1000);
 
-        setFormData({
+        pristine = {
           title: '',
           description: '',
           location: '',
           start,
           end,
           allDay: !!initialAllDay,
-          color: '#3b82f6',
           calendarId: calendars?.[0]?.id,
           attachments: [],
-          reminders: defaultReminders(),
+          reminders: [],
           guests: [],
-        });
+        };
+        opened = { ...pristine, ...initialValuesRef.current };
       }
+      setFormData(opened);
+      openedAs.current = JSON.stringify(pristine ?? opened);
     }
   }, [isOpen, event, initialDate, calendars, initialAllDay]);
+
+  const dirty = isOpen && JSON.stringify(formData) !== openedAs.current;
+  const requestClose = () => {
+    if (dirty) setConfirmingDiscard(true);
+    else onClose();
+  };
+  useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
+  const closeRequestRef = useRef(closeRequest);
+  useEffect(() => {
+    if (closeRequest === closeRequestRef.current) return;
+    closeRequestRef.current = closeRequest;
+    setConfirmingDiscard(true);
+  }, [closeRequest]);
+  // A card beside what it edits (no overlay): the event's block, or the new event's ghost.
+  const editedId = event?.id;
+  useIsomorphicLayoutEffect(() => {
+    const el = card.current;
+    if (!isOpen || !el || variant !== 'card') return;
+    const root = el.closest('.ck-root');
+    const target = editedId === undefined
+      ? root?.querySelector('[data-ck-ghost]')
+      : [...(root?.querySelectorAll('[data-ck-event-id]') ?? [])].find((node) => node.getAttribute('data-ck-event-id') === editedId);
+    const box = target?.getBoundingClientRect();
+    const viewport = { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
+    setPlace(box && box.width > 0 ? placeBeside(box, { width: Math.min(WIDTH, window.innerWidth - 2 * MARGIN), height: el.offsetHeight }, viewport) : null);
+  }, [isOpen, editedId, variant]);
+
+  // The Focus panel sits beside a grid that stays usable: the focus comes back, but Tab is free.
+  useDialogFocus(card, { open: isOpen, trap: variant !== 'panel', content: editedId });
+
+  const closeRef = useRef(requestClose);
+  closeRef.current = requestClose;
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && closeRef.current();
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isOpen]);
+
 
   const guests = formData.guests || [];
 
@@ -186,20 +262,11 @@ export const EventModal: React.FC<EventModalProps> = ({
       return;
     }
 
-    let eventColor = formData.color;
-    if (formData.calendarId && calendars) {
-        const selectedCal = calendars.find(c => c.id === formData.calendarId);
-        if (selectedCal?.color) {
-            eventColor = selectedCal.color;
-        }
-    }
-
     const finalGuests = mergeGuests(guests, pending);
 
     onSave({
       ...formData,
       guests: finalGuests,
-      color: eventColor,
       id: event?.id,
     });
     onClose();
@@ -308,438 +375,178 @@ export const EventModal: React.FC<EventModalProps> = ({
     return interpolate(t.durationHoursMinutes, { h: hours, m: remainingMins });
   };
 
-  const { time: timeFormat } = timeFormats(locale);
-  // Day span shown in the read view for all-day and multi-day events.
-  const viewEvent = event && { ...event, start: new Date(event.start), end: new Date(event.end) };
-  const viewSpan = viewEvent && isDayEvent(viewEvent) ? dayEventSpan(viewEvent) : null;
-
-  const renderAttachment = (att: EventAttachment) => {
-    const content = (
-      <>
-        <div className="p-2 bg-primary/10 rounded-lg">
-          <File className="w-4 h-4 text-primary" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground truncate">{att.name}</p>
-          <p className="text-xs text-muted-foreground">{att.size}</p>
-        </div>
-        {att.url && <Download className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />}
-      </>
-    );
-    const className = "flex items-center gap-3 p-3 rounded-xl border border-border/30 bg-muted/20 transition-all group";
-    // U6: only real attachment URLs are downloadable (no generated placeholder file).
-    return att.url && isSafeUrl(att.url) ? (
-      <a key={att.id} href={att.url} target="_blank" rel="noopener noreferrer" download={att.name} className={cn(className, "hover:bg-muted/40 cursor-pointer")}>
-        {content}
-      </a>
-    ) : (
-      <div key={att.id} className={className}>{content}</div>
-    );
-  };
-
-  // ========== VIEW MODE ==========
-  const renderViewMode = () => (
-    <div className="flex flex-col bg-background overflow-hidden w-full max-h-[90vh]">
-      {/* Hero Header with Color */}
-      <div
-        className="relative px-6 pt-6 pb-8"
-        style={{
-          background: `linear-gradient(135deg, ${event?.color || '#3b82f6'}15 0%, transparent 100%)`
-        }}
-      >
-        {/* Top Actions Bar */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <div
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: event?.color || '#3b82f6' }}
-            />
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              {calendars?.find(c => c.id === event?.calendarId)?.label || t.event}
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setMode('edit')}
-              className="p-2 hover:bg-background/80 rounded-lg transition-all text-muted-foreground hover:text-foreground"
-              title={t.edit}
-              aria-label={t.edit}
-            >
-              <Edit2 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleDelete}
-              className="p-2 hover:bg-destructive/10 rounded-lg transition-all text-muted-foreground hover:text-destructive"
-              title={t.delete}
-              aria-label={t.delete}
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-background/80 rounded-lg transition-all text-muted-foreground hover:text-foreground"
-              title={t.close}
-              aria-label={t.close}
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Title */}
-        <h1 className="text-2xl font-bold text-foreground mb-3 leading-tight">
-          {event?.title || t.noTitle}
-        </h1>
-
-        {/* Date & Time */}
-        <div className="flex items-center gap-3 text-sm">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-background/60 backdrop-blur-sm rounded-lg border border-border/30">
-            <Calendar className="w-4 h-4 text-muted-foreground" />
-            <span className="font-medium">
-              {viewSpan && viewSpan.lastDay > viewSpan.firstDay
-                ? `${format(viewSpan.firstDay, 'EEE d MMM', { locale })} – ${format(viewSpan.lastDay, 'EEE d MMM', { locale })}`
-                : event?.start && format(new Date(event.start), 'EEE, MMM d', { locale })}
-            </span>
-          </div>
-          {event?.allDay ? (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-lg border border-primary/20">
-              <span className="font-medium text-primary">{t.allDay}</span>
-            </div>
-          ) : (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-background/60 backdrop-blur-sm rounded-lg border border-border/30">
-            <Clock className="w-4 h-4 text-muted-foreground" />
-            <span className="font-medium">
-              {event?.start && format(new Date(event.start), timeFormat, { locale })}{' – '}{event?.end && format(new Date(event.end), timeFormat, { locale })}
-            </span>
-          </div>
-          )}
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="px-6 pb-6 space-y-4 overflow-y-auto flex-1">
-        {/* Location: U4, a real link to a maps search */}
-        {event?.location && (
-          <motion.a
-            href={mapsUrl(event.location)}
-            target="_blank"
-            rel="noopener noreferrer"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-start gap-3 p-4 rounded-2xl bg-muted/30 border border-border/30 group hover:bg-muted/50 transition-all cursor-pointer"
-          >
-            <div className="p-2 bg-primary/10 rounded-xl">
-              <MapPin className="w-5 h-5 text-primary" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-foreground">{event.location}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{t.openInMaps}</p>
-            </div>
-            <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-          </motion.a>
-        )}
-
-        {/* Guests */}
-        {event?.guests && event.guests.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="space-y-3"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-foreground">
-                  {event.guests.length} {event.guests.length > 1 ? t.guests : t.guestSingular}
-                </span>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {event.guests.map((email) => (
-                <div
-                  key={email}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/30 border border-border/30"
-                >
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold text-white"
-                    style={{ backgroundColor: `hsl(${avatarHue(email)}, 70%, 50%)` }}
-                  >
-                    {email[0].toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground">{email.split('@')[0]}</p>
-                    <p className="text-xs text-muted-foreground truncate">{email}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Reminders */}
-        {event?.reminders && event.reminders.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="flex items-center gap-3"
-          >
-            <div className="p-2 bg-amber-500/10 rounded-xl">
-              <Bell className="w-4 h-4 text-amber-500" />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {event.reminders.map(reminder => (
-                <span
-                  key={reminder.id}
-                  className="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                >
-                  {reminder.label || reminderLabel(reminder.time, t)}
-                </span>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Description */}
-        {event?.description && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="space-y-2"
-          >
-            <div className="flex items-center gap-2">
-              <AlignLeft className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">{t.notesLabel}</span>
-            </div>
-            <div className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed pl-6 p-3 rounded-xl bg-muted/20 border border-border/30">
-              {event.description}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Attachments */}
-        {event?.attachments && event.attachments.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="space-y-2"
-          >
-            <div className="flex items-center gap-2">
-              <Paperclip className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">{t.attachments}</span>
-            </div>
-            <div className="grid gap-2">
-              {event.attachments.map(renderAttachment)}
-            </div>
-          </motion.div>
-        )}
-      </div>
-    </div>
-  );
+  const calendarColor = formData.color || calendars?.find((c) => c.id === formData.calendarId)?.color;
+  const duration = getDurationText();
 
   // ========== EDIT/CREATE MODE ==========
   const renderEditMode = () => (
-    <form onSubmit={handleSubmit} className="flex flex-col bg-background overflow-hidden w-full max-h-[85vh]">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-border/50 shrink-0">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setIsColorPickerOpen(!isColorPickerOpen)}
-            className="relative p-1"
-            aria-label={t.eventColor}
-          >
-            <div
-              className="w-5 h-5 rounded-full cursor-pointer hover:scale-110 transition-transform"
-              style={{
-                backgroundColor: formData.color,
-                boxShadow: `0 0 0 2px var(--background), 0 0 0 4px ${formData.color}60`
-              }}
-            />
+    <form onSubmit={handleSubmit} className="ck:flex ck:flex-col ck:flex-1 ck:min-h-0 ck:bg-background">
+      <div className="ck:flex-1 ck:min-h-0 ck:overflow-y-auto ck:flex ck:flex-col ck:gap-4 ck:px-5 ck:pt-4 ck:pb-5 ck:sm:px-6">
+        <div className="ck:flex ck:items-center ck:gap-2">
+          <div className="ck:relative">
+            <button
+              type="button"
+              onClick={() => setIsColorPickerOpen(!isColorPickerOpen)}
+              className="ck:flex ck:w-8 ck:h-8 ck:items-center ck:justify-center ck:rounded-lg ck:hover:bg-muted"
+              aria-label={t.eventColor}
+              aria-expanded={isColorPickerOpen}
+            >
+              <span className="ck-dot ck:w-3.5 ck:h-3.5 ck:rounded-[4px]" style={eventColorStyle(calendarColor)} />
+            </button>
             {isColorPickerOpen && (
-              <div className="absolute top-full left-0 mt-2 p-2 bg-background border border-border rounded-xl shadow-xl z-50 flex flex-wrap gap-1.5 w-[180px]">
-                {COLOR_PALETTE.map(color => (
+              <div className="ck:absolute ck:top-full ck:left-0 ck:mt-1 ck:p-2 ck:bg-background ck:border ck:border-border ck:rounded-xl ck:shadow-xl ck:z-50 ck:grid ck:grid-cols-5 ck:gap-1.5">
+                {COLOR_PALETTE.map(([color, name]) => (
                   <button
                     key={color}
                     type="button"
-                    aria-label={color}
+                    aria-label={t[name]}
+                    aria-pressed={formData.color === color}
                     onClick={() => {
                       setFormData(prev => ({ ...prev, color }));
                       setIsColorPickerOpen(false);
                     }}
-                    className={cn(
-                      "w-7 h-7 rounded-full transition-all hover:scale-110",
-                      formData.color === color && "ring-2 ring-offset-2 ring-offset-background ring-current"
-                    )}
-                    style={{ backgroundColor: color, color: color }}
+                    className={cx("ck:w-7 ck:h-7 ck:rounded-full ck:transition-transform ck:hover:scale-110", formData.color === color && "ck:ring-2 ck:ring-offset-2 ck:ring-offset-background ck:ring-foreground")}
+                    style={{ backgroundColor: color }}
                   />
                 ))}
               </div>
             )}
-          </button>
-          <h2 className="text-lg font-semibold text-foreground">
+          </div>
+          <h2 id={`${id}-heading`} className="ck:flex-1 ck:text-sm ck:font-semibold ck:text-muted-foreground">
             {mode === 'edit' ? t.editEvent : t.newEvent}
           </h2>
+          <button
+            type="button"
+            onClick={requestClose}
+            className="ck:flex ck:w-8 ck:h-8 ck:items-center ck:justify-center ck:rounded-lg ck:text-muted-foreground ck:hover:bg-muted ck:hover:text-foreground"
+            aria-label={t.close}
+          >
+            <X className="ck:w-4 ck:h-4" aria-hidden="true" />
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="p-2 hover:bg-accent rounded-xl transition-all text-muted-foreground hover:text-foreground"
-          aria-label={t.close}
-        >
-          <X className="w-4 h-4" />
-        </button>
-      </div>
 
-      {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="px-5 py-4 space-y-5">
-          {/* Title */}
-          <div>
-            <input
-              type="text"
-              required
-              autoFocus
-              className="w-full text-xl font-semibold border-0 border-b-2 border-transparent focus:border-primary bg-transparent px-0 py-2 placeholder-muted-foreground/50 transition-all text-foreground focus:outline-none"
-              value={formData.title}
-              onChange={e => setFormData({ ...formData, title: e.target.value })}
-              placeholder={t.title}
-              aria-label={t.title}
-            />
-          </div>
+        <input
+          type="text"
+          required
+          autoFocus
+          className="ck:w-full ck:bg-transparent ck:border-0 ck:border-b-2 ck:border-border ck:focus:border-ring ck:px-0.5 ck:py-1.5 ck:font-display ck:text-2xl ck:font-semibold ck:text-foreground ck:placeholder:text-muted-foreground ck:placeholder:font-normal ck:focus:outline-hidden ck:transition-colors"
+          value={formData.title}
+          onChange={e => setFormData({ ...formData, title: e.target.value })}
+          placeholder={t.title}
+          aria-label={t.title}
+        />
 
-          {/* All-day toggle (ported from PR #1) */}
-          <div className="flex items-center justify-between px-1">
-            <span id="calendarkit-all-day-label" className="text-sm font-medium text-foreground">{t.allDay}</span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={!!formData.allDay}
-              aria-labelledby="calendarkit-all-day-label"
-              onClick={handleAllDayToggle}
-              className={cn(
-                "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors cursor-pointer",
-                formData.allDay ? "bg-primary" : "bg-muted"
-              )}
-            >
-              <span
-                className={cn(
-                  "pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow transition-transform",
-                  formData.allDay ? "translate-x-5" : "translate-x-0"
-                )}
+        <Field icon={Clock} label={t.whenLabel} labelId={`${id}-when`}>
+          <div role="group" aria-labelledby={`${id}-when`} className="ck:flex ck:flex-col ck:gap-2.5">
+            <div className="ck:flex ck:flex-wrap ck:items-center ck:gap-2">
+              <label htmlFor={`${id}-start`} className="ck:sr-only">{t.start}</label>
+              <input
+                id={`${id}-start`}
+                type={allDaySpan ? "date" : "datetime-local"}
+                className={cx(INPUT, "ck:tabular-nums")}
+                value={allDaySpan ? format(allDaySpan.firstDay, 'yyyy-MM-dd') : formatDateForInput(formData.start)}
+                onChange={e => handleDateChange('start', e.target.value)}
               />
-            </button>
+              <span className="ck:text-muted-foreground" aria-hidden="true">–</span>
+              <label htmlFor={`${id}-end`} className="ck:sr-only">{t.end}</label>
+              <input
+                id={`${id}-end`}
+                type={allDaySpan ? "date" : "datetime-local"}
+                className={cx(INPUT, "ck:tabular-nums")}
+                value={allDaySpan ? format(allDaySpan.lastDay, 'yyyy-MM-dd') : formatDateForInput(formData.end)}
+                onChange={e => handleDateChange('end', e.target.value)}
+              />
+              {duration && <span className="ck:text-xs ck:font-semibold ck:text-muted-foreground ck:tabular-nums">{duration}</span>}
+            </div>
+            <div className="ck:flex ck:flex-wrap ck:items-center ck:gap-3">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={!!formData.allDay}
+                onClick={handleAllDayToggle}
+                className="ck:inline-flex ck:items-center ck:gap-2.5 ck:min-h-10 ck:text-sm ck:font-medium ck:text-foreground"
+              >
+                <span aria-hidden="true" className={cx("ck:relative ck:inline-flex ck:h-[22px] ck:w-9 ck:shrink-0 ck:rounded-full ck:transition-colors", formData.allDay ? "ck:bg-primary" : "ck:bg-muted-foreground/30")}>
+                  <span className={cx("ck:absolute ck:top-[3px] ck:left-[3px] ck:h-4 ck:w-4 ck:rounded-full ck:bg-background ck:shadow-sm ck:transition-transform", formData.allDay && "ck:translate-x-[14px]")} />
+                </span>
+                {t.allDay}
+              </button>
+              <select
+                className={cx(INPUT, "ck:min-w-0")}
+                aria-label={t.repeat}
+                value={formData.recurrence?.freq || ''}
+                onChange={e => setFormData({
+                  ...formData,
+                  recurrence: e.target.value === '' ? undefined : { freq: e.target.value as 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY', interval: 1 },
+                })}
+              >
+                <option value="">{t.doesNotRepeat}</option>
+                <option value="DAILY">{t.daily}</option>
+                <option value="WEEKLY">{t.weekly}</option>
+                <option value="MONTHLY">{t.monthly}</option>
+                <option value="YEARLY">{t.yearly}</option>
+              </select>
+            </div>
           </div>
+        </Field>
 
-          {/* Date & Time Row */}
-          <div className="flex items-center gap-3 p-4 rounded-2xl bg-muted/20 border border-border/30">
-            <div className="p-2 bg-primary/10 rounded-xl shrink-0">
-              <Clock className="w-5 h-5 text-primary" />
+        {calendars && calendars.length > 0 && (
+          <Field icon={Calendar} label={t.calendar} htmlFor={`${id}-calendar`}>
+            <div className="ck:relative ck:inline-flex ck:max-w-full">
+              <span className="ck-dot ck:pointer-events-none ck:absolute ck:left-3 ck:top-1/2 ck:-translate-y-1/2 ck:w-2.5 ck:h-2.5 ck:rounded-[3px]" style={eventColorStyle(calendars.find(c => c.id === formData.calendarId)?.color)} aria-hidden="true" />
+              <select
+                id={`${id}-calendar`}
+                className={cx(INPUT, "ck:pl-8 ck:min-w-48")}
+                value={formData.calendarId ?? ''}
+                onChange={e => setFormData({ ...formData, calendarId: e.target.value || undefined })}
+              >
+                {formData.calendarId === undefined && <option value="">{t.select}</option>}
+                {/* A calendar the host no longer lists is kept, shown as itself (never silently replaced). */}
+                {formData.calendarId !== undefined && !calendars.some(c => c.id === formData.calendarId) && <option value={formData.calendarId}>{formData.calendarId}</option>}
+                {calendars.map(cal => <option key={cal.id} value={cal.id}>{cal.label}</option>)}
+              </select>
             </div>
-            <div className="flex-1 grid grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="calendarkit-event-start" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">{t.start}</label>
-                <input
-                  id="calendarkit-event-start"
-                  type={allDaySpan ? "date" : "datetime-local"}
-                  className="w-full bg-background border border-border/50 rounded-xl px-3 py-2 text-sm font-medium text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                  value={allDaySpan ? format(allDaySpan.firstDay, 'yyyy-MM-dd') : formatDateForInput(formData.start)}
-                  onChange={e => handleDateChange('start', e.target.value)}
-                />
-              </div>
-              <div>
-                <label htmlFor="calendarkit-event-end" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">{t.end}</label>
-                <input
-                  id="calendarkit-event-end"
-                  type={allDaySpan ? "date" : "datetime-local"}
-                  className="w-full bg-background border border-border/50 rounded-xl px-3 py-2 text-sm font-medium text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                  value={allDaySpan ? format(allDaySpan.lastDay, 'yyyy-MM-dd') : formatDateForInput(formData.end)}
-                  onChange={e => handleDateChange('end', e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
+          </Field>
+        )}
 
-          {/* Duration Badge */}
-          {getDurationText() && (
-            <div className="flex justify-center">
-              <span className="text-xs font-medium px-3 py-1 rounded-full bg-primary/10 text-primary">
-                {getDurationText()}
-              </span>
-            </div>
-          )}
+        <Field icon={MapPin} label={t.locationLabel} htmlFor={`${id}-location`}>
+          <PlaceField
+            id={`${id}-location`}
+            value={formData.location || ''}
+            place={formData.place}
+            search={placeSearch}
+            className={INPUT}
+            translations={t}
+            onChange={(location, place) => setFormData(prev => ({ ...prev, location, place }))}
+          />
+        </Field>
 
-          {/* Reminders */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Bell className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-foreground">{t.reminders}</span>
-              </div>
-              <div className="relative">
+        {/* Guests: U2, free email input instead of a fake suggestion list */}
+        <Field icon={Users} label={t.guests} htmlFor={`${id}-guest`}>
+          <div className="ck:flex ck:flex-wrap ck:items-center ck:gap-1.5">
+            {guests.map(email => (
+              <span key={email} className={cx(CHIP, "ck:pl-1 ck:pr-1")}>
+                <span
+                  className="ck:flex ck:w-6 ck:h-6 ck:items-center ck:justify-center ck:rounded-full ck:text-[11px] ck:font-semibold ck:text-white"
+                  style={{ backgroundColor: `hsl(${avatarHue(email)}, 55%, 42%)` }}
+                  aria-hidden="true"
+                >
+                  {email[0].toUpperCase()}
+                </span>
+                {email}
                 <button
                   type="button"
-                  onClick={() => setIsReminderDropdownOpen(!isReminderDropdownOpen)}
-                  className="flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+                  data-ck-small
+                  onClick={() => removeGuest(email)}
+                  className="ck:flex ck:w-6 ck:h-6 ck:items-center ck:justify-center ck:rounded-full ck:text-muted-foreground ck:hover:bg-background ck:hover:text-foreground"
+                  aria-label={interpolate(t.removeGuest, { email })}
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  {t.add}
+                  <X className="ck:w-3 ck:h-3" aria-hidden="true" />
                 </button>
-                {isReminderDropdownOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setIsReminderDropdownOpen(false)} />
-                    <div className="absolute right-0 top-full mt-1 w-48 bg-background border border-border rounded-xl shadow-xl z-50 py-1 max-h-60 overflow-y-auto">
-                      {REMINDER_OPTIONS.map(minutes => (
-                        <button
-                          key={minutes}
-                          type="button"
-                          onClick={() => addReminder(minutes)}
-                          className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
-                        >
-                          {reminderLabel(minutes, t)}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-            {formData.reminders && formData.reminders.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {formData.reminders.map(reminder => (
-                  <div
-                    key={reminder.id}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20"
-                  >
-                    <BellRing className="w-3.5 h-3.5 text-amber-500" />
-                    <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
-                      {reminder.label || reminderLabel(reminder.time, t)}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => removeReminder(reminder.id)}
-                      className="p-0.5 hover:bg-amber-500/20 rounded-full transition-colors"
-                      aria-label={t.removeReminder}
-                    >
-                      <X className="w-3 h-3 text-amber-500" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Guests: U2, free email input instead of a fake suggestion list */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-muted-foreground" />
-              <label htmlFor="calendarkit-event-guest" className="text-sm font-medium text-foreground">{t.guests}</label>
-            </div>
+              </span>
+            ))}
             <input
-              id="calendarkit-event-guest"
+              id={`${id}-guest`}
               // Plain text: browser email validation would block saving a pasted list before our own check.
               type="text"
               inputMode="email"
@@ -758,140 +565,51 @@ export const EventModal: React.FC<EventModalProps> = ({
               onBlur={() => guestInput.trim() && addGuests(guestInput)}
               placeholder={t.addGuestPlaceholder}
               aria-invalid={guestError}
-              className={cn(
-                "w-full px-4 py-3 bg-muted/20 border rounded-xl text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-all",
-                guestError ? "border-destructive" : "border-border/30"
-              )}
-            />
-            {guestError && <p role="alert" className="text-xs text-destructive">{t.invalidEmail}</p>}
-
-            {guests.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {guests.map(email => (
-                  <div
-                    key={email}
-                    className="flex items-center gap-2 pl-1 pr-2 py-1 bg-muted/30 border border-border/30 rounded-full"
-                  >
-                    <div
-                      className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold text-white"
-                      style={{ backgroundColor: `hsl(${avatarHue(email)}, 70%, 50%)` }}
-                    >
-                      {email[0].toUpperCase()}
-                    </div>
-                    <span className="text-xs font-medium text-foreground">{email}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeGuest(email)}
-                      className="p-0.5 hover:bg-destructive/10 rounded-full transition-colors"
-                      aria-label={interpolate(t.removeGuest, { email })}
-                    >
-                      <X className="w-3 h-3 text-muted-foreground" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Location */}
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/20 border border-border/30">
-            <MapPin className="w-5 h-5 text-muted-foreground shrink-0" />
-            <input
-              type="text"
-              className="flex-1 bg-transparent text-sm text-foreground placeholder-muted-foreground focus:outline-none"
-              placeholder={t.addLocation}
-              aria-label={t.addLocation}
-              value={formData.location || ''}
-              onChange={e => setFormData({ ...formData, location: e.target.value })}
+              className={cx(INPUT, "ck:flex-1 ck:min-w-48", guestError && "ck:border-destructive")}
             />
           </div>
+          {guestError && <p role="alert" className="ck:mt-1.5 ck:text-xs ck:text-destructive">{t.invalidEmail}</p>}
+        </Field>
 
-          {/* Description */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <AlignLeft className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">{t.notesLabel}</span>
-            </div>
-            <textarea
-              className="w-full bg-muted/20 border border-border/30 rounded-xl px-4 py-3 text-sm min-h-[100px] resize-none text-foreground placeholder-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-              placeholder={t.addNotes}
-              aria-label={t.notesLabel}
-              value={formData.description || ''}
-              onChange={e => setFormData({ ...formData, description: e.target.value })}
-            />
-          </div>
-
-          {/* Recurrence */}
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/20 border border-border/30">
-            <Repeat className="w-5 h-5 text-muted-foreground shrink-0" />
-            <select
-              className="flex-1 bg-transparent text-sm text-foreground focus:outline-none cursor-pointer"
-              aria-label={t.repeat}
-              value={formData.recurrence?.freq || ''}
-              onChange={e => {
-                if (e.target.value === '') {
-                  setFormData({ ...formData, recurrence: undefined });
-                } else {
-                  setFormData({
-                    ...formData,
-                    recurrence: {
-                      freq: e.target.value as 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY',
-                      interval: 1
-                    }
-                  });
-                }
-              }}
-            >
-              <option value="">{t.doesNotRepeat}</option>
-              <option value="DAILY">{t.daily}</option>
-              <option value="WEEKLY">{t.weekly}</option>
-              <option value="MONTHLY">{t.monthly}</option>
-              <option value="YEARLY">{t.yearly}</option>
-            </select>
-          </div>
-
-          {/* Calendar Selector (only when calendars are provided) */}
-          {calendars && calendars.length > 0 && (
-          <div className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-border/30">
-            <div className="flex items-center gap-2">
-              <Tag className="w-5 h-5 text-muted-foreground" />
-              <span className="text-sm text-foreground">{t.calendar}</span>
-            </div>
-            <div className="relative">
+        <Field icon={Bell} label={t.reminders} labelId={`${id}-reminders`}>
+          <div role="group" aria-labelledby={`${id}-reminders`} className="ck:flex ck:flex-wrap ck:items-center ck:gap-1.5">
+            {formData.reminders?.map(reminder => (
+              <span key={reminder.id} className={cx(CHIP, "ck:pl-3 ck:pr-1")}>
+                {/* From the minutes, in the calendar's language (a stored label may be in another). */}
+                {reminderLabel(reminder.time, t)}
+                <button
+                  type="button"
+                  data-ck-small
+                  onClick={() => removeReminder(reminder.id)}
+                  className="ck:flex ck:w-6 ck:h-6 ck:items-center ck:justify-center ck:rounded-full ck:text-muted-foreground ck:hover:bg-background ck:hover:text-foreground"
+                  aria-label={t.removeReminder}
+                >
+                  <X className="ck:w-3 ck:h-3" aria-hidden="true" />
+                </button>
+              </span>
+            ))}
+            <div className="ck:relative">
               <button
                 type="button"
-                onClick={() => setIsCalendarDropdownOpen(!isCalendarDropdownOpen)}
-                className="flex items-center gap-2 px-3 py-1.5 bg-background border border-border/50 rounded-lg text-sm hover:bg-accent/50 transition-all"
+                onClick={() => setIsReminderDropdownOpen(!isReminderDropdownOpen)}
+                aria-expanded={isReminderDropdownOpen}
+                className="ck:inline-flex ck:items-center ck:gap-1 ck:min-h-8 ck:rounded-full ck:px-3 ck:text-xs ck:font-semibold ck:text-foreground ck:border ck:border-dashed ck:border-border ck:hover:bg-muted"
               >
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: calendars.find(c => c.id === formData.calendarId)?.color || '#3b82f6' }}
-                />
-                <span className="font-medium">{calendars.find(c => c.id === formData.calendarId)?.label || t.select}</span>
-                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                <Plus className="ck:w-3.5 ck:h-3.5" aria-hidden="true" />
+                {t.addReminder}
               </button>
-
-              {isCalendarDropdownOpen && (
+              {isReminderDropdownOpen && (
                 <>
-                  <div className="fixed inset-0 z-40" onClick={() => setIsCalendarDropdownOpen(false)} />
-                  <div className="absolute right-0 bottom-full mb-2 w-48 bg-background border border-border rounded-xl shadow-xl z-50 py-1">
-                    {calendars.map(cal => (
+                  <div className="ck:fixed ck:inset-0 ck:z-40" onClick={() => setIsReminderDropdownOpen(false)} />
+                  <div className="ck:absolute ck:left-0 ck:top-full ck:mt-1 ck:w-52 ck:bg-background ck:border ck:border-border ck:rounded-xl ck:shadow-xl ck:z-50 ck:p-1 ck:max-h-60 ck:overflow-y-auto">
+                    {REMINDER_OPTIONS.map(minutes => (
                       <button
-                        key={cal.id}
+                        key={minutes}
                         type="button"
-                        className="w-full flex items-center gap-3 px-3 py-2 hover:bg-accent transition-colors text-left"
-                        onClick={() => {
-                          setFormData({
-                            ...formData,
-                            calendarId: cal.id,
-                            color: cal.color || formData.color
-                          });
-                          setIsCalendarDropdownOpen(false);
-                        }}
+                        onClick={() => addReminder(minutes)}
+                        className="ck:w-full ck:rounded-lg ck:px-3 ck:py-2 ck:text-left ck:text-sm ck:text-foreground ck:hover:bg-muted"
                       >
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cal.color }} />
-                        <span className="flex-1 text-sm">{cal.label}</span>
-                        {formData.calendarId === cal.id && <Check className="w-4 h-4 text-primary" />}
+                        {reminderLabel(minutes, t)}
                       </button>
                     ))}
                   </div>
@@ -899,67 +617,91 @@ export const EventModal: React.FC<EventModalProps> = ({
               )}
             </div>
           </div>
-          )}
-        </div>
+        </Field>
+
+        <Field icon={AlignLeft} label={t.description} htmlFor={`${id}-description`}>
+          <textarea
+            id={`${id}-description`}
+            rows={3}
+            className={cx(INPUT, "ck:w-full ck:py-2.5 ck:resize-y")}
+            placeholder={t.addNotes}
+            value={formData.description || ''}
+            onChange={e => setFormData({ ...formData, description: e.target.value })}
+          />
+        </Field>
       </div>
 
-      {/* Footer */}
-      <div className="px-5 py-4 border-t border-border/50 flex items-center justify-between bg-muted/10 shrink-0">
-        {mode === 'edit' && (
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="flex items-center gap-2 px-4 py-2 text-destructive hover:bg-destructive/10 rounded-xl transition-all text-sm font-medium"
-          >
-            <Trash2 className="w-4 h-4" />
-            {t.delete}
-          </button>
+      <div className="ck:shrink-0 ck:flex ck:items-center ck:gap-2 ck:border-t ck:border-border ck:px-5 ck:py-3 ck:sm:px-6">
+        {confirmingDiscard ? (
+          <DiscardPrompt translations={t} onKeep={() => setConfirmingDiscard(false)} onDiscard={onClose} />
+        ) : (
+          <>
+            {mode === 'edit' && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="ck:inline-flex ck:items-center ck:gap-1.5 ck:min-h-10 ck:rounded-lg ck:px-3 ck:text-sm ck:font-semibold ck:text-destructive ck:hover:bg-destructive/10"
+              >
+                <Trash2 className="ck:w-4 ck:h-4" aria-hidden="true" />
+                {t.delete}
+              </button>
+            )}
+            <span className="ck:flex-1" />
+            <button
+              type="button"
+              onClick={requestClose}
+              className="ck:min-h-10 ck:rounded-lg ck:px-4 ck:text-sm ck:font-semibold ck:text-foreground ck:hover:bg-muted"
+            >
+              {t.cancel}
+            </button>
+            <button
+              type="submit"
+              className="ck:min-h-10 ck:rounded-lg ck:bg-primary ck:px-5 ck:text-sm ck:font-semibold ck:text-primary-foreground ck:hover:bg-primary/90"
+            >
+              {mode === 'edit' ? t.saveChanges : t.createEvent}
+            </button>
+          </>
         )}
-        {mode === 'create' && <div />}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2.5 text-muted-foreground hover:text-foreground font-medium text-sm rounded-xl transition-all hover:bg-accent"
-          >
-            {t.cancel}
-          </button>
-          <button
-            type="submit"
-            className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm rounded-xl shadow-md transition-all hover:shadow-lg hover:shadow-primary/20 active:scale-95"
-          >
-            {mode === 'edit' ? t.saveChanges : t.createEvent}
-          </button>
-        </div>
       </div>
     </form>
   );
 
+  if (!isOpen) return null;
+  if (variant === 'panel') {
+    // Focus: docked in the calendar's row, beside the grid, which stays usable (no overlay).
+    return (
+      <div ref={card} data-ck-panel role="dialog" aria-labelledby={`${id}-heading`} className={cx("ck:flex ck:h-full ck:w-[440px] ck:max-w-full ck:shrink-0 ck:flex-col ck:border-l ck:border-border ck:bg-background ck:animate-fade-in", classNames.dialog)}>
+        {renderEditMode()}
+      </div>
+    );
+  }
+  if (variant === 'sheet') {
+    // Flow: a sheet from the bottom of the calendar, over a light scrim (nothing blurred).
+    return (
+      <>
+        <div data-ck-backdrop className="ck:absolute ck:inset-0 ck:z-40 ck:bg-black/20 ck:animate-fade-in" onClick={requestClose} />
+        <div ref={card} data-ck-sheet role="dialog" aria-modal="true" aria-labelledby={`${id}-heading`} className={cx("ck:absolute ck:inset-x-0 ck:bottom-0 ck:z-50 ck:mx-auto ck:flex ck:max-h-[85%] ck:w-full ck:max-w-[720px] ck:flex-col ck:overflow-hidden ck:rounded-t-3xl ck:bg-background ck:shadow-[0_-20px_50px_-20px_rgb(0_0_0/0.4)] ck:animate-rise-in", classNames.dialog)}>
+          <span aria-hidden="true" className="ck:mx-auto ck:mt-2.5 ck:h-1.5 ck:w-11 ck:shrink-0 ck:rounded-full ck:bg-muted-foreground/30" />
+          {renderEditMode()}
+        </div>
+      </>
+    );
+  }
+  // No taller than the room below its top: the form scrolls inside, Save stays in the window.
+  const at = place ?? { left: Math.max(MARGIN, (window.innerWidth - WIDTH) / 2), top: 80 };
   return (
-    <Modal isOpen={isOpen} onClose={onClose} hideHeader className="p-0 overflow-hidden max-w-lg rounded-2xl shadow-2xl">
-      <AnimatePresence mode="wait">
-        {mode === 'view' && event ? (
-          <motion.div
-            key="view"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-          >
-            {renderViewMode()}
-          </motion.div>
-        ) : (
-          <motion.div
-            key="edit"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-          >
-            {renderEditMode()}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </Modal>
+    <>
+      <div data-ck-backdrop className="ck:fixed ck:inset-0 ck:z-40" onClick={requestClose} />
+      <div
+        ref={card}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`${id}-heading`}
+        className={cx("ck:fixed ck:z-50 ck:flex ck:flex-col ck:overflow-hidden ck:rounded-2xl ck:border ck:border-border ck:bg-background ck:shadow-[0_24px_56px_-20px_rgb(0_0_0/0.4),0_2px_8px_-2px_rgb(0_0_0/0.12)] ck:animate-pop-in", classNames.dialog)}
+        style={{ ...at, width: WIDTH, maxWidth: `calc(100vw - ${2 * MARGIN}px)`, maxHeight: window.innerHeight - at.top - MARGIN }}
+      >
+        {renderEditMode()}
+      </div>
+    </>
   );
 };

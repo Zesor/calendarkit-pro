@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Scheduler, CalendarEvent, ViewType, Resource, EventType } from "@/index";
+import { useState, useMemo, useEffect } from "react";
+import { Scheduler, CalendarEvent, ViewType, Resource, EventType, ThemePreset, CalendarLayout, photonPlaces } from "@/index";
 
 interface Calendar {
   id: string;
@@ -71,6 +71,18 @@ const generateDemoEvents = (): CalendarEvent[] => {
   events.push(allDay("16", "Team Birthday", 2, 1, "personal", "#10b981", { freq: "YEARLY" }));
   // A 30 h trip (timed, ≥ 24 h → shown in the all-day row)
   events.push(createEvent("17", "Flight to Tokyo", 3, 20, 30, "personal", "#0ea5e9"));
+
+  // The weeks before, so the month view has a past.
+  const past: [string, number, number, number, string, string][] = [
+    ["Planning", 1, 9, 1, "work", "#3b82f6"], ["Design Sync", 2, 11, 1, "work", "#3b82f6"], ["Yoga", 3, 18, 1, "personal", "#10b981"],
+    ["Retro", 4, 15, 1, "work", "#3b82f6"], ["Dinner with Sam", 5, 19, 2, "personal", "#10b981"],
+  ];
+  for (const week of [-3, -2, -1]) {
+    past.forEach(([title, day, hour, duration, calendarId, color], i) => {
+      if ((i + week) % 3 !== 0) events.push(createEvent(`p${week}-${i}`, title, week * 7 + day, hour, duration, calendarId, color));
+    });
+  }
+  events.push(allDay("18", "Hackathon", -12, 2, "work", "#8b5cf6"));
 
   return events;
 };
@@ -150,8 +162,29 @@ export default function Home() {
   const [view, setView] = useState<ViewType>("week");
   const [date, setDate] = useState(new Date());
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [theme, setTheme] = useState<ThemePreset>("calm");
+  const [layout, setLayout] = useState<CalendarLayout>("classic");
+  const [reverseTimeAxis, setReverseTimeAxis] = useState(false);
   const [language, setLanguage] = useState<"en" | "fr">("en");
+  // The demo turns place search on (OpenStreetMap through Photon); a host opts in the same way.
+  const placeSearch = useMemo(() => photonPlaces({ lang: language }), [language]);
   const [timezone, setTimezone] = useState("America/New_York");
+
+  const [scrollToHour, setScrollToHour] = useState<number>();
+
+  // Demo settings from the URL (?layout=focus&theme=editorial&dark=1&view=month&tz=local&hour=8&day=2),
+  // used for the README screenshots.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("layout")) setLayout(q.get("layout") as CalendarLayout);
+    if (q.get("theme")) setTheme(q.get("theme") as ThemePreset);
+    if (q.get("view")) setView(q.get("view") as ViewType);
+    if (q.get("dark")) setIsDarkMode(true);
+    if (q.get("lang") === "fr") setLanguage("fr");
+    if (q.get("tz")) setTimezone(q.get("tz") === "local" ? Intl.DateTimeFormat().resolvedOptions().timeZone : q.get("tz")!);
+    if (q.get("hour")) setScrollToHour(Number(q.get("hour")));
+    if (q.get("day")) setDate(addDays(startOfWeek(new Date()), Number(q.get("day"))));
+  }, []);
 
   const [calendars, setCalendars] = useState<Calendar[]>([
     { id: "work", label: "Work", color: "#3b82f6", active: true },
@@ -186,17 +219,37 @@ export default function Home() {
   };
 
   return (
-    <main className={`min-h-screen p-4 md:p-8 ${isDarkMode ? "dark" : ""}`}>
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">ProScheduler</h1>
-          <p className="text-muted-foreground">
+    <main className={`demo${isDarkMode ? " dark" : ""}`}>
+      <div className="demo-inner">
+        <div className="demo-header">
+          <h1>ProScheduler</h1>
+          <p>
             Professional React calendar with drag-drop, timezone support, i18n, resources, and recurring events.
           </p>
+          <label className="demo-theme">
+            Theme{" "}
+            <select value={theme} onChange={(e) => setTheme(e.target.value as ThemePreset)}>
+              <option value="calm">Calm</option>
+              <option value="vivid">Vivid</option>
+              <option value="editorial">Editorial</option>
+            </select>
+          </label>{" "}
+          <label className="demo-theme">
+            Layout{" "}
+            <select value={layout} onChange={(e) => setLayout(e.target.value as CalendarLayout)}>
+              <option value="classic">Classic</option>
+              <option value="focus">Focus</option>
+              <option value="flow">Flow</option>
+            </select>
+          </label>{" "}
+          <label className="demo-theme">
+            <input type="checkbox" checked={reverseTimeAxis} onChange={(e) => setReverseTimeAxis(e.target.checked)} /> Latest hours on top
+          </label>
         </div>
 
-        <div className="h-[800px] border rounded-lg overflow-hidden">
+        <div className="demo-frame">
           <Scheduler
+            layout={layout}
             events={filteredEvents}
             view={view}
             onViewChange={setView}
@@ -211,8 +264,10 @@ export default function Home() {
             onEventCreate={handleEventCreate}
             onEventUpdate={handleEventUpdate}
             onEventDelete={handleEventDelete}
+            placeSearch={placeSearch}
             resources={demoResources}
             eventTypes={demoEventTypes}
+            theme={theme}
             isDarkMode={isDarkMode}
             onThemeToggle={() => setIsDarkMode(!isDarkMode)}
             timezone={timezone}
@@ -221,6 +276,9 @@ export default function Home() {
             onLanguageChange={(lang) => setLanguage(lang as "en" | "fr")}
             translations={translations[language]}
             locale={language === "fr" ? fr : enUS}
+            workingHours={{ start: 9, end: 18 }}
+            reverseTimeAxis={reverseTimeAxis}
+            scrollToHour={scrollToHour}
           />
         </div>
       </div>

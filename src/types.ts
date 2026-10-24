@@ -19,6 +19,19 @@ export interface EventReminder {
   label?: string; // e.g., "30 minutes before"
 }
 
+/** A place chosen from `placeSearch` (spec §8.7). */
+export interface Place {
+  name: string;
+  address?: string;
+  lat: number;
+  lon: number;
+  provider?: string;
+  id?: string;
+}
+
+/** Suggests places for what is typed in the form's Location field. */
+export type PlaceSearch = (query: string, options: { signal: AbortSignal }) => Promise<Place[]>;
+
 export interface CalendarEvent {
   id: string;
   title: string;
@@ -38,6 +51,8 @@ export interface CalendarEvent {
   attachments?: EventAttachment[];
   guests?: string[]; // Array of email addresses
   reminders?: EventReminder[]; // Event reminders
+  /** The place chosen with `placeSearch`; `location` keeps its text. */
+  place?: Place;
   recurrence?: {
     freq: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
     interval?: number;
@@ -70,19 +85,35 @@ export interface Resource {
 
 export interface ThemeColors {
   primary?: string;
+  /** Text and icons on `primary`. */
+  primaryForeground?: string;
   secondary?: string;
   background?: string;
   foreground?: string;
   border?: string;
   muted?: string;
+  /** Secondary text. */
+  mutedForeground?: string;
   accent?: string;
+  destructive?: string;
+  /** Focus ring. */
+  ring?: string;
 }
 
+/** Built-in looks, each in light and dark: `calm` (default, neutral), `vivid` (saturated), `editorial` (warm, serif titles). */
+export type ThemePreset = 'calm' | 'vivid' | 'editorial';
+
+/** `system` follows the operating system setting. */
+export type ColorMode = 'light' | 'dark' | 'system';
+
 export interface CalendarTheme {
+  /** The built-in theme the overrides below apply to (default `calm`). */
+  preset?: ThemePreset;
+  /** Replaces colours of the preset (any CSS colour), in light and dark mode. */
   colors?: ThemeColors;
   fontFamily?: string;
+  /** Base corner radius: the smaller and larger radii scale from it. */
   borderRadius?: string;
-  // Future: lightColors, darkColors
 }
 
 // Derived from the English language pack so the type always matches every
@@ -90,8 +121,96 @@ export interface CalendarTheme {
 // had drifted from the runtime keys).
 export type CalendarTranslations = typeof en;
 
+/** Extra classes for the calendar's parts, added next to the built-in ones. */
+export interface CalendarClassNames {
+  root?: string;
+  toolbar?: string;
+  sidebar?: string;
+  /** Event blocks, all-day bars, month chips, agenda and resource items. */
+  event?: string;
+  /** Time slots, all-day slots and month days. */
+  slot?: string;
+  /** All-day and multi-day bars (they also get `event`). */
+  allDayBar?: string;
+  /** The quick card, the editor and the "+N" list. */
+  dialog?: string;
+}
+
+/** Props of `components.EventContent`: what is drawn inside an event block, an all-day bar or a month chip. */
+export interface EventContentProps {
+  event: CalendarEvent;
+  variant: 'block' | 'bar' | 'chip';
+}
+
+/** Props of `components.EventEditor` (the same as `renderEventForm`'s). */
+export interface EventEditorProps {
+  isOpen: boolean;
+  onClose: () => void;
+  event?: CalendarEvent | null;
+  initialDate?: Date;
+  /** True when the form is opened from the all-day row (preset to an all-day event). */
+  initialAllDay?: boolean;
+  onSave: (event: Partial<CalendarEvent>) => void;
+  onDelete?: (eventId: string) => void;
+}
+
+/** Props of `components.Toolbar`. */
+export interface ToolbarProps {
+  date: Date;
+  view: ViewType;
+  onPrev: () => void;
+  onNext: () => void;
+  onToday: () => void;
+  onViewChange: (view: ViewType) => void;
+  /** Shows or hides the side panel (a drawer in the phone layout). */
+  onToggleSidebar: () => void;
+  /** The calendar is in its phone layout (under 768 px of width). */
+  compact?: boolean;
+}
+
+/** Props of `components.Sidebar`. `onCreate` is undefined in read-only mode. */
+export interface SidebarProps {
+  date: Date;
+  onDateChange: (date: Date) => void;
+  onCreate?: () => void;
+  calendars?: CalendarProps['calendars'];
+  onCalendarToggle?: (calendarId: string, active: boolean) => void;
+}
+
+/** Props of `components.EmptyState` (the agenda without events). `onCreate` is undefined in read-only mode. */
+export interface EmptyStateProps {
+  onCreate?: () => void;
+}
+
+/** The host's own parts, used in place of the built-in ones. */
+export interface CalendarComponents {
+  EventContent?: React.ComponentType<EventContentProps>;
+  EventEditor?: React.ComponentType<EventEditorProps>;
+  Toolbar?: React.ComponentType<ToolbarProps>;
+  Sidebar?: React.ComponentType<SidebarProps>;
+  EmptyState?: React.ComponentType<EmptyStateProps>;
+}
+
+/** Working time: the week and day views shade the hours outside it. */
+export interface WorkingHours {
+  /** Start of the working day, in hours (9.5 is 9:30). */
+  start: number;
+  /** End of the working day, in hours (17.5 is 17:30). */
+  end: number;
+  /** Working days, 0 being Sunday (default: Monday to Friday). Other days are shaded all day. */
+  days?: number[];
+}
+
+/** Spec §8.1: Classic (header, side panel, event card), Focus (full grid, floating toolbar, editor panel), Flow (day feed). */
+export type CalendarLayout = 'classic' | 'focus' | 'flow';
+
 export interface CalendarProps {
+  /** Controlled (1.x): the host owns the list and updates it from the callbacks. */
   events?: CalendarEvent[];
+  /** Uncontrolled: the starting list; the calendar keeps it and reports it through `onEventsChange`. Ignored with `events`. */
+  defaultEvents?: CalendarEvent[];
+  /** The whole list after every change (create, edit, move, resize, duplicate, delete, undo), in both modes. */
+  onEventsChange?: (events: CalendarEvent[]) => void;
   translations?: Partial<CalendarTranslations>; // New prop
   view?: ViewType;
   onViewChange?: (view: ViewType) => void;
@@ -109,7 +228,10 @@ export interface CalendarProps {
    * occurrence. Without this prop, deleting an occurrence deletes the whole series (`onEventDelete`).
    */
   onOccurrenceDelete?: (occurrence: CalendarEvent, updatedSeries: CalendarEvent) => void;
-  theme?: CalendarTheme;
+  /** A preset name (`"calm"`, `"vivid"`, `"editorial"`) or a theme object. */
+  theme?: CalendarTheme | ThemePreset;
+  /** Light, dark or the system setting. Without `mode` nor `isDarkMode`, a `.dark` ancestor turns the calendar dark. */
+  mode?: ColorMode;
   locale?: Locale; // from date-fns
   timezone?: string; // e.g. "America/New_York"
   onTimezoneChange?: (timezone: string) => void;
@@ -122,22 +244,40 @@ export interface CalendarProps {
     active?: boolean;
   }[];
   resources?: Resource[];
+  /** First hour drawn by the week, day and resource views (0 to 23, default 0). */
+  dayStartHour?: number;
+  /** Hour the week, day and resource views end at (1 to 24, default 24). Events are cut at these hours. */
+  dayEndHour?: number;
+  /** Length of a time slot in minutes: 5, 10, 15 (default), 20, 30 or 60. Clicks, drops and resizes snap to it. */
+  slotDuration?: number;
+  /** Week and day views: the latest hours on top, the day running upward. */
+  reverseTimeAxis?: boolean;
+  /** Week and day views: hours outside working time are shaded (none by default). */
+  workingHours?: WorkingHours;
+  /** Week and day views: the hour at the top of the grid when it opens (default: a few hours before now). */
+  scrollToHour?: number;
   eventTypes?: EventType[]; // Pre-defined types
   onCalendarToggle?: (calendarId: string, active: boolean) => void;
   isLoading?: boolean;
+  /**
+   * Adds the compiled stylesheet to the page (once, however many calendars). Pass `false` and
+   * `import 'calendarkit-pro/styles.css'` instead for a strict Content-Security-Policy or a cached file.
+   */
+  injectStyles?: boolean;
+  classNames?: CalendarClassNames;
+  components?: CalendarComponents;
+  /** `classic` (default), `focus` or `flow` (spec §8.1). */
+  layout?: CalendarLayout;
+  /**
+   * Place suggestions in the form's Location field, e.g. `photonPlaces()`. Off by default: what is
+   * typed there goes to the provider.
+   */
+  placeSearch?: PlaceSearch;
   isDarkMode?: boolean;
   onThemeToggle?: () => void;
   hideViewSwitcher?: boolean;
   language?: 'en' | 'fr';
   onLanguageChange?: (lang: 'en' | 'fr') => void;
-  renderEventForm?: (props: {
-    isOpen: boolean;
-    onClose: () => void;
-    event?: CalendarEvent | null;
-    initialDate?: Date;
-    /** True when the form is opened from the all-day row (preset to an all-day event). */
-    initialAllDay?: boolean;
-    onSave: (event: Partial<CalendarEvent>) => void;
-    onDelete?: (eventId: string) => void;
-  }) => React.ReactNode;
+  /** 1.x: the same as `components.EventEditor`, as a render function. */
+  renderEventForm?: (props: EventEditorProps) => React.ReactNode;
 }

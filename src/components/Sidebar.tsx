@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
-import { Plus, ChevronDown, Globe } from 'lucide-react';
+import { Plus, ChevronDown, Globe } from './icons';
 import { MiniCalendar } from './MiniCalendar';
-import { cn } from '../utils';
-import { toZonedTime } from 'date-fns-tz';
+import { cx } from '../utils';
+import { useClassNames } from './customize';
 import { format, Locale } from 'date-fns';
 import { timeZoneAbbreviation } from '../core/format';
+import { toDisplay } from '../core/timezone';
 import { safeColor } from '../core/color';
 
 import { ViewType, CalendarEvent } from '../types';
@@ -95,7 +96,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               // Real local acronym, falling back to the static one
               acronym = timeZoneAbbreviation(now) || 'LOC';
           } else {
-              const zDate = toZonedTime(now, tz.value);
+              const zDate = toDisplay(now, tz.value);
               time = format(zDate, 'HH:mm');
               // Calculate dynamic acronym if needed (e.g. DST changes)
               const dynAcronym = getAcronym(tz.value);
@@ -108,10 +109,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       }
 
       return (
-          <div className="flex justify-between w-full">
+          <div className="ck:flex ck:justify-between ck:w-full">
               <span>{tz.label}</span>
-              <span className="text-muted-foreground ml-2 tabular-nums">
-                  {time} <span className="text-xs opacity-75">({acronym})</span>
+              <span className="ck:text-muted-foreground ck:ml-2 ck:tabular-nums">
+                  {time} <span className="ck:text-xs ck:opacity-75">({acronym})</span>
               </span>
           </div>
       );
@@ -120,16 +121,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const selectedTzObj = timezones.find(t => t.value === (timezone || ''));
   const selectedTimezoneLabel = selectedTzObj ? formatTzLabel(selectedTzObj) : (translations?.localTime || 'Local Time');
 
+  const classNames = useClassNames();
   return (
-    <div className={cn("flex flex-col w-[260px] overflow-x-hidden h-full bg-gradient-to-b scrollbar-hide from-background via-background to-muted/10 pt-4 pb-4 overflow-y-auto hidden lg:flex", className)}>
+    <div className={cx("ck:flex-col ck:overflow-x-hidden ck:h-full ck:bg-linear-to-b ck:from-background ck:via-background ck:to-muted/10 ck:pt-4 ck:pb-4 ck:overflow-y-auto ck:flex", className, classNames.sidebar)}>
       {!readOnly && (
-        <div className="px-4 mb-6">
+        <div className="ck:px-4 ck:mb-6">
             <Button
-              className="w-full rounded-2xl shadow-lg bg-primary text-primary-foreground hover:bg-primary/90 h-12 gap-3 justify-center transition-all duration-300 hover:shadow-xl hover:shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] font-semibold"
+              className="ck:inline-flex ck:text-sm ck:w-full ck:rounded-2xl ck:shadow-lg ck:bg-primary ck:text-primary-foreground ck:hover:bg-primary/90 ck:h-12 ck:gap-3 ck:transition-all ck:duration-300 ck:hover:shadow-xl ck:hover:shadow-primary/20 ck:hover:scale-[1.02] ck:active:scale-[0.98] ck:font-semibold"
               onClick={onEventCreate}
             >
-              <Plus className="w-5 h-5" />
-              <span className="text-sm">{translations?.create || 'Create'}</span>
+              <Plus className="ck:w-5 ck:h-5" />
+              <span className="ck:text-sm">{translations?.create || 'Create'}</span>
             </Button>
         </div>
       )}
@@ -142,30 +144,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
         labels={{ previousMonth: translations?.previousMonth, nextMonth: translations?.nextMonth }}
       />
 
-      <div className="flex-1 px-4 space-y-5 mt-5">
+      <div className="ck:flex-1 ck:px-4 ck:space-y-5 ck:mt-5">
         {/* Calendars List: U1, only when the consumer provides calendars (no demo placeholders) */}
         {calendars && calendars.length > 0 && (
-        <div className="bg-muted/20 rounded-2xl p-3 border-[0px] border-border/30">
+        <div className="ck:bg-muted/20 ck:rounded-2xl ck:p-3 ck:border-[0px] ck:border-border/30">
           <div
-            className="flex items-center justify-between cursor-pointer hover:bg-accent/50 p-2 -m-1 rounded-xl mb-2 transition-all duration-200"
+            className="ck:flex ck:items-center ck:justify-between ck:cursor-pointer ck:hover:bg-accent/50 ck:p-2 ck:-m-1 ck:rounded-xl ck:mb-2 ck:transition-all ck:duration-200"
             onClick={() => setCalendarsOpen(!calendarsOpen)}
           >
-            <span className="text-sm font-semibold text-foreground">{translations?.calendars || 'Calendars'}</span>
-            <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform duration-200", calendarsOpen && "rotate-180")} />
+            <span className="ck:text-sm ck:font-semibold ck:text-foreground">{translations?.calendars || 'Calendars'}</span>
+            <ChevronDown className={cx("ck:w-4 ck:h-4 ck:text-muted-foreground ck:transition-transform ck:duration-200", calendarsOpen && "ck:rotate-180")} />
           </div>
 
           {calendarsOpen && (
-            <div className="space-y-1">
+            <div className="ck:space-y-1">
               {calendars.map(cal => (
                 <div
                     key={cal.id}
-                    className="flex items-center gap-3 py-2 px-2 hover:bg-accent/60 rounded-xl cursor-pointer group transition-all duration-200"
+                    className="ck:flex ck:items-center ck:gap-3 ck:py-2 ck:px-2 ck:hover:bg-accent/60 ck:rounded-xl ck:cursor-pointer ck:group ck:transition-all ck:duration-200"
                     onClick={() => onCalendarToggle?.(cal.id, !(cal.active ?? true))}
                 >
                   <div
-                    className="relative flex items-center justify-center"
+                    className="ck:relative ck:flex ck:items-center ck:justify-center"
                     // U5: the colour is validated and passed as a CSS variable (no injected <style> tag).
-                    style={{ '--cal-color': safeColor(cal.color, 'hsl(var(--primary))') } as React.CSSProperties}
+                    style={{ '--cal-color': safeColor(cal.color, 'var(--ck-primary)') } as React.CSSProperties}
                   >
                     <input
                         type="checkbox"
@@ -175,20 +177,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                              onCalendarToggle?.(cal.id, e.target.checked);
                         }}
                         aria-label={cal.label}
-                        className="peer h-5 w-5 rounded-md border-2 border-border/60 cursor-pointer appearance-none checked:border-transparent checked:bg-[var(--cal-color)] focus:ring-2 focus:ring-[var(--cal-color)] transition-all duration-200"
+                        className="ck:peer ck:h-5 ck:w-5 ck:rounded-md ck:border-2 ck:border-border/60 ck:cursor-pointer ck:appearance-none ck:checked:border-transparent ck:checked:bg-[var(--cal-color)] ck:focus:ring-2 ck:focus:ring-[var(--cal-color)] ck:transition-all ck:duration-200"
                     />
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 peer-checked:opacity-100 transition-opacity">
-                        <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <div className="ck:absolute ck:inset-0 ck:flex ck:items-center ck:justify-center ck:pointer-events-none ck:opacity-0 ck:peer-checked:opacity-100 ck:transition-opacity">
+                        <svg className={cx("ck:w-3.5 ck:h-3.5", safeColor(cal.color, '') ? "ck:text-white" : "ck:text-primary-foreground")} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                         </svg>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <span className="text-sm text-foreground/90 truncate font-medium">{cal.label}</span>
+                  <div className="ck:flex ck:items-center ck:gap-2 ck:flex-1 ck:min-w-0">
+                    <span className="ck:text-sm ck:text-foreground/90 ck:truncate ck:font-medium">{cal.label}</span>
                   </div>
                   <div
-                    className="w-2 h-2 rounded-full opacity-60 group-hover:opacity-100 transition-opacity"
-                    style={{ backgroundColor: safeColor(cal.color, 'hsl(var(--primary))') }}
+                    className="ck:w-2 ck:h-2 ck:rounded-full ck:opacity-60 ck:group-hover:opacity-100 ck:transition-opacity"
+                    style={{ backgroundColor: safeColor(cal.color, 'var(--ck-primary)') }}
                   />
                 </div>
               ))}
@@ -199,36 +201,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Timezone Selector - Custom UI */}
-      <div className="mt-auto px-4 pt-5">
-          <div className="bg-muted/20 rounded-2xl p-3">
-              <div className="flex items-center gap-2 mb-3">
-                  <div className="p-1.5 bg-primary/10 rounded-lg">
-                      <Globe className="w-4 h-4 text-primary" />
+      <div className="ck:mt-auto ck:px-4 ck:pt-5">
+          <div className="ck:bg-muted/20 ck:rounded-2xl ck:p-3">
+              <div className="ck:flex ck:items-center ck:gap-2 ck:mb-3">
+                  <div className="ck:p-1.5 ck:bg-primary/10 ck:rounded-lg">
+                      <Globe className="ck:w-4 ck:h-4 ck:text-primary" />
                   </div>
-                  <span className="text-sm font-semibold text-foreground">{translations?.timezone || 'Timezone'}</span>
+                  <span className="ck:text-sm ck:font-semibold ck:text-foreground">{translations?.timezone || 'Timezone'}</span>
               </div>
 
-              <div className="relative">
+              <div className="ck:relative">
                 <button
                     onClick={() => setTimezoneOpen(!timezoneOpen)}
-                    className="w-full flex items-center justify-between bg-blue-200/40  hover:bg-blue-200/80 rounded-xl py-2.5 pl-4 pr-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all duration-200 text-left"
+                    className="ck:w-full ck:flex ck:items-center ck:justify-between ck:bg-muted ck:hover:bg-accent ck:rounded-xl ck:py-2.5 ck:pl-4 ck:pr-3 ck:text-sm ck:text-foreground ck:focus:outline-hidden ck:focus:ring-2 ck:focus:ring-primary/20 ck:focus:border-primary/50 ck:transition-all ck:duration-200 ck:text-left"
                 >
-                    <div className="flex-1 truncate mr-2 font-medium">{selectedTimezoneLabel}</div>
-                    <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform duration-200", timezoneOpen && "rotate-180")} />
+                    <div className="ck:flex-1 ck:truncate ck:mr-2 ck:font-medium">{selectedTimezoneLabel}</div>
+                    <ChevronDown className={cx("ck:w-4 ck:h-4 ck:text-muted-foreground ck:transition-transform ck:duration-200", timezoneOpen && "ck:rotate-180")} />
                 </button>
 
                 {timezoneOpen && (
                     <>
-                        <div className="fixed inset-0 z-40" onClick={() => setTimezoneOpen(false)} />
-                        <div className="absolute bottom-full left-0 w-full mb-2 bg-background rounded-xl shadow-2xl z-50 max-h-[260px] overflow-y-auto p-1.5 animate-in fade-in zoom-in-95 duration-200 backdrop-blur-none">
+                        <div className="ck:fixed ck:inset-0 ck:z-40" onClick={() => setTimezoneOpen(false)} />
+                        <div className="ck:absolute ck:bottom-full ck:left-0 ck:w-full ck:mb-2 ck:bg-background ck:rounded-xl ck:shadow-2xl ck:z-50 ck:max-h-[260px] ck:overflow-y-auto ck:p-1.5 ck:duration-200 ck:backdrop-blur-none">
                             {timezones.map(tz => (
-                                <div
+                                <button
+                                    type="button"
                                     key={tz.value}
-                                    className={cn(
-                                        "px-3 py-2.5 text-sm rounded-lg cursor-pointer transition-all duration-200",
+                                    aria-pressed={(timezone || '') === tz.value}
+                                    className={cx(
+                                        "ck:block ck:w-full ck:text-left ck:px-3 ck:py-2.5 ck:text-sm ck:rounded-lg ck:cursor-pointer ck:transition-all ck:duration-200",
                                         (timezone || '') === tz.value
-                                            ? "bg-primary text-primary-foreground font-semibold"
-                                            : "text-foreground hover:bg-accent/80"
+                                            ? "ck:bg-primary ck:text-primary-foreground ck:font-semibold"
+                                            : "ck:text-foreground ck:hover:bg-accent/80"
                                     )}
                                     onClick={() => {
                                         onTimezoneChange?.(tz.value);
@@ -236,7 +240,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                     }}
                                 >
                                     {formatTzLabel(tz)}
-                                </div>
+                                </button>
                             ))}
                         </div>
                     </>

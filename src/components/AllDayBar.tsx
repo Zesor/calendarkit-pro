@@ -1,10 +1,13 @@
 import React, { useRef, useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { addDays, differenceInCalendarDays, format, Locale } from 'date-fns';
-import { CalendarEvent, CalendarTranslations } from '../types';
-import { cn, isEventDragDisabled, isEventResizeDisabled } from '../utils';
+import { addDays, differenceInCalendarDays, format } from 'date-fns';
+import { CalendarEvent } from '../types';
+import { cx, isEventDragDisabled, isEventResizeDisabled } from '../utils';
+import { useClassNames, useComponents } from './customize';
 import { dayEventSpan, DaySpanSegment } from '../core/allDay';
+import { useEventLabel } from './eventLabel';
+import { useEventColorStyle } from './eventColor';
 
 interface AllDayBarProps {
   segment: DaySpanSegment;
@@ -12,8 +15,6 @@ interface AllDayBarProps {
   rowDays: Date[];
   laneHeight: number;
   timezone?: string;
-  locale?: Locale;
-  translations?: Partial<CalendarTranslations>;
   readonly?: boolean;
   onEventClick?: (event: CalendarEvent) => void;
   onEventContextMenu?: (event: CalendarEvent, e: React.MouseEvent) => void;
@@ -25,16 +26,16 @@ const AllDayBarImpl: React.FC<AllDayBarProps> = ({
   rowDays,
   laneHeight,
   timezone,
-  locale,
-  translations,
   readonly,
   onEventClick,
   onEventContextMenu,
   onDayEventResize,
 }) => {
+  const classNames = useClassNames();
+  const { EventContent } = useComponents();
   const { event, startCol, span, lane, continuesBefore, continuesAfter } = segment;
   const columns = rowDays.length;
-  const { firstDay, lastDay } = dayEventSpan(event, timezone);
+  const { firstDay } = dayEventSpan(event, timezone);
   // Days of the event hidden before this row (bars continued from a previous week).
   const segmentOffset = differenceInCalendarDays(rowDays[startCol], firstDay);
 
@@ -42,7 +43,8 @@ const AllDayBarImpl: React.FC<AllDayBarProps> = ({
   const dragData = useRef({ event, grabDayOffset: segmentOffset });
   dragData.current.event = event;
   const dragDisabled = readonly || isEventDragDisabled(event);
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+  // Pointer drag only: the wrapper is not a tab stop, the bar button inside it is (spec §8.8).
+  const { listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `${event.id}@day@${format(rowDays[0], 'yyyy-MM-dd')}`,
     data: dragData.current,
     disabled: dragDisabled,
@@ -88,21 +90,18 @@ const AllDayBarImpl: React.FC<AllDayBarProps> = ({
     document.addEventListener('pointercancel', stop);
   };
 
-  const color = event.color || 'hsl(var(--primary))';
-  const dateFormat = 'd MMM';
-  const label = `${event.title}, ${format(firstDay, dateFormat, { locale })}${lastDay > firstDay ? ` – ${format(lastDay, dateFormat, { locale })}` : ''}`;
+  const colorStyle = useEventColorStyle(event);
+  const label = useEventLabel()(event);
 
   return (
     <div
       ref={setNodeRef}
+      data-ck-drag=""
       {...listeners}
-      {...attributes}
       onPointerDownCapture={handlePointerDownCapture}
-      role="button"
-      aria-label={label}
-      className={cn(
-        "group absolute px-[2px] select-none",
-        dragDisabled ? "cursor-pointer" : "cursor-grab active:cursor-grabbing touch-none"
+      className={cx(
+        "ck:group ck:absolute ck:px-[2px] ck:select-none",
+        dragDisabled ? "ck:cursor-pointer" : "ck:cursor-grab ck:active:cursor-grabbing ck:touch-none"
       )}
       style={{
         left: `${(startCol / columns) * 100}%`,
@@ -123,25 +122,30 @@ const AllDayBarImpl: React.FC<AllDayBarProps> = ({
       }}
       onContextMenu={onEventContextMenu ? (e) => onEventContextMenu(event, e) : undefined}
     >
-      <div
-        className={cn(
-          "relative h-[calc(100%-4px)] mt-[2px] flex items-center gap-1 px-1.5 text-[11px] font-semibold text-white overflow-hidden shadow-sm",
-          continuesBefore ? "rounded-l-none" : "rounded-l-md",
-          continuesAfter ? "rounded-r-none" : "rounded-r-md"
+      <button
+        type="button"
+        aria-label={label}
+        className={cx(
+          "ck-event ck-event-bar ck:w-full ck:text-left ck:relative ck:h-[calc(100%-4px)] ck:mt-[2px] ck:flex ck:items-center ck:gap-1 ck:px-1.5 ck:text-[11px] ck:font-semibold ck:overflow-hidden",
+          continuesBefore ? "ck:rounded-l-none" : "ck:rounded-l-md",
+          continuesAfter ? "ck:rounded-r-none" : "ck:rounded-r-md",
+          classNames.event,
+          classNames.allDayBar
         )}
-        style={{ backgroundColor: color }}
+        style={colorStyle}
+        data-ck-event-id={event.id}
       >
-        {continuesBefore && <span aria-label={translations?.continuesBefore}>‹</span>}
-        <span className="truncate">{event.title}</span>
-        {continuesAfter && <span className="ml-auto" aria-label={translations?.continuesAfter}>›</span>}
+        {continuesBefore && <span aria-hidden="true">‹</span>}
+        {EventContent ? <EventContent event={event} variant="bar" /> : <span className="ck:truncate">{event.title}</span>}
+        {continuesAfter && <span className="ck:ml-auto" aria-hidden="true">›</span>}
         {canResize && (
           <div
             data-testid="all-day-resize"
-            className="absolute right-0 top-0 bottom-0 w-1.5 cursor-ew-resize opacity-0 group-hover:opacity-100 bg-black/20"
+            className="ck:absolute ck:right-0 ck:top-0 ck:bottom-0 ck:w-1.5 ck:cursor-ew-resize ck:opacity-0 ck:group-hover:opacity-100 ck:bg-black/20"
             onPointerDown={handleResizeStart}
           />
         )}
-      </div>
+      </button>
     </div>
   );
 };

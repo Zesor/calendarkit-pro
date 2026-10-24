@@ -1,0 +1,69 @@
+/* Event fills (spec §8.2). An event element carries `ck-event` (blocks, bars) or `ck-dot` (month and
+   agenda markers) and sets --ck-ev, --ck-ev-ink-l and --ck-ev-ink-d inline (src/components/eventColor.tsx,
+   4.5:1 guaranteed by src/core/eventColors.ts); without a colour it uses the theme's --ck-event*.
+   calm: a tint with a coloured ink; vivid: the solid colour with white text; editorial: a card with a
+   coloured top edge (its all-day bars stay tinted). Tints mix in srgb, as eventColors computes them.
+   Selectors weigh two classes, so they win over a plain utility and the later ones (dark, then themes)
+   win. The fills own box-shadow (ring, editorial edge): elevation on events uses drop-shadow (filter). */
+.ck-root .ck-event {
+  background-color: color-mix(in srgb, var(--ck-ev, var(--ck-event)) 14%, var(--ck-background));
+  color: var(--ck-ev-ink-l, var(--ck-event-ink-light));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ck-ev, var(--ck-event)) 30%, transparent);
+}
+.ck-root:where([data-ck-mode="dark"]) .ck-event,
+:where(.dark) .ck-root:where(:not([data-ck-mode])) .ck-event {
+  background-color: color-mix(in srgb, var(--ck-ev, var(--ck-event)) 26%, var(--ck-background));
+  color: var(--ck-ev-ink-d, var(--ck-event-ink-dark));
+}
+@media (prefers-color-scheme: dark) {
+  .ck-root:where([data-ck-mode="system"]) .ck-event {
+    background-color: color-mix(in srgb, var(--ck-ev, var(--ck-event)) 26%, var(--ck-background));
+    color: var(--ck-ev-ink-d, var(--ck-event-ink-dark));
+  }
+}
+.ck-root:where([data-ck-theme="vivid"]) .ck-event {
+  background-color: var(--ck-ev, var(--ck-event));
+  color: #fff;
+  box-shadow: none;
+}
+.ck-root:where([data-ck-theme="editorial"]) .ck-event:where(:not(.ck-event-bar)) {
+  background-color: var(--ck-background);
+  color: var(--ck-foreground);
+  box-shadow: inset 0 0 0 1px var(--ck-border), inset 0 3px 0 var(--ck-ev, var(--ck-event));
+}
+.ck-root .ck-dot {
+  background-color: var(--ck-ev, var(--ck-event));
+}
+
+/* Outside working hours (spec §2, B): a hatched tint, and a line where work starts and ends, so the
+   working hours read as a band. The line sits on the side touching them (flipped on a reversed axis). */
+.ck-root .ck-off-hours {
+  --ck-off-line: color-mix(in srgb, var(--ck-muted-foreground) 35%, transparent);
+  background-color: color-mix(in srgb, var(--ck-muted) 70%, transparent);
+  background-image: repeating-linear-gradient(135deg, transparent 0 7px, color-mix(in srgb, var(--ck-muted-foreground) 10%, transparent) 7px 8px);
+}
+.ck-root .ck-off-hours[data-ck-edge="start"],
+.ck-root .ck-off-hours[data-ck-edge="end"][data-ck-reverse] {
+  box-shadow: inset 0 -1px 0 var(--ck-off-line);
+}
+.ck-root .ck-off-hours[data-ck-edge="end"],
+.ck-root .ck-off-hours[data-ck-edge="start"][data-ck-reverse] {
+  box-shadow: inset 0 1px 0 var(--ck-off-line);
+}
+
+/* Phone sheets (spec §8.9): every control a finger can hit, at least 44 px. Colour swatches and the
+   remove buttons inside chips keep their size (the chip is the target; swatches would not fit). */
+.ck-root :is([data-ck-docked], [data-ck-sheet]) :is(button:not([aria-pressed], [data-ck-small]), select, input:not([type="checkbox"], [type="radio"], [type="color"], [type="range"])) {
+  min-height: 44px;
+}
+.ck-root :is([data-ck-docked], [data-ck-sheet]) button:not([aria-pressed], [data-ck-small]) {
+  min-width: 44px;
+}
+
+/* Phone layout: the day view's date on one line, under a header that already has Today. */
+.ck-root[data-ck-compact] [data-ck-day-header] {
+  padding: 8px 12px;
+}
+.ck-root[data-ck-compact] [data-ck-day-header] h2 {
+  font-size: 1rem;
+}

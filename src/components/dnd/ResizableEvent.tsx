@@ -1,12 +1,16 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { CalendarEvent } from '../../types';
-import { cn, isEventResizeDisabled } from '../../utils';
+import { cx, isEventResizeDisabled } from '../../utils';
 import { computeResizeEnd } from '../../core/dnd';
 
 interface ResizableEventProps {
   event: CalendarEvent;
   hourHeight: number;
   minDuration?: number; // Minimum duration in minutes
+  /** The resize steps, in minutes (the grid's slot). */
+  snapMinutes?: number;
+  /** Reversed time axis: the end is the top edge, so the handle sits there and moves up to lengthen. */
+  reverse?: boolean;
   onResize?: (event: CalendarEvent, newEnd: Date) => void;
   children: React.ReactNode;
   className?: string;
@@ -18,6 +22,8 @@ export const ResizableEvent: React.FC<ResizableEventProps> = ({
   event,
   hourHeight,
   minDuration = 15,
+  snapMinutes = 15,
+  reverse,
   onResize,
   children,
   className,
@@ -46,10 +52,9 @@ export const ResizableEvent: React.FC<ResizableEventProps> = ({
 
     const handleMove = (moveEvent: MouseEvent | TouchEvent) => {
       const moveClientY = 'touches' in moveEvent ? moveEvent.touches[0].clientY : moveEvent.clientY;
-      const deltaY = moveClientY - startYRef.current;
+      const deltaY = (moveClientY - startYRef.current) * (reverse ? -1 : 1);
 
-      // Snap to 15-minute intervals
-      const snapInterval = hourHeight / 4; // 15 minutes
+      const snapInterval = (hourHeight * snapMinutes) / 60;
       const snappedDelta = Math.round(deltaY / snapInterval) * snapInterval;
 
       const newHeight = Math.max(
@@ -84,7 +89,7 @@ export const ResizableEvent: React.FC<ResizableEventProps> = ({
     document.addEventListener('mouseup', handleEnd);
     document.addEventListener('touchmove', handleMove, { passive: false });
     document.addEventListener('touchend', handleEnd);
-  }, [event, hourHeight, minDuration, onResize]);
+  }, [event, hourHeight, minDuration, snapMinutes, reverse, onResize]);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     // dnd-kit's PointerSensor activates on pointerdown, which mousedown's
@@ -96,7 +101,7 @@ export const ResizableEvent: React.FC<ResizableEventProps> = ({
   return (
     <div
       ref={containerRef}
-      className={cn("relative group", className)}
+      className={cx("ck:relative ck:group", className)}
       style={{
         ...style,
         height: resizeHeight !== null ? `${resizeHeight}px` : style?.height,
@@ -106,25 +111,26 @@ export const ResizableEvent: React.FC<ResizableEventProps> = ({
 
       {/* Resize Handle */}
       <div
-        className={cn(
-          resizeLocked ? "cursor-default" : "cursor-ns-resize group-hover:opacity-100",
-          "absolute bottom-0 left-0 right-0 h-3 z-20 flex items-center justify-center",
-          "opacity-0 transition-opacity",
-          isResizing && "opacity-100"
+        className={cx(
+          resizeLocked ? "ck:cursor-default" : "ck:cursor-ns-resize ck:group-hover:opacity-100",
+          "ck:absolute ck:left-0 ck:right-0 ck:h-3 ck:z-20 ck:flex ck:items-center ck:justify-center",
+          reverse ? "ck:top-0" : "ck:bottom-0",
+          "ck:transition-opacity",
+          isResizing ? "ck:opacity-100" : "ck:opacity-0"
         )}
         onPointerDown={resizeLocked ? undefined : handlePointerDown}
         onMouseDown={resizeLocked ? undefined : handleResizeStart}
         onTouchStart={resizeLocked ? undefined : handleResizeStart}
       >
-        <div className={cn(
-          "w-8 h-1 rounded-full transition-all",
-          isResizing ? "bg-primary" : "bg-muted-foreground/30 group-hover:bg-primary/50"
+        <div className={cx(
+          "ck:w-8 ck:h-1 ck:rounded-full ck:transition-all",
+          isResizing ? "ck:bg-primary" : "ck:bg-muted-foreground/30 ck:group-hover:bg-primary/50"
         )} />
       </div>
 
       {/* Visual feedback during resize */}
       {isResizing && (
-        <div className="absolute inset-0 border-2 border-primary border-dashed rounded-md pointer-events-none bg-primary/5" />
+        <div className="ck:absolute ck:inset-0 ck:border-2 ck:border-primary ck:border-dashed ck:rounded-md ck:pointer-events-none ck:bg-primary/5" />
       )}
     </div>
   );

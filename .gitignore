@@ -45,3 +45,6 @@ next-env.d.ts
 .vscode
 *.swp
 *.swo
+
+# Compiled stylesheet module (npm run css)
+src/styles/css.generated.ts

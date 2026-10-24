@@ -42,8 +42,9 @@ const calendarPropKeys: Array<keyof CalendarProps> = [
 ]
 
 describe('public API', () => {
-  test('runtime exports are exactly Scheduler and cn', () => {
-    expect(Object.keys(publicApi).sort()).toEqual(['Scheduler', 'cn'])
+  // 2.0 removes `cn` (clsx + tailwind-merge), a Tailwind helper unrelated to calendars.
+  test('the runtime exports are Scheduler and the opt-in place search adapter', () => {
+    expect(Object.keys(publicApi).sort()).toEqual(['Scheduler', 'photonPlaces'])
   })
 
   test('CalendarProps keeps its 30 documented props', () => {

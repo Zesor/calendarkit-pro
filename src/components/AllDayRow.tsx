@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { format, Locale } from 'date-fns';
 import { CalendarEvent, CalendarTranslations } from '../types';
-import { cn } from '../utils';
+import { cx } from '../utils';
 import { interpolate } from '../core/format';
 import { layoutDayRow } from '../core/allDay';
 import { DroppableCell } from './dnd/DroppableCell';
@@ -55,42 +55,41 @@ const AllDayRowImpl: React.FC<AllDayRowProps> = ({
   const height = Math.max(visibleLanes, 1) * LANE_HEIGHT + 4;
 
   return (
-    <div className="flex border-b-[0.5px] border-border/50 bg-background" data-all-day-row>
-      <div className={cn("flex-none flex flex-col items-end justify-start gap-0.5 pr-2 pt-1 text-[10px] text-muted-foreground border-r-[0.5px] border-border/30", gutterClassName)}>
+    <div className="ck:flex ck:border-b-[0.5px] ck:border-border/50 ck:bg-background" data-all-day-row>
+      <div className={cx("ck:flex-none ck:flex ck:flex-col ck:items-end ck:justify-start ck:gap-0.5 ck:pr-2 ck:pt-1 ck:text-[10px] ck:text-muted-foreground ck:border-r-[0.5px] ck:border-border/30", gutterClassName)}>
         <span>{translations?.allDay || 'All Day'}</span>
         {laneCount > maxLanes && (
           <button
             type="button"
-            className="text-primary font-semibold hover:underline"
+            className="ck:text-primary ck:font-semibold ck:hover:underline"
             onClick={() => setExpanded(!expanded)}
           >
             {expanded ? translations?.showLess || 'Show less' : interpolate(translations?.moreEvents || '+{n} more', { n: hidden })}
           </button>
         )}
       </div>
-      <div className="flex-1 relative" style={{ height }}>
-        <div className="absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
+      <div className="ck:flex-1 ck:relative" style={{ height }}>
+        <div className="ck:absolute ck:inset-0 ck:grid" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
           {days.map((day, index) => (
             <DroppableCell
               key={day.toISOString()}
               id={`all-day-${day.toISOString()}`}
               date={day}
               allDayRow
-              className={cn("h-full", index > 0 && "border-l-[0.5px] border-border/30")}
+              className={cx("ck:h-full", index > 0 && "ck:border-l-[0.5px] ck:border-border/30")}
               onSlotClick={readonly || !onSlotClick ? undefined : handleSlotClick}
+              label={interpolate(translations?.createAllDayOn ?? '{date}', { date: format(day, 'EEEE d MMMM', { locale }) })}
             />
           ))}
         </div>
-        <div className="absolute inset-x-0 top-0 pointer-events-none" style={{ height }}>
+        <div className="ck:absolute ck:inset-x-0 ck:top-0 ck:pointer-events-none" style={{ height }}>
           {segments.filter((segment) => segment.lane < visibleLanes).map((segment) => (
-            <div key={`${segment.event.id}-${rowKey}`} className="pointer-events-auto">
+            <div key={`${segment.event.id}-${rowKey}`} className="ck:pointer-events-auto">
               <AllDayBar
                 segment={segment}
                 rowDays={days}
                 laneHeight={LANE_HEIGHT}
                 timezone={timezone}
-                locale={locale}
-                translations={translations}
                 readonly={readonly}
                 onEventClick={onEventClick}
                 onEventContextMenu={onEventContextMenu}

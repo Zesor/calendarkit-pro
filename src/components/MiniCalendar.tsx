@@ -2,8 +2,8 @@ import React from 'react';
 import { format, isSameMonth, isSameDay, isToday, addMonths, subMonths, Locale } from 'date-fns';
 import { getMonthGrid, resolveWeekStartsOn } from '../core/week';
 import { Button } from './ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { cn } from '../utils';
+import { ChevronLeft, ChevronRight } from './icons';
+import { cx } from '../utils';
 
 import { ViewType } from '../types';
 
@@ -67,45 +67,41 @@ export const MiniCalendar: React.FC<MiniCalendarProps> = ({
   };
 
   return (
-    <div className={cn("px-4 w-[260px]", className)}>
+    <div className={cx("ck:px-4 ck:w-[260px]", className)}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-sm font-semibold text-foreground capitalize">
+      <div className="ck:flex ck:items-center ck:justify-between ck:mb-4">
+        <span className="ck:text-sm ck:font-semibold ck:text-foreground ck:capitalize">
           {format(viewDate, 'MMMM yyyy', { locale })}
         </span>
-        <div className="flex items-center bg-muted/40 rounded-lg p-0.5">
+        <div className="ck:flex ck:items-center ck:bg-muted/40 ck:rounded-lg ck:p-0.5">
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 rounded-md hover:bg-background/80 transition-all"
+              className="ck:inline-flex ck:text-sm ck:font-medium ck:hover:text-accent-foreground ck:h-7 ck:w-7 ck:rounded-md ck:hover:bg-background/80 ck:transition-all"
               onClick={handlePrev}
               aria-label={labels?.previousMonth || 'Previous month'}
             >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="ck:h-4 ck:w-4" />
             </Button>
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 rounded-md hover:bg-background/80 transition-all"
+              className="ck:inline-flex ck:text-sm ck:font-medium ck:hover:text-accent-foreground ck:h-7 ck:w-7 ck:rounded-md ck:hover:bg-background/80 ck:transition-all"
               onClick={handleNext}
               aria-label={labels?.nextMonth || 'Next month'}
             >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="ck:h-4 ck:w-4" />
             </Button>
         </div>
       </div>
 
       {/* Weekday Headers */}
-      <div className="grid grid-cols-7 gap-y-2 text-center mb-2">
+      <div className="ck:grid ck:grid-cols-7 ck:gap-y-2 ck:text-center ck:mb-2">
         {weekDays.map((day, i) => (
-          <div key={`${day}-${i}`} className="text-[10px] text-muted-foreground/70 font-semibold uppercase">
+          <div key={`${day}-${i}`} className="ck:text-[10px] ck:text-muted-foreground/70 ck:font-semibold ck:uppercase">
             {day}
           </div>
         ))}
       </div>
 
       {/* Days Grid */}
-      <div className="grid grid-cols-7 gap-y-1 text-center">
+      <div className="ck:grid ck:grid-cols-7 ck:gap-y-1 ck:text-center">
         {days.map(day => {
           const isSelected = isSameDay(day, currentDate);
           const isCurrentMonth = isSameMonth(day, viewDate);
@@ -114,13 +110,16 @@ export const MiniCalendar: React.FC<MiniCalendarProps> = ({
           return (
             <button
               key={day.toISOString()}
+              type="button"
+              aria-label={format(day, 'EEEE d MMMM yyyy', { locale })}
+              aria-pressed={isSelected}
               onClick={() => handleDateClick(day)}
-              className={cn(
-                "h-8 w-8 mx-auto flex items-center justify-center text-xs rounded-xl transition-all duration-200 font-medium",
-                !isCurrentMonth && "text-muted-foreground/30",
-                isCurrentMonth && !isSelected && !isTodayDate && "text-foreground hover:bg-accent/80",
-                isSelected && "bg-primary text-primary-foreground shadow-md shadow-primary/30 scale-105",
-                !isSelected && isTodayDate && "bg-primary/10 text-primary ring-1 ring-primary/30"
+              className={cx(
+                "ck:h-8 ck:w-8 ck:mx-auto ck:flex ck:items-center ck:justify-center ck:text-xs ck:rounded-xl ck:transition-all ck:duration-200 ck:font-medium",
+                !isCurrentMonth && "ck:text-muted-foreground/30",
+                isCurrentMonth && !isSelected && !isTodayDate && "ck:text-foreground ck:hover:bg-accent/80",
+                isSelected && "ck:bg-primary ck:text-primary-foreground ck:shadow-md ck:shadow-primary/30 ck:scale-105",
+                !isSelected && isTodayDate && "ck:bg-primary/10 ck:text-primary ck:ring-1 ck:ring-primary/30"
               )}
             >
               {format(day, 'd')}

@@ -1,6 +1,5 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { fr as frLocale } from 'date-fns/locale'
 import { resolveTranslations } from '../core/format'
 import type { CalendarEvent } from '../types'
 import { EventModal, reminderLabel } from './EventModal'
@@ -46,30 +45,15 @@ describe('EventModal all-day', () => {
     fireEvent.click(screen.getByRole('switch', { name: 'All Day' }))
     expect((screen.getByLabelText('Start') as HTMLInputElement).value).toBe('2026-10-15T09:00')
   })
-
-  test('the read view shows the day range and an "All Day" badge', async () => {
-    const event: CalendarEvent = { id: 'c', title: 'Conference', start: new Date(2026, 9, 12), end: new Date(2026, 9, 15), allDay: true }
-    render(<EventModal isOpen event={event} onClose={() => {}} onSave={() => {}} translations={en} />)
-    expect(await screen.findByText('Mon 12 Oct – Wed 14 Oct')).toBeTruthy()
-    expect(screen.getByText('All Day')).toBeTruthy()
-  })
-
-  test('an overnight timed event (under 24 h) keeps the historical single date', async () => {
-    const event: CalendarEvent = { id: 'n', title: 'Night shift', start: new Date(2026, 9, 14, 22), end: new Date(2026, 9, 15, 2) }
-    render(<EventModal isOpen event={event} onClose={() => {}} onSave={() => {}} translations={en} />)
-    expect(await screen.findByText('Wed, Oct 14')).toBeTruthy()
-    expect(screen.queryByText(/Wed 14 Oct –/)).toBeNull()
-  })
 })
 
 describe('EventModal', () => {
-  test('I1/I3: the form is fully translated (French) and times follow the locale', () => {
-    openCreate({ translations: fr, locale: frLocale })
+  test('I1/I3: the form is fully translated (French)', () => {
+    openCreate({ translations: fr })
     expect(screen.getByText('Nouvel événement')).toBeTruthy()
     expect(screen.getByText('Début')).toBeTruthy()
     expect(screen.getByText('Fin')).toBeTruthy()
     expect(screen.getByText('Rappels')).toBeTruthy()
-    expect(screen.getByText('30 minutes avant')).toBeTruthy()
     expect(screen.getByText('1 h')).toBeTruthy()
     expect(screen.getByRole('option', { name: 'Ne se répète pas' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Créer un événement' })).toBeTruthy()
@@ -138,42 +122,98 @@ describe('EventModal', () => {
     openCreate()
     expect(screen.queryByText('Calendar')).toBeNull()
   })
+})
 
-  describe('view mode', () => {
-    const event: CalendarEvent = {
-      id: 'e', title: 'Offsite', start, end: new Date(2026, 9, 15, 10),
-      location: '10 Downing St, London',
-      attachments: [
-        { id: 'a', name: 'agenda.pdf', url: 'https://files.example/agenda.pdf', type: 'file' },
-        { id: 'b', name: 'notes.txt', type: 'file' },
-      ],
-    }
+describe('EventModal: no made-up defaults, and changes are never dropped without asking (spec §8.5)', () => {
+  const save = () => fireEvent.submit(screen.getByLabelText('Add title').closest('form')!)
 
-    // The view mode appears after the edit form's exit animation: wait for it.
-    test('U4: the location opens a maps search with an encoded query', async () => {
-      render(<EventModal isOpen event={event} onClose={() => {}} onSave={() => {}} translations={en} />)
-      const link = (await screen.findByText('Open in maps')).closest('a')!
-      expect(link.getAttribute('href')).toBe('https://www.google.com/maps/search/?api=1&query=10%20Downing%20St%2C%20London')
-      expect(link.getAttribute('rel')).toBe('noopener noreferrer')
-    })
+  test('a new event has no reminder and no colour: its calendar colours it', () => {
+    const onSave = vi.fn()
+    openCreate({ onSave, calendars: [{ id: 'w', label: 'Work', color: '#047857' }] })
+    fireEvent.change(screen.getByLabelText('Add title'), { target: { value: 'Call' } })
+    save()
+    expect(onSave.mock.calls[0][0]).toMatchObject({ reminders: [], calendarId: 'w' })
+    expect(onSave.mock.calls[0][0].color).toBeUndefined()
+  })
 
-    test('U6: only attachments with a URL are links (no generated placeholder download)', async () => {
-      render(<EventModal isOpen event={event} onClose={() => {}} onSave={() => {}} translations={en} />)
-      expect((await screen.findByText('agenda.pdf')).closest('a')?.getAttribute('href')).toBe('https://files.example/agenda.pdf')
-      expect(screen.getByText('notes.txt').closest('a')).toBeNull()
-    })
+  test('saving an event without reminders keeps it without reminders', () => {
+    const onSave = vi.fn()
+    const event: CalendarEvent = { id: 'a', title: 'Review', start, end: new Date(2026, 9, 15, 10) }
+    render(<EventModal isOpen onClose={() => {}} onSave={onSave} event={event} translations={en} />)
+    save()
+    expect(onSave.mock.calls[0][0].reminders).toEqual([])
+  })
 
-    test('an attachment with an unsafe URL scheme is not a link', async () => {
-      const unsafe = { ...event, attachments: [{ id: 'x', name: 'evil.txt', url: 'javascript:alert(1)', type: 'file' as const }] }
-      render(<EventModal isOpen event={unsafe} onClose={() => {}} onSave={() => {}} translations={en} />)
-      expect((await screen.findByText('evil.txt')).closest('a')).toBeNull()
-    })
+  test('Cancel, Escape or a click outside close an untouched form, and ask once something was typed', () => {
+    const onClose = vi.fn()
+    openCreate({ onClose })
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(onClose).toHaveBeenCalledTimes(1)
+    fireEvent.change(screen.getByLabelText('Add title'), { target: { value: 'Call' } })
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.getByRole('alertdialog', { name: 'Discard changes?' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }))
+    expect(screen.queryByRole('alertdialog')).toBeNull()
+    expect(onClose).toHaveBeenCalledTimes(1)
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Discard' }))
+    expect(onClose).toHaveBeenCalledTimes(2)
+  })
 
-    test('A1: icon-only buttons have accessible names', async () => {
-      render(<EventModal isOpen event={event} onClose={() => {}} onSave={() => {}} translations={fr} />)
-      expect(await screen.findByRole('button', { name: 'Modifier' })).toBeTruthy()
-      expect(screen.getByRole('button', { name: 'Supprimer' })).toBeTruthy()
-      expect(screen.getByRole('button', { name: 'Fermer' })).toBeTruthy()
-    })
+  test('the fields chosen in the quick card open in the editor', () => {
+    openCreate({ initialValues: { title: 'Lunch with Lea', end: new Date(2026, 9, 15, 10, 30) } })
+    expect((screen.getByLabelText('Add title') as HTMLInputElement).value).toBe('Lunch with Lea')
+    expect(screen.getByText('1 hr 30 min')).toBeTruthy()
+  })
+})
+
+describe('EventModal layout (spec §8.5): labelled rows, and a footer that stays in view', () => {
+  test('every row has its visible label: When, Calendar, Location, Guests, Reminders, Description', () => {
+    openCreate({ calendars: [{ id: 'w', label: 'Work' }] })
+    for (const name of ['When', 'Calendar', 'Location', 'Guests', 'Reminders', 'Description']) expect(screen.getByText(name)).toBeTruthy()
+    expect(screen.getByLabelText('Location').tagName).toBe('INPUT')
+    expect(screen.getByLabelText('Description').tagName).toBe('TEXTAREA')
+    expect(screen.getByRole('combobox', { name: 'Calendar' })).toBeTruthy()
+  })
+
+  test('the editor is a card named by its heading, no taller than the window, with the footer outside the scrolling body', () => {
+    openCreate()
+    const dialog = screen.getByRole('dialog', { name: 'New Event' })
+    // Centred near the top (no anchor here): no taller than the room below that top.
+    expect(dialog.style.maxHeight).toBe(`${window.innerHeight - 80 - 8}px`)
+    const body = screen.getByLabelText('Add title').closest('.ck\\:overflow-y-auto')!
+    expect(body.contains(screen.getByRole('button', { name: 'Create Event' }))).toBe(false)
+  })
+
+  test('reminders are chips, each with its remove button, added from "Add reminder"', () => {
+    openCreate()
+    fireEvent.click(screen.getByRole('button', { name: 'Add reminder' }))
+    fireEvent.click(screen.getByRole('button', { name: '30 minutes before' }))
+    expect(screen.getByText('30 minutes before')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Remove reminder' }))
+    expect(screen.queryByText('30 minutes before')).toBeNull()
+  })
+
+  test('asking before discarding takes the place of the footer buttons', () => {
+    openCreate()
+    fireEvent.change(screen.getByLabelText('Add title'), { target: { value: 'Call' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(screen.getByRole('alertdialog', { name: 'Discard changes?' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Create Event' })).toBeNull()
+  })
+
+  test('an event whose calendar is not in `calendars` keeps it: shown as itself, saved unchanged', () => {
+    const onSave = vi.fn()
+    const event: CalendarEvent = { id: 'a', title: 'Review', start, end: new Date(2026, 9, 15, 10), calendarId: 'archived' }
+    render(<EventModal isOpen onClose={() => {}} onSave={onSave} event={event} calendars={[{ id: 'w', label: 'Work' }]} translations={en} />)
+    const select = screen.getByRole('combobox', { name: 'Calendar' }) as HTMLSelectElement
+    expect(select.value).toBe('archived')
+    fireEvent.submit(screen.getByLabelText('Add title').closest('form')!)
+    expect(onSave.mock.calls[0][0].calendarId).toBe('archived')
+  })
+
+  test('the calendar row shows the event\'s calendar', () => {
+    openCreate({ calendars: [{ id: 'w', label: 'Work' }, { id: 'p', label: 'Personal', color: '#16a34a' }], initialValues: { calendarId: 'p' } })
+    expect((screen.getByRole('combobox', { name: 'Calendar' }) as HTMLSelectElement).value).toBe('p')
   })
 })

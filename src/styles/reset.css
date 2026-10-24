@@ -1,0 +1,93 @@
+/* Scoped reset: what the components expect from a preflight, applied only inside a calendar.
+   `.ck-root :where(…)` weighs one class, like a utility, and comes first: utilities win over it,
+   and it wins over a host's element rules (`button { padding: 0 }`). */
+.ck-root {
+  font-family: var(--ck-font);
+  line-height: 1.5;
+  color: var(--ck-foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+}
+/* The root's own box (margin, padding, border, size) stays the host's, through `className`. */
+.ck-root {
+  box-sizing: border-box;
+}
+.ck-root :where(*, ::before, ::after) {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 0 solid var(--ck-border);
+}
+.ck-root :where(button, input, select, textarea) {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  background-color: transparent;
+  border-radius: 0;
+  opacity: 1;
+}
+.ck-root :where(button, [role="button"]) {
+  cursor: pointer;
+}
+/* Keyboard focus is always visible (spec §8.8), inside the box so grid cells don't overlap. */
+.ck-root :where(:focus-visible) {
+  outline: 2px solid var(--ck-ring);
+  outline-offset: -2px;
+}
+.ck-root :where(:disabled) {
+  cursor: default;
+}
+.ck-root :where(h1, h2, h3, h4, h5, h6) {
+  font-size: inherit;
+  font-weight: inherit;
+}
+.ck-root :where(ol, ul, menu) {
+  list-style: none;
+}
+.ck-root :where(a) {
+  color: inherit;
+  text-decoration: inherit;
+}
+.ck-root :where(img, svg, video, canvas) {
+  display: block;
+  vertical-align: middle;
+}
+.ck-root :where(img, video) {
+  max-width: 100%;
+  height: auto;
+}
+.ck-root :where(table) {
+  border-collapse: collapse;
+  text-indent: 0;
+}
+.ck-root :where(textarea) {
+  resize: vertical;
+}
+.ck-root :where(input, textarea)::placeholder {
+  color: var(--ck-muted-foreground);
+  opacity: 1;
+}
+.ck-root :where([hidden]:not([hidden="until-found"])) {
+  display: none !important;
+}
+.ck-root ::selection {
+  background-color: color-mix(in oklab, var(--ck-primary) 22%, transparent);
+  color: var(--ck-foreground);
+}
+.ck-root :where(input, textarea) {
+  caret-color: var(--ck-primary);
+}
+.ck-root :where(*) {
+  scrollbar-color: var(--ck-border) transparent;
+  scrollbar-width: thin;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ck-root,
+  .ck-root :where(*, ::before, ::after) {
+    animation-duration: 1ms !important;
+    animation-delay: 0s !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}

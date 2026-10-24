@@ -23,7 +23,7 @@ describe('translated views (I1)', () => {
   test('U7: month view "+N more" is translated and opens the day', () => {
     const onDateClick = vi.fn()
     render(<DndContext><MonthView currentDate={day} events={[1, 2, 3, 4, 5, 6].map((h) => at(h))} translations={fr} locale={frLocale} onDateClick={onDateClick} /></DndContext>)
-    fireEvent.click(screen.getByRole('button', { name: '+2 de plus' }))
+    fireEvent.click(screen.getByRole('button', { name: '+3 de plus' }))
     expect(onDateClick).toHaveBeenCalledWith(day)
   })
 
@@ -57,18 +57,11 @@ describe('Scheduler wiring', () => {
     expect(screen.getByText('Duplicate')).toBeTruthy()
   })
 
-  const mobileCreateButton = (container: HTMLElement) => container.querySelector('.md\\:hidden button')
-
-  test('the mobile create button has an accessible name (A1)', () => {
-    const { container } = render(<Scheduler events={[]} view="agenda" date={day} />)
-    expect(mobileCreateButton(container)?.getAttribute('aria-label')).toBe('Create Event')
-  })
-
-  test('U3: readOnly shows no context menu and no mobile create button', () => {
-    const { container } = render(<Scheduler events={[at(9, 'ro')]} view="agenda" date={day} readOnly />)
+  // The floating Create (phone layout only) and its name: compact.test.tsx.
+  test('U3: readOnly shows no context menu', () => {
+    render(<Scheduler events={[at(9, 'ro')]} view="agenda" date={day} readOnly />)
     fireEvent.contextMenu(screen.getByText('Event 9'))
     expect(screen.queryByText('Duplicate')).toBeNull()
-    expect(mobileCreateButton(container)).toBeNull()
   })
 
   test('numeric calendar ids (from JSON) are matched like before', () => {

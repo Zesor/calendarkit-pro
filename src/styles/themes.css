@@ -1,0 +1,171 @@
+/* Theme tokens. Every theme sets the same `--ck-*` variables; the utilities only read them.
+   Each selector is wrapped in :where() (no weight), so a host rule such as
+   `.ck-root { --ck-primary: #0b7285; }` or the `theme` prop overrides any token.
+   --ck-event* colour the events that have no colour of their own (eventColors of --ck-event).
+   The Scheduler always sets data-ck-theme. data-ck-mode is absent when neither `mode` nor
+   `isDarkMode` is passed: a `.dark` ancestor then switches the calendar to dark (1.x behavior). */
+
+:where(.ck-root) {
+  --ck-background: #ffffff;
+  --ck-foreground: #17171a;
+  --ck-muted: #f2f2f4;
+  --ck-accent: #e9e9ec;
+  --ck-muted-foreground: #52525b;
+  --ck-border: #e2e2e6;
+  --ck-primary: #1f1f24;
+  --ck-primary-foreground: #ffffff;
+  --ck-ring: #3b5bdb;
+  --ck-destructive: #c92a2a;
+  --ck-destructive-foreground: #ffffff;
+  --ck-warning: #9a5800;
+  --ck-event: #3b5bdb;
+  --ck-event-ink-light: #2f49af;
+  --ck-event-ink-dark: #99aaec;
+  --ck-radius: 10px;
+  --ck-font: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --ck-font-display: var(--ck-font);
+  color-scheme: light;
+  --ck-styles: 1;
+}
+
+:where(.ck-root[data-ck-theme="vivid"]) {
+  --ck-background: #ffffff;
+  --ck-foreground: #0e1526;
+  --ck-muted: #eef1f7;
+  --ck-accent: #e3e8f2;
+  --ck-muted-foreground: #46506a;
+  --ck-border: #dfe4ee;
+  --ck-primary: #3341c9;
+  --ck-primary-foreground: #ffffff;
+  --ck-ring: #3341c9;
+  --ck-destructive: #c92a2a;
+  --ck-destructive-foreground: #ffffff;
+  --ck-warning: #985600;
+  --ck-event: #3341c9;
+  --ck-event-ink-light: #3240c5;
+  --ck-event-ink-dark: #99a0e4;
+  --ck-radius: 14px;
+  --ck-font: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --ck-font-display: var(--ck-font);
+  color-scheme: light;
+}
+
+:where(.ck-root[data-ck-theme="editorial"]) {
+  --ck-background: #fcfaf6;
+  --ck-foreground: #1d1915;
+  --ck-muted: #f0ebe2;
+  --ck-accent: #e6dfd3;
+  --ck-muted-foreground: #55493d;
+  --ck-border: #e1d9cc;
+  --ck-primary: #a8380c;
+  --ck-primary-foreground: #ffffff;
+  --ck-ring: #a8380c;
+  --ck-destructive: #b42318;
+  --ck-destructive-foreground: #ffffff;
+  --ck-warning: #8f5200;
+  --ck-event: #a8380c;
+  --ck-event-ink-light: #94310b;
+  --ck-event-ink-dark: #d49c86;
+  --ck-radius: 4px;
+  --ck-font: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --ck-font-display: "Newsreader", Georgia, ui-serif, serif;
+  color-scheme: light;
+}
+
+:where(.ck-root[data-ck-mode="dark"], .dark .ck-root:not([data-ck-mode])) {
+  --ck-background: #141417;
+  --ck-foreground: #f2f2f4;
+  --ck-muted: #1c1c20;
+  --ck-accent: #26262b;
+  --ck-muted-foreground: #b4b4bd;
+  --ck-border: #2a2a30;
+  --ck-primary: #f2f2f4;
+  --ck-primary-foreground: #141417;
+  --ck-ring: #8ea2ff;
+  --ck-destructive: #ff8787;
+  --ck-destructive-foreground: #141417;
+  --ck-warning: #f5b74e;
+  color-scheme: dark;
+}
+
+:where(.ck-root[data-ck-theme="vivid"][data-ck-mode="dark"], .dark .ck-root[data-ck-theme="vivid"]:not([data-ck-mode])) {
+  --ck-background: #10162a;
+  --ck-foreground: #e8ecf8;
+  --ck-muted: #18203a;
+  --ck-accent: #222b4a;
+  --ck-muted-foreground: #b3bcd6;
+  --ck-border: #26304f;
+  --ck-primary: #9aa5ff;
+  --ck-primary-foreground: #0a0e1a;
+  --ck-ring: #9aa5ff;
+  --ck-destructive: #ff8787;
+  --ck-destructive-foreground: #0a0e1a;
+  --ck-warning: #f5b74e;
+  color-scheme: dark;
+}
+
+:where(.ck-root[data-ck-theme="editorial"][data-ck-mode="dark"], .dark .ck-root[data-ck-theme="editorial"]:not([data-ck-mode])) {
+  --ck-background: #1b1713;
+  --ck-foreground: #f3ede4;
+  --ck-muted: #241f19;
+  --ck-accent: #2f2820;
+  --ck-muted-foreground: #cdbfae;
+  --ck-border: #352d24;
+  --ck-primary: #ff9a66;
+  --ck-primary-foreground: #1b1713;
+  --ck-ring: #ff9a66;
+  --ck-destructive: #ff8f7a;
+  --ck-destructive-foreground: #1b1713;
+  --ck-warning: #f0b45a;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :where(.ck-root[data-ck-mode="system"]) {
+    --ck-background: #141417;
+    --ck-foreground: #f2f2f4;
+    --ck-muted: #1c1c20;
+    --ck-accent: #26262b;
+    --ck-muted-foreground: #b4b4bd;
+    --ck-border: #2a2a30;
+    --ck-primary: #f2f2f4;
+    --ck-primary-foreground: #141417;
+    --ck-ring: #8ea2ff;
+    --ck-destructive: #ff8787;
+    --ck-destructive-foreground: #141417;
+    --ck-warning: #f5b74e;
+    color-scheme: dark;
+  }
+
+  :where(.ck-root[data-ck-theme="vivid"][data-ck-mode="system"]) {
+    --ck-background: #10162a;
+    --ck-foreground: #e8ecf8;
+    --ck-muted: #18203a;
+    --ck-accent: #222b4a;
+    --ck-muted-foreground: #b3bcd6;
+    --ck-border: #26304f;
+    --ck-primary: #9aa5ff;
+    --ck-primary-foreground: #0a0e1a;
+    --ck-ring: #9aa5ff;
+    --ck-destructive: #ff8787;
+    --ck-destructive-foreground: #0a0e1a;
+    --ck-warning: #f5b74e;
+    color-scheme: dark;
+  }
+
+  :where(.ck-root[data-ck-theme="editorial"][data-ck-mode="system"]) {
+    --ck-background: #1b1713;
+    --ck-foreground: #f3ede4;
+    --ck-muted: #241f19;
+    --ck-accent: #2f2820;
+    --ck-muted-foreground: #cdbfae;
+    --ck-border: #352d24;
+    --ck-primary: #ff9a66;
+    --ck-primary-foreground: #1b1713;
+    --ck-ring: #ff9a66;
+    --ck-destructive: #ff8f7a;
+    --ck-destructive-foreground: #1b1713;
+    --ck-warning: #f0b45a;
+    color-scheme: dark;
+  }
+}

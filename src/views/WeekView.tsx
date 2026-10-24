@@ -1,23 +1,27 @@
 import React from 'react';
-import { addDays, format, differenceInMinutes, isSameDay, Locale } from 'date-fns';
+import { addDays, format, isSameDay, Locale } from 'date-fns';
 import { CalendarEvent, CalendarTranslations } from '../types';
-import { cn, isEventDragDisabled } from '../utils';
+import { cx } from '../utils';
 import { DaySegment, segmentsByDisplayDay } from '../core/events';
 import { partitionDayEvents } from '../core/allDay';
 import { AllDayRow } from '../components/AllDayRow';
 import { timeFormats, timeZoneAbbreviation } from '../core/format';
-import { layoutDayEvents } from '../core/layout';
 import { displayToday, minutesSinceDisplayMidnight, resolveTimeZone, toDisplay } from '../core/timezone';
 import { getWeekDays, resolveWeekStartsOn } from '../core/week';
-import { DraggableEvent } from '../components/dnd/DraggableEvent';
-import { DroppableCell } from '../components/dnd/DroppableCell';
-import { ResizableEvent } from '../components/dnd/ResizableEvent';
+import { useElementWidth } from '../hooks/useElementWidth';
+import { type GhostEvent, weekMaxColumns } from './TimeGridEvents';
+import { TimeColumn } from './TimeColumn';
+import { DEFAULT_GRID, gridHours, gridOffset, gridScrollTop, slotDate, type TimeGrid } from './grid';
+import { TODAY_MARK } from '../components/todayMark';
+import { useNow } from '../hooks/useNow';
 
 interface WeekViewProps {
   currentDate: Date;
   events: CalendarEvent[];
   onEventClick?: (event: CalendarEvent) => void;
   onTimeSlotClick?: (date: Date) => void;
+  /** A drag over free time (mouse or pen): the range from its first slot to the end of its last. */
+  onTimeRangeSelect?: (start: Date, end: Date) => void;
   onEventResize?: (event: CalendarEvent, newEnd: Date) => void;
   timezone?: string;
   locale?: Locale;
@@ -25,25 +29,26 @@ interface WeekViewProps {
   onEventContextMenu?: (event: CalendarEvent, e: React.MouseEvent) => void;
   onDayEventResize?: (event: CalendarEvent, newLastDay: Date) => void;
   onAllDaySlotClick?: (day: Date) => void;
+  /** "+N" in the grid: the events of a cluster that did not fit. */
+  onMoreClick?: (events: CalendarEvent[]) => void;
+  /** Id of the event just created or moved, outlined briefly. */
+  highlightId?: string;
+  /** Quick create: the new event's draft, drawn in its column. */
+  draft?: GhostEvent & { allDay: boolean };
   translations?: Partial<CalendarTranslations>;
+  /** Visible hours and slots (`dayStartHour`, `dayEndHour`…). */
+  grid?: TimeGrid;
 }
 
 const HOUR_HEIGHT = 60; // px
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
-const QUARTERS = [0, 15, 30, 45];
 const NO_SEGMENTS: DaySegment[] = [];
-
-const slotDate = (day: Date, hour: number, minute: number) => {
-  const date = new Date(day);
-  date.setHours(hour, minute, 0, 0);
-  return date;
-};
 
 const WeekViewImpl: React.FC<WeekViewProps> = ({
   currentDate,
   events,
   onEventClick,
   onTimeSlotClick,
+  onTimeRangeSelect,
   onEventResize,
   timezone,
   locale,
@@ -51,7 +56,11 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
   onEventContextMenu,
   onDayEventResize,
   onAllDaySlotClick,
+  onMoreClick,
+  draft,
+  highlightId,
   translations,
+  grid = DEFAULT_GRID,
 }) => {
   // Week start follows the locale (historical Monday fallback without a locale).
   const weekDays = React.useMemo(
@@ -66,60 +75,58 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
   );
 
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
-  const [now, setNow] = React.useState(() => new Date());
-
-  React.useEffect(() => {
-    const interval = setInterval(() => setNow(new Date()), 60000);
-    return () => clearInterval(interval);
-  }, []);
+  const [gridRef, gridWidth] = useElementWidth<HTMLDivElement>();
+  const columnWidth = gridWidth === undefined ? undefined : gridWidth / 7;
+  // Null until mounted: no "now" in the server's HTML nor in the first client render (hydration).
+  const now = useNow();
 
   // Scroll a few hours above the current time (in the display zone) on mount.
   React.useEffect(() => {
     if (scrollContainerRef.current) {
       const offsetHour = 4;
-      scrollContainerRef.current.scrollTop = (toDisplay(new Date(), timezone).getHours() - offsetHour) * HOUR_HEIGHT;
+      scrollContainerRef.current.scrollTop = gridScrollTop(grid, toDisplay(new Date(), timezone).getHours(), offsetHour, HOUR_HEIGHT);
     }
-  }, [timezone]);
+  }, [timezone, grid]);
 
   // All-day and 24 h+ events go to the all-day row; the grid only shows timed events.
   const { dayEvents, timedEvents } = partitionDayEvents(events, timezone);
   const segmentsByDay = segmentsByDisplayDay(timedEvents, timezone, visibleRange);
-  const today = displayToday(timezone, now);
-  const zonedNow = toDisplay(now, timezone);
-  const nowTop = (minutesSinceDisplayMidnight(now, timezone) / 60) * HOUR_HEIGHT;
-  const showsToday = weekDays.some((day) => isSameDay(day, today));
+  const today = now && displayToday(timezone, now);
+  const zonedNow = now && toDisplay(now, timezone);
+  const nowMinutes = now ? minutesSinceDisplayMidnight(now, timezone) : 0;
+  const hours = gridHours(grid);
+  const showsNow = !!today && weekDays.some((day) => isSameDay(day, today)) && nowMinutes >= grid.startHour * 60 && nowMinutes <= grid.endHour * 60;
   const zone = resolveTimeZone(timezone);
-  const zoneLabel = timeZoneAbbreviation(now, zone) || zone || 'LOC';
+  const zoneLabel = timeZoneAbbreviation(now ?? currentDate, zone) || zone || 'LOC';
   const formats = timeFormats(locale);
 
   return (
-    <div className="flex flex-col h-full bg-background border-[0.5px] border-border/50 rounded-2xl overflow-hidden min-w-[800px] md:min-w-0 shadow-sm">
+    <div className="ck:flex ck:flex-col ck:h-full ck:bg-background ck:border-[0.5px] ck:border-border/50 ck:rounded-2xl ck:overflow-hidden ck:min-w-[800px] ck:md:min-w-0 ck:shadow-xs">
       {/* Scrollable Container - includes header for proper alignment.
           No scrollbar-gutter here: the scrollbar is hidden (scrollbar-hide),
           so reserving its space just leaves a blank strip after the last
           day column on classic-scrollbar platforms. */}
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto scrollbar-hide relative bg-background scroll-smooth"
+        className="ck:flex-1 ck:overflow-y-auto ck:relative ck:bg-background ck:scroll-smooth"
       >
         {/* Header + all-day row - sticky inside scroll container */}
-        <div className="sticky top-0 z-20">
-        <div className="flex border-b-[0.5px] border-border/50 bg-gradient-to-r from-muted/20 via-background to-muted/20 backdrop-blur-sm">
-          <div className="flex-none p-3 text-center text-xs font-semibold text-muted-foreground w-16 flex items-center justify-center border-r-[0.5px] border-border/30 bg-muted/10">
-            <div className="flex flex-col items-center justify-center leading-tight">
-              <span>{format(zonedNow, 'HH:mm')}</span>
-              <span className="text-[10px] opacity-75">({zoneLabel})</span>
+        {/* Above everything that scrolls under it (events, the current-time line and badge), and opaque. */}
+        <div className="ck:sticky ck:top-0 ck:z-40 ck:bg-background">
+        <div className="ck:flex ck:border-b-[0.5px] ck:border-border/50 ck:bg-linear-to-r ck:from-muted/20 ck:via-background ck:to-muted/20 ck:backdrop-blur-xs">
+          <div className="ck:flex-none ck:p-3 ck:text-center ck:text-xs ck:font-semibold ck:text-muted-foreground ck:w-16 ck:flex ck:items-center ck:justify-center ck:border-r-[0.5px] ck:border-border/30 ck:bg-muted/10">
+            <div className="ck:flex ck:flex-col ck:items-center ck:justify-center ck:leading-tight">
+              {zonedNow && <span>{format(zonedNow, 'HH:mm')}</span>}
+              <span className="ck:text-[10px] ck:opacity-75">({zoneLabel})</span>
             </div>
           </div>
-          <div className="flex-1 grid grid-cols-7">
+          <div className="ck:flex-1 ck:grid ck:grid-cols-7">
               {weekDays.map((day, index) => (
-              <div key={day.toISOString()} className={cn("py-3 px-2 text-center", index > 0 && "border-l-[0.5px] border-border/30")}>
-                  <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">{format(day, 'EEE', { locale })}</div>
-                  <div className={cn(
-                    "w-9 h-9 flex items-center justify-center rounded-xl mx-auto text-sm font-semibold transition-all duration-200",
-                    isSameDay(day, today)
-                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-110"
-                      : "text-foreground hover:bg-accent/80"
+              <div key={day.toISOString()} className={cx("ck:py-3 ck:px-2 ck:text-center", index > 0 && "ck:border-l-[0.5px] ck:border-border/30")}>
+                  <div className="ck:text-[10px] ck:font-semibold ck:text-muted-foreground ck:uppercase ck:tracking-wider ck:mb-1.5">{format(day, 'EEE', { locale })}</div>
+                  <div className={cx(
+                    "ck:w-9 ck:h-9 ck:flex ck:items-center ck:justify-center ck:mx-auto ck:text-sm ck:font-semibold ck:tabular-nums ck:transition-colors ck:duration-200",
+                    today && isSameDay(day, today) ? TODAY_MARK : "ck:rounded-xl ck:text-foreground ck:hover:bg-accent/80"
                   )}>
                     {format(day, 'd', { locale })}
                   </div>
@@ -134,7 +141,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
           locale={locale}
           translations={translations}
           readonly={readonly}
-          gutterClassName="w-16"
+          gutterClassName="ck:w-16"
           onEventClick={onEventClick}
           onEventContextMenu={onEventContextMenu}
           onDayEventResize={onDayEventResize}
@@ -144,179 +151,65 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
 
         {/* Grid Content */}
         <div
-          className="flex min-w-full relative"
-          style={{ height: HOURS.length * HOUR_HEIGHT }}
+          className="ck:flex ck:min-w-full ck:relative"
+          style={{ height: hours.length * HOUR_HEIGHT }}
         >
           {/* Time Labels Column */}
-          <div className="flex-none w-16 border-r-[0.5px] border-border/30 relative bg-muted/5">
-            {HOURS.map((hour) => (
+          <div className={cx("ck:flex-none ck:w-16 ck:border-r-[0.5px] ck:border-border/30 ck:relative ck:bg-muted/5", grid.reverse && "ck:flex ck:flex-col-reverse")}>
+            {hours.map((hour) => (
                  <div
                    key={hour}
-                   className="relative w-full text-[11px] text-muted-foreground/80 text-right pr-3 font-medium tabular-nums box-border"
+                   className="ck:relative ck:w-full ck:text-[11px] ck:text-muted-foreground/80 ck:text-right ck:pr-3 ck:font-medium ck:tabular-nums ck:box-border"
                    style={{ height: HOUR_HEIGHT }}
                  >
-                   <span className="block -translate-y-1/2">
-                    {hour !== 0 && format(slotDate(currentDate, hour, 0), formats.hour, { locale })}
+                   <span className={grid.reverse ? "ck:absolute ck:inset-x-0 ck:bottom-0 ck:pr-3 ck:translate-y-1/2" : "ck:block ck:-translate-y-1/2"}>
+                    {hour !== grid.startHour && format(slotDate(currentDate, hour * 60), formats.hour, { locale })}
                    </span>
                  </div>
             ))}
 
             {/* Current Time Label (Left Axis), positioned in the grid so no header offset is needed */}
-            {showsToday && (
+            {showsNow && (
               <div
-                className="absolute left-0 w-full pointer-events-none z-30 flex justify-end pr-2"
-                style={{ top: `${nowTop}px` }}
+                className="ck:absolute ck:left-0 ck:w-full ck:pointer-events-none ck:z-30 ck:flex ck:justify-end ck:pr-2"
+                style={gridOffset(grid, nowMinutes, HOUR_HEIGHT)}
               >
-                <span className="text-[10px] font-bold text-primary-foreground bg-primary px-1.5 py-0.5 rounded-md shadow-md -translate-y-1/2 backdrop-blur-none">
-                  {format(zonedNow, formats.compact, { locale })}
+                <span className={cx("ck:text-[10px] ck:font-bold ck:text-primary-foreground ck:bg-primary ck:px-1.5 ck:py-0.5 ck:rounded-md ck:shadow-md ck:backdrop-blur-none", grid.reverse ? "ck:translate-y-1/2" : "ck:-translate-y-1/2")}>
+                  {zonedNow && format(zonedNow, formats.compact, { locale })}
                 </span>
               </div>
             )}
           </div>
 
           {/* Days Columns */}
-          <div className="flex-1 grid grid-cols-7 relative">
+          <div ref={gridRef} className="ck:flex-1 ck:grid ck:grid-cols-7 ck:relative">
             {weekDays.map((day, dayIndex) => {
                 const dayKey = format(day, 'yyyy-MM-dd');
-                const positioned = layoutDayEvents(segmentsByDay.get(dayKey) ?? NO_SEGMENTS);
-
                 return (
-                <div key={dayKey} className={cn("relative h-full", dayIndex > 0 && "border-l-[0.5px] border-border/30")}>
-                    {/* Grid Rows (Droppable Cells) */}
-                    {HOURS.map((hour) => (
-                        <div
-                            key={hour}
-                            className="w-full border-b-[0.5px] border-dashed border-border/20 box-border relative hover:bg-accent/5 transition-colors"
-                            style={{ height: HOUR_HEIGHT }}
-                        >
-                            {/* 4 x 15-minute intervals */}
-                            {QUARTERS.map((minute) => {
-                                const cellDate = slotDate(day, hour, minute);
-                                return (
-                                    <DroppableCell
-                                        key={minute}
-                                        id={cellDate.toISOString()}
-                                        date={cellDate}
-                                        className="w-full absolute left-0 right-0 z-0 transition-colors"
-                                        style={{
-                                            height: '25%',
-                                            top: `${(minute / 60) * 100}%`
-                                        }}
-                                        onSlotClick={onTimeSlotClick}
-                                    />
-                                );
-                            })}
-                        </div>
-                    ))}
-
-                    {/* Events Overlay */}
-                    {positioned.map(({ event, start, end, column, columns }) => {
-                        const widthPercent = 100 / columns;
-                        const leftPercent = column * widthPercent;
-
-                        const zonedEventStart = toDisplay(event.start, timezone);
-                        const zonedEventEnd = toDisplay(event.end, timezone);
-
-                        const startMinutes = start.getHours() * 60 + start.getMinutes();
-                        const durationMinutes = differenceInMinutes(end, start);
-
-                        const top = (startMinutes / 60) * HOUR_HEIGHT;
-                        const height = (durationMinutes / 60) * HOUR_HEIGHT;
-
-                        const isShortEvent = durationMinutes < 60;
-                        // Only the segment holding the event's real end can be resized.
-                        const isLastSegment = end.getTime() === zonedEventEnd.getTime();
-
-                        return (
-                            <DraggableEvent
-                                key={`${event.id}-${dayKey}`}
-                                dragId={`${event.id}@${dayKey}`}
-                                grabOffsetMs={start.getTime() - zonedEventStart.getTime()}
-                                event={event}
-                                className={`absolute z-10 transition-all ${readonly ? "cursor-default" : ""}`}
-                                style={{
-                                    top: `${top}px`,
-                                    height: `${Math.max(height, 20)}px`,
-                                    left: `${leftPercent}%`,
-                                    width: `${widthPercent}%`,
-                                    // Add minimal spacing between overlapping events
-                                    paddingRight: columns > 1 ? '2px' : '0'
-                                }}
-                            >
-                                <ResizableEvent
-                                    readonly={readonly || !isLastSegment}
-                                    event={event}
-                                    hourHeight={HOUR_HEIGHT}
-                                    onResize={onEventResize}
-                                    className="h-full"
-                                    style={{ height: '100%' }}
-                                >
-                                    <div
-                                        className={cn(
-                                            "rounded-md border shadow-sm transition-all hover:shadow-md group overflow-hidden relative",
-                                            "glass",
-                                            readonly || isEventDragDisabled(event) ? "cursor-default" : "cursor-grab active:cursor-grabbing",
-                                            !event.color && "border-primary/20 bg-primary/10",
-                                            isShortEvent ? "px-1 flex items-center justify-center" : "p-2",
-                                            // Add active border for overlapped events to distinguish them
-                                            columns > 1 && "border-l-4 border-l-primary/50"
-                                        )}
-                                        style={{
-                                            height: '100%',
-                                            backgroundColor: event.color ? `${event.color}15` : undefined,
-                                            borderColor: event.color ? `${event.color}40` : undefined,
-                                            borderLeftWidth: '3px',
-                                            borderLeftColor: event.color || 'var(--primary)'
-                                        }}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onEventClick?.(event);
-                                        }}
-                                        onContextMenu={onEventContextMenu ? (e) => onEventContextMenu(event, e) : undefined}
-                                        title={columns > 1 ? `${event.title} (${column + 1}/${columns})` : undefined}
-                                    >
-                                        <div className="flex flex-col h-full overflow-hidden w-full">
-                                            <div className={cn("font-semibold truncate text-foreground/90 leading-tight",
-                                                isShortEvent ? "text-xs text-center" : "text-xs"
-                                            )}>
-                                                {event.title}
-                                            </div>
-                                            {!isShortEvent && (
-                                                <>
-                                                    <div className="text-[10px] text-muted-foreground truncate mt-0.5 font-medium leading-tight">
-                                                        {format(zonedEventStart, formats.time, { locale })} - {format(zonedEventEnd, formats.time, { locale })}
-                                                    </div>
-                                                    {event.description && height > 50 && (
-                                                        <div className="text-[10px] text-muted-foreground/80 truncate mt-1 leading-tight opacity-80">
-                                                            {event.description}
-                                                        </div>
-                                                    )}
-                                                </>
-                                            )}
-                                            {/* Overlap Badge */}
-                                            {columns > 1 && !isShortEvent && (
-                                                <div className="absolute top-1 right-1 bg-background/80 backdrop-blur-sm rounded-full w-4 h-4 flex items-center justify-center text-[9px] font-bold text-muted-foreground border border-border shadow-sm">
-                                                    {columns}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </ResizableEvent>
-                            </DraggableEvent>
-                        );
-                    })}
-
-                    {/* Current Time Indicator */}
-                    {isSameDay(day, today) && (
-                    <div
-                        className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
-                        style={{ top: `${nowTop}px` }}
-                    >
-                        <div className="h-[2px] w-full bg-gradient-to-r from-primary via-primary to-primary/50" />
-                        <div className="absolute -left-1.5 w-3 h-3 bg-primary rounded-full shadow-lg shadow-primary/40 ring-2 ring-background animate-pulse" />
-                    </div>
-                    )}
-                </div>
+                    <TimeColumn
+                        key={dayKey}
+                        day={day}
+                        dayKey={dayKey}
+                        segments={segmentsByDay.get(dayKey) ?? NO_SEGMENTS}
+                        grid={grid}
+                        hourHeight={HOUR_HEIGHT}
+                        maxColumns={weekMaxColumns(columnWidth)}
+                        columnWidth={columnWidth}
+                        nowMinutes={today && isSameDay(day, today) ? nowMinutes : undefined}
+                        className={cx("ck:h-full", dayIndex > 0 && "ck:border-l-[0.5px] ck:border-border/30")}
+                        timezone={timezone}
+                        locale={locale}
+                        readonly={readonly}
+                        onTimeSlotClick={onTimeSlotClick}
+                        onRangeSelect={onTimeRangeSelect}
+                        onEventClick={onEventClick}
+                        onEventContextMenu={onEventContextMenu}
+                        onEventResize={onEventResize}
+                        onMoreClick={onMoreClick}
+                        highlightId={highlightId}
+                        ghost={draft && !draft.allDay && isSameDay(draft.start, day) ? draft : undefined}
+                        translations={translations}
+                    />
                 );
             })}
           </div>
