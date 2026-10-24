@@ -149,7 +149,22 @@ A custom `components.Toolbar` replaces the Focus toolbar and Flow's top bar too;
 />
 ```
 
-`initialAllDay` is `true` when the form is opened from the all-day row.
+Your form replaces the built-in quick card and full form. It receives:
+
+| Prop | Type | |
+|------|------|---|
+| `isOpen` | `boolean` | Whether the form should be shown |
+| `onClose` | `() => void` | Call it to close the form |
+| `event` | `CalendarEvent \| null` | The event being edited; `null` or absent for a new one |
+| `initialDate` | `Date` | Start of the slot that was clicked, for a new event |
+| `initialAllDay` | `boolean` | `true` when the form is opened from the all-day row |
+| `onSave` | `(event: Partial<CalendarEvent>) => void` | Save the event (create or update) |
+| `onDelete` | `(eventId: string) => void` | Delete the event |
+
+- A click on a free slot, or **Create**, opens your form for a new event; a click on an event opens it with that event (`onEventClick` is still called first).
+- It opens in every layout: Classic, Focus and Flow.
+- When it closes, the focus goes back to what opened it.
+- `components.EventEditor` is the same thing under another name; pass one or the other.
 
 ## Places
 
@@ -253,6 +268,21 @@ Size or space the calendar with `className` (`className="h-[600px] rounded-xl"`)
 />
 ```
 
+`timezone` is an IANA time zone name, such as `'America/New_York'` or `'Asia/Tokyo'`. Without it, the calendar uses the browser's zone; an unknown name falls back to it with a console warning.
+
+- Events are drawn at their time in that zone. Your data does not change: `start` and `end` stay the same instants, so an event at 9:00 in New York shows at 15:00 with `timezone="Europe/Paris"`.
+- "Today", the current-time line, the hour the grid opens at and the grouping of the agenda follow `timezone` in the week, day, agenda and resource views.
+- The built-in event form shows and saves times in `timezone`. A form of your own still receives instants (see [Custom event form](#custom-event-form)).
+- All-day events are calendar dates: `timezone` never shifts them (see [All-day and multi-day events](#all-day-and-multi-day-events)).
+- Recurring events keep their wall-clock time across daylight-saving changes, in that zone (see [Recurring events](#recurring-events)).
+- The side panel shows the zone and its current time. Its picker offers a short list of common zones plus Local time (an empty string), and calls `onTimezoneChange` with the choice. The calendar does not keep it for you: keep it in your state so the choice sticks:
+
+```tsx
+const [timezone, setTimezone] = useState('Europe/Paris');
+
+<Scheduler timezone={timezone} onTimezoneChange={setTimezone} />
+```
+
 ## Internationalization
 
 ```tsx
@@ -275,7 +305,15 @@ const frenchTranslations = {
 />
 ```
 
-All interface texts (views, event form, sidebar, accessible labels) come from the language pack selected by `language`; `translations` overrides individual keys. Calendars are only listed in the sidebar when you pass `calendars`.
+Three props work together:
+
+- `language` (`'en'` or `'fr'`) picks the built-in language pack: every interface text, the event form, the side panel and the accessible labels read by screen readers.
+- `translations` overrides single keys of that pack. The `CalendarTranslations` type lists every key.
+- `locale` is a date-fns locale. It formats dates, and sets the 12 or 24 hour clock and the week start.
+
+The quick card understands typed sentences in the calendar's `language`: "Lunch with Lea tomorrow 1pm for 2h" in English, the same kind of sentence in French. Time zones are separate: see [Time zones](#time-zones).
+
+Calendars are only listed in the sidebar when you pass `calendars`.
 
 ## Resource scheduling
 
@@ -291,6 +329,15 @@ const resources: Resource[] = [
   events={events}
 />
 ```
+
+The resource view is a horizontal timeline with one row per resource: rooms, people, equipment.
+
+- A resource is `{ id, label, color?, avatar? }`. An event goes on a row through its `resourceId`.
+- An event without its own `color` or calendar takes its resource's colour.
+- A click on a free slot of a row opens the new-event card (or your own form) with that resource already assigned.
+- Drag an event along its row to change its time, or to another row to change its resource. `onEventUpdate` receives the event with its new `resourceId`; `onEventDrop` receives the event before the move and its new dates.
+- The view shares the time grid settings: `dayStartHour`, `dayEndHour` and `slotDuration` apply. `reverseTimeAxis` does not.
+- Resources are rows, calendars are colours and filters: an event can have both a `resourceId` and a `calendarId` (see [Multiple calendars](#multiple-calendars)).
 
 ## Multiple calendars
 
