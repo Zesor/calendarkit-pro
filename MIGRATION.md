@@ -1,6 +1,6 @@
 # Migrating from 1.x to 2.0
 
-2.0 is in pre-release on the `next` dist-tag (`npm install calendarkit-pro@next`). This page lists every breaking change, why it was made and what to do. It grows with each pre-release.
+This page lists every breaking change of 2.0, why it was made and what to do. Most 1.x code keeps working as is: every example of the 1.4 README runs unchanged on 2.0 (it is part of the test suite).
 
 ## Styles: no Tailwind setup
 

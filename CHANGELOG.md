@@ -1,5 +1,24 @@
 # Pro-Scheduler Changelog
 
+## 2.0.0
+
+The new CalendarKit: rebuilt on a framework-free engine, redesigned, accessible and ready for phones. Upgrading from 1.x: see [MIGRATION.md](MIGRATION.md); every example of the 1.4 README still runs unchanged. The pre-releases below list every change in detail.
+
+### Highlights
+- **No setup.** The calendar ships its own compiled, scoped stylesheet: no Tailwind configuration, nothing to import (`calendarkit-pro/styles.css` remains available as a file).
+- **Redesigned.** Three themes (Calm, Vivid, Editorial) in light and dark, every colour a CSS variable, event colours adjusted to WCAG AA contrast.
+- **Create in place.** Click or drag over free time; the quick card understands sentences ("Lunch with Lea tomorrow 1pm for 2h") in English and French. Every change shows Undo; the event card opens beside the event.
+- **Three layouts.** Classic, Focus (the grid under a floating toolbar, editing in a side panel) and Flow (the day as a feed with free slots to book).
+- **Time grid.** Visible hours, slot length, working hours, reversed time axis (issue #2), drag to create.
+- **Phones.** Under 768 px of calendar width: day view, drawer, bottom sheets, 44 px targets, a month of day buttons.
+- **Accessible.** Every event and slot is a named button; dialogs trap and return the focus; no keyboard shortcuts to learn.
+- **Places.** Optional location suggestions (`placeSearch`, `photonPlaces()` for OpenStreetMap).
+- **Integration.** Uncontrolled mode (`defaultEvents`, `onEventsChange`), `classNames`, `components`, server rendering with React 18 and 19.
+- **Headless.** `calendarkit-pro/core` (the engine, no React) and `calendarkit-pro/react` (hooks and helpers) to build your own calendar UI.
+
+### Removed
+- The root `cn` export, deprecated in 1.4.1.
+
 ## 2.0.0-beta.1
 
 Pre-release on the `next` dist-tag (`latest` stays on 1.4.x). The API is complete: from here to 2.0.0, fixes only.
@@ -190,6 +209,11 @@ Pre-release on the `next` dist-tag (`latest` stays on 1.4.x). The `<Scheduler>` 
 ### Fixed
 - Duplicating an all-day event on a daylight-saving day moves it by one calendar day.
 - An occurrence lasting over a year no longer makes recurrence expansion scan decades back (look-back capped at one year, with a development warning).
+
+## 1.4.1
+
+### Deprecated
+- The root `cn` export (clsx + tailwind-merge) is removed in 2.0. Copy it into your project: `const cn = (...inputs: ClassValue[]) => twMerge(clsx(inputs))`. Calling it logs a one-time warning in development.
 
 ## 1.4.0
 
