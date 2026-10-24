@@ -31,6 +31,8 @@ npm install calendarkit-pro
 
 React 18 or 19, nothing else: the calendar brings its own stylesheet and adds it to the page once. The Tailwind `content` entry that 1.x needed can be removed (see [Styles and Content-Security-Policy](#styles-and-content-security-policy) to load the CSS as a file instead).
 
+Server rendering (Next.js, Remix…) works with both: nothing touches `window` at import or during the server render, and the page hydrates without a warning. The phone layout switches after the first measure in the browser, before the first paint; until then the window's media queries stand in.
+
 ## Quick Start
 
 ```tsx
@@ -491,7 +493,7 @@ An event takes its own `color`, else the colour of its calendar (`calendarId`), 
 
 ## Headless core (2.0 preview)
 
-The 2.0 engine ships ahead of the new UI as `calendarkit-pro/core`: no React, no DOM, usable on the server and from any framework. Install the preview with `npm install calendarkit-pro@next`; the API may still change until 2.0.0.
+The 2.0 engine ships ahead of the new UI as `calendarkit-pro/core`: no React, no DOM, usable on the server and from any framework. Install the 2.0 beta with `npm install calendarkit-pro@next`; the API no longer changes before 2.0.0, unless a beta bug requires it.
 
 ```ts
 import { createCalendar, selectTimeGrid } from 'calendarkit-pro/core'

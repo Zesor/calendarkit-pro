@@ -63,7 +63,7 @@ const DroppableCellImpl: React.FC<DroppableCellProps> = ({ id, date, resourceId,
   // A slot that creates is a button (read-only grids and month cells stay plain cells).
   if (onSlotClick) {
     return (
-      <button type="button" ref={setNodeRef} data-ck-slot="" aria-label={label} tabIndex={tabbable ? 0 : -1} className={cellClassName} style={style} onClick={() => onSlotClick(date, resourceId)}>
+      <button type="button" ref={setNodeRef} data-ck-slot={allDayRow ? `day:${date.toISOString()}` : date.toISOString()} aria-label={label} tabIndex={tabbable ? 0 : -1} className={cellClassName} style={style} onClick={() => onSlotClick(date, resourceId)}>
         {children}
       </button>
     );

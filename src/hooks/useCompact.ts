@@ -1,6 +1,5 @@
-import { RefObject, useEffect, useLayoutEffect, useState } from 'react';
-
-const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
+import { RefObject, useState } from 'react';
+import { useIsomorphicLayoutEffect } from './useIsomorphicLayoutEffect';
 
 /**
  * Spec §8.9: whether the element is narrower than `below` px (the phone layout). Measured before the

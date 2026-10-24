@@ -1,6 +1,6 @@
 {
   "name": "calendarkit-pro",
-  "version": "2.0.0-alpha.11",
+  "version": "2.0.0-beta.1",
   "description": "Professional React calendar with drag-drop, recurring events, timezone support, resource scheduling, and i18n",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -58,6 +58,7 @@
     "pretest": "npm run css",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:dst": "CK_TODAY=2026-10-25T12:00 vitest run && CK_TODAY=2026-03-29T12:00 vitest run",
     "test:coverage": "vitest run --coverage",
     "knip": "knip",
     "check:package": "node scripts/check-dist.mjs && publint --strict && attw --pack . --exclude-entrypoints styles.css",

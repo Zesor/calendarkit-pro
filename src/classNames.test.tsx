@@ -5,11 +5,12 @@ import React from 'react'
 import { afterEach, describe, expect, test } from 'vitest'
 import { Scheduler } from './index'
 import type { CalendarClassNames, CalendarEvent } from './types'
+import { todayAt } from './test/time'
 
 afterEach(cleanup)
 
 const today = startOfDay(new Date())
-const standup: CalendarEvent = { id: 'su', title: 'Standup', start: new Date(today.getTime() + 9.5 * 3600e3), end: new Date(today.getTime() + 10 * 3600e3) }
+const standup: CalendarEvent = { id: 'su', title: 'Standup', start: todayAt(9.5), end: todayAt(10) }
 const offsite: CalendarEvent = { id: 'off', title: 'Offsite', start: today, end: addDays(today, 1), allDay: true }
 const classNames: CalendarClassNames = { root: 'x-root', toolbar: 'x-toolbar', sidebar: 'x-sidebar', event: 'x-event', slot: 'x-slot', allDayBar: 'x-bar', dialog: 'x-dialog' }
 

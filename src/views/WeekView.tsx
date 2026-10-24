@@ -13,6 +13,7 @@ import { type GhostEvent, weekMaxColumns } from './TimeGridEvents';
 import { TimeColumn } from './TimeColumn';
 import { DEFAULT_GRID, gridHours, gridOffset, gridScrollTop, slotDate, type TimeGrid } from './grid';
 import { TODAY_MARK } from '../components/todayMark';
+import { useNow } from '../hooks/useNow';
 
 interface WeekViewProps {
   currentDate: Date;
@@ -76,12 +77,8 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const [gridRef, gridWidth] = useElementWidth<HTMLDivElement>();
   const columnWidth = gridWidth === undefined ? undefined : gridWidth / 7;
-  const [now, setNow] = React.useState(() => new Date());
-
-  React.useEffect(() => {
-    const interval = setInterval(() => setNow(new Date()), 60000);
-    return () => clearInterval(interval);
-  }, []);
+  // Null until mounted: no "now" in the server's HTML nor in the first client render (hydration).
+  const now = useNow();
 
   // Scroll a few hours above the current time (in the display zone) on mount.
   React.useEffect(() => {
@@ -94,13 +91,13 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
   // All-day and 24 h+ events go to the all-day row; the grid only shows timed events.
   const { dayEvents, timedEvents } = partitionDayEvents(events, timezone);
   const segmentsByDay = segmentsByDisplayDay(timedEvents, timezone, visibleRange);
-  const today = displayToday(timezone, now);
-  const zonedNow = toDisplay(now, timezone);
-  const nowMinutes = minutesSinceDisplayMidnight(now, timezone);
+  const today = now && displayToday(timezone, now);
+  const zonedNow = now && toDisplay(now, timezone);
+  const nowMinutes = now ? minutesSinceDisplayMidnight(now, timezone) : 0;
   const hours = gridHours(grid);
-  const showsNow = weekDays.some((day) => isSameDay(day, today)) && nowMinutes >= grid.startHour * 60 && nowMinutes <= grid.endHour * 60;
+  const showsNow = !!today && weekDays.some((day) => isSameDay(day, today)) && nowMinutes >= grid.startHour * 60 && nowMinutes <= grid.endHour * 60;
   const zone = resolveTimeZone(timezone);
-  const zoneLabel = timeZoneAbbreviation(now, zone) || zone || 'LOC';
+  const zoneLabel = timeZoneAbbreviation(now ?? currentDate, zone) || zone || 'LOC';
   const formats = timeFormats(locale);
 
   return (
@@ -119,7 +116,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
         <div className="ck:flex ck:border-b-[0.5px] ck:border-border/50 ck:bg-linear-to-r ck:from-muted/20 ck:via-background ck:to-muted/20 ck:backdrop-blur-xs">
           <div className="ck:flex-none ck:p-3 ck:text-center ck:text-xs ck:font-semibold ck:text-muted-foreground ck:w-16 ck:flex ck:items-center ck:justify-center ck:border-r-[0.5px] ck:border-border/30 ck:bg-muted/10">
             <div className="ck:flex ck:flex-col ck:items-center ck:justify-center ck:leading-tight">
-              <span>{format(zonedNow, 'HH:mm')}</span>
+              {zonedNow && <span>{format(zonedNow, 'HH:mm')}</span>}
               <span className="ck:text-[10px] ck:opacity-75">({zoneLabel})</span>
             </div>
           </div>
@@ -129,7 +126,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
                   <div className="ck:text-[10px] ck:font-semibold ck:text-muted-foreground ck:uppercase ck:tracking-wider ck:mb-1.5">{format(day, 'EEE', { locale })}</div>
                   <div className={cx(
                     "ck:w-9 ck:h-9 ck:flex ck:items-center ck:justify-center ck:mx-auto ck:text-sm ck:font-semibold ck:tabular-nums ck:transition-colors ck:duration-200",
-                    isSameDay(day, today) ? TODAY_MARK : "ck:rounded-xl ck:text-foreground ck:hover:bg-accent/80"
+                    today && isSameDay(day, today) ? TODAY_MARK : "ck:rounded-xl ck:text-foreground ck:hover:bg-accent/80"
                   )}>
                     {format(day, 'd', { locale })}
                   </div>
@@ -178,7 +175,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
                 style={gridOffset(grid, nowMinutes, HOUR_HEIGHT)}
               >
                 <span className={cx("ck:text-[10px] ck:font-bold ck:text-primary-foreground ck:bg-primary ck:px-1.5 ck:py-0.5 ck:rounded-md ck:shadow-md ck:backdrop-blur-none", grid.reverse ? "ck:translate-y-1/2" : "ck:-translate-y-1/2")}>
-                  {format(zonedNow, formats.compact, { locale })}
+                  {zonedNow && format(zonedNow, formats.compact, { locale })}
                 </span>
               </div>
             )}
@@ -198,7 +195,7 @@ const WeekViewImpl: React.FC<WeekViewProps> = ({
                         hourHeight={HOUR_HEIGHT}
                         maxColumns={weekMaxColumns(columnWidth)}
                         columnWidth={columnWidth}
-                        nowMinutes={isSameDay(day, today) ? nowMinutes : undefined}
+                        nowMinutes={today && isSameDay(day, today) ? nowMinutes : undefined}
                         className={cx("ck:h-full", dayIndex > 0 && "ck:border-l-[0.5px] ck:border-border/30")}
                         timezone={timezone}
                         locale={locale}

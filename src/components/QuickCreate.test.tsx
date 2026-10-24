@@ -6,13 +6,14 @@ import React from 'react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { Scheduler } from '../index'
 import type { CalendarEvent, CalendarProps } from '../types'
+import { todayAt } from '../test/time'
 
 afterEach(cleanup)
 
 const today = startOfDay(new Date())
 // A wall-clock time `days` after today: right on a DST day too (adding milliseconds is an hour off there).
 const wall = (days: number, hours: number) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + days, Math.floor(hours), (hours % 1) * 60)
-const standup: CalendarEvent = { id: 'su', title: 'Standup', start: new Date(today.getTime() + 9.5 * 3600e3), end: new Date(today.getTime() + 10 * 3600e3) }
+const standup: CalendarEvent = { id: 'su', title: 'Standup', start: todayAt(9.5), end: todayAt(10) }
 
 // The day view's quarter-hour slots, in order (index 36 = 09:00).
 const slots = (container: HTMLElement) => container.querySelectorAll<HTMLElement>('.ck\\:z-0.ck\\:cursor-pointer')
@@ -57,7 +58,7 @@ describe('quick create', () => {
     expect(screen.getByText('Overlaps “Standup”').getAttribute('role')).toBe('status')
     fireEvent.change(screen.getByRole('combobox', { name: 'Calendar' }), { target: { value: 'w' } })
     act(() => screen.getByRole('button', { name: 'Save' }).click())
-    expect(onEventCreate).toHaveBeenCalledWith(expect.objectContaining({ calendarId: 'w', end: new Date(today.getTime() + 10 * 3600e3) }))
+    expect(onEventCreate).toHaveBeenCalledWith(expect.objectContaining({ calendarId: 'w', end: todayAt(10) }))
   })
 
   test('the card: close, title, then one row each for when, guests, location, description and calendar, and More options and Save', () => {

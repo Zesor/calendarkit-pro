@@ -8,6 +8,7 @@ import { resolveTranslations } from '../core/format'
 import { Scheduler } from '../index'
 import type { CalendarEvent, Place, PlaceSearch } from '../types'
 import { EventModal } from './EventModal'
+import { todayAt } from '../test/time'
 
 afterEach(cleanup)
 
@@ -90,7 +91,7 @@ describe('place search in the form', () => {
 
   test('the event card shows a saved place with Open in Maps and Directions', () => {
     const today = startOfDay(new Date())
-    const coffee: CalendarEvent = { id: 'c', title: 'Coffee', start: new Date(today.getTime() + 9 * 3600e3), end: new Date(today.getTime() + 10 * 3600e3), location: 'Café de Flore, 172 Boulevard Saint-Germain, Paris', place: flore }
+    const coffee: CalendarEvent = { id: 'c', title: 'Coffee', start: todayAt(9), end: todayAt(10), location: 'Café de Flore, 172 Boulevard Saint-Germain, Paris', place: flore }
     render(<Scheduler view="day" date={today} events={[coffee]} />)
     act(() => screen.getByText('Coffee').click())
     expect(screen.getByText('Café de Flore')).toBeTruthy()

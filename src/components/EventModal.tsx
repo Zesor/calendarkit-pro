@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useId, useInsertionEffect, useLayoutEffect, useRef } from 'react';
+import React, { useState, useEffect, useId, useInsertionEffect, useRef } from 'react';
 import { useClassNames } from './customize';
 import { placeBeside } from './placement';
 import { useDialogFocus } from './useDialogFocus';
@@ -11,6 +11,7 @@ import { cx } from '../utils';
 import { DiscardPrompt } from './DiscardPrompt';
 import { interpolate } from '../core/format';
 import { dayEventSpan } from '../core/allDay';
+import { useIsomorphicLayoutEffect } from '../hooks/useIsomorphicLayoutEffect';
 
 interface EventModalProps {
   isOpen: boolean;
@@ -40,18 +41,19 @@ interface EventModalProps {
 const REMINDER_OPTIONS = [0, 5, 10, 15, 30, 60, 120, 1440, 2880, 10080];
 
 // Color palette for events
+// Each colour with the key of its name (swatches are named by colour, not by hex code).
 const COLOR_PALETTE = [
-  '#3b82f6', // Blue
-  '#ef4444', // Red
-  '#10b981', // Emerald
-  '#f59e0b', // Amber
-  '#8b5cf6', // Violet
-  '#ec4899', // Pink
-  '#06b6d4', // Cyan
-  '#84cc16', // Lime
-  '#f97316', // Orange
-  '#6366f1', // Indigo
-];
+  ['#3b82f6', 'colorBlue'],
+  ['#ef4444', 'colorRed'],
+  ['#10b981', 'colorEmerald'],
+  ['#f59e0b', 'colorAmber'],
+  ['#8b5cf6', 'colorViolet'],
+  ['#ec4899', 'colorPink'],
+  ['#06b6d4', 'colorCyan'],
+  ['#84cc16', 'colorLime'],
+  ['#f97316', 'colorOrange'],
+  ['#6366f1', 'colorIndigo'],
+] as const;
 
 export const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -207,7 +209,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   }, [closeRequest]);
   // A card beside what it edits (no overlay): the event's block, or the new event's ghost.
   const editedId = event?.id;
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const el = card.current;
     if (!isOpen || !el || variant !== 'card') return;
     const root = el.closest('.ck-root');
@@ -393,11 +395,11 @@ export const EventModal: React.FC<EventModalProps> = ({
             </button>
             {isColorPickerOpen && (
               <div className="ck:absolute ck:top-full ck:left-0 ck:mt-1 ck:p-2 ck:bg-background ck:border ck:border-border ck:rounded-xl ck:shadow-xl ck:z-50 ck:grid ck:grid-cols-5 ck:gap-1.5">
-                {COLOR_PALETTE.map(color => (
+                {COLOR_PALETTE.map(([color, name]) => (
                   <button
                     key={color}
                     type="button"
-                    aria-label={color}
+                    aria-label={t[name]}
                     aria-pressed={formData.color === color}
                     onClick={() => {
                       setFormData(prev => ({ ...prev, color }));

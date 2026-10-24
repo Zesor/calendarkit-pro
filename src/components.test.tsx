@@ -6,11 +6,12 @@ import React from 'react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { Scheduler } from './index'
 import type { CalendarEvent, EventContentProps, EventEditorProps, SidebarProps, ToolbarProps } from './types'
+import { todayAt } from './test/time'
 
 afterEach(cleanup)
 
 const today = startOfDay(new Date())
-const standup: CalendarEvent = { id: 'su', title: 'Standup', start: new Date(today.getTime() + 9.5 * 3600e3), end: new Date(today.getTime() + 10 * 3600e3) }
+const standup: CalendarEvent = { id: 'su', title: 'Standup', start: todayAt(9.5), end: todayAt(10) }
 const offsite: CalendarEvent = { id: 'off', title: 'Offsite', start: today, end: addDays(today, 1), allDay: true }
 const EventContent = ({ event, variant }: EventContentProps) => <b>{`${variant}: ${event.title}`}</b>
 
