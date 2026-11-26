@@ -504,7 +504,7 @@ export const Scheduler: React.FC<CalendarProps> = ({
         ref={rootRef}
         onPointerDownCapture={(e) => { pointer.current = pressedBox(e); }}
         onKeyDownCapture={(e) => { if (e.key === 'Enter' || e.key === ' ') pointer.current = keyedBox(e); }}
-        className={cx("ck-root ck:flex ck:flex-col ck:h-full ck:bg-background ck:text-foreground ck:relative", className, classNames.root)}
+        className={cx("ck-root ck:flex ck:flex-col ck:h-full ck:bg-background ck:text-foreground ck:relative ck:overflow-hidden", className, classNames.root)}
         style={getThemeStyles(theme)}
         data-ck-theme={themePreset(theme)}
         data-ck-mode={colorMode(mode, isDarkMode)}
